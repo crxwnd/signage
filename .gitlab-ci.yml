@@ -1,0 +1,91 @@
+# GitLab CI/CD Pipeline for Signage Monorepo
+
+image: node:20-alpine
+
+# Cache configuration
+cache:
+  key:
+    files:
+      - pnpm-lock.yaml
+  paths:
+    - .pnpm-store
+
+# Stages
+stages:
+  - install
+  - lint
+  - test
+  - build
+
+# Install dependencies
+install:
+  stage: install
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.23.0 --activate
+    - pnpm config set store-dir .pnpm-store
+  script:
+    - pnpm install --frozen-lockfile
+  artifacts:
+    paths:
+      - node_modules
+      - apps/*/node_modules
+      - packages/*/node_modules
+    expire_in: 1 hour
+
+# Lint stage
+lint:
+  stage: lint
+  dependencies:
+    - install
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.23.0 --activate
+  script:
+    - pnpm run lint
+    - pnpm run format:check
+
+# Type check
+typecheck:
+  stage: lint
+  dependencies:
+    - install
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.23.0 --activate
+  script:
+    - pnpm run typecheck
+
+# Test stage
+test:
+  stage: test
+  dependencies:
+    - install
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.23.0 --activate
+  script:
+    - pnpm run test
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+
+# Build stage
+build:
+  stage: build
+  dependencies:
+    - install
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@10.23.0 --activate
+  script:
+    - pnpm run build
+  artifacts:
+    paths:
+      - apps/frontend/.next
+      - apps/backend/dist
+      - apps/player/.next
+    expire_in: 1 week
