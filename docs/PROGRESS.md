@@ -26,21 +26,21 @@ Ninguna todavía - proyecto iniciando
 
 ### Tareas
 
-- [ ] **0.1** - Crear estructura de archivos de contexto
-  - [ ] CLAUDE.md
-  - [ ] docs/ARQUITECTURA.md
-  - [ ] docs/PROGRESS.md (este archivo)
-  - [ ] .claude/settings.json
+- [x] **0.1** - Crear estructura de archivos de contexto
+  - [x] CLAUDE.md
+  - [x] docs/ARQUITECTURA.md
+  - [x] docs/PROGRESS.md (este archivo)
+  - [x] .claude/settings.json
   - Commits: [ ] Archivos de contexto creados
 
-- [ ] **0.2** - Primera interacción con Claude Code
-  - [ ] Verificar que Claude puede leer CLAUDE.md
-  - [ ] Test de exploración sin código
+- [x] **0.2** - Primera interacción con Claude Code
+  - [x] Verificar que Claude puede leer CLAUDE.md
+  - [x] Test de exploración sin código
   - Commits: [ ]
 
-**Estado**: ⏸️ Pendiente  
-**Fecha inicio**: [PENDIENTE]  
-**Fecha fin**: [PENDIENTE]
+**Estado**: COMPLETADA  
+**Fecha inicio**: 20/11/2025  
+**Fecha fin**: 20/11/2025
 
 ---
 
