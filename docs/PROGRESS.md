@@ -76,23 +76,23 @@ Ninguna todavía - proyecto iniciando
   - TypeScript no estaba instalado como devDependency en workspaces (resuelto con `pnpm add -D typescript --filter [package]`)
 
 
-- [ ] **1.5** - ESLint y Prettier
-  - [ ] Configs compartidas en packages/config
-  - [ ] Rules específicas para React/Node
-  - [ ] Scripts de lint y format en package.json
+- [x] **1.5** - ESLint y Prettier
+  - [x] Configs compartidas en packages/config
+  - [x] Rules específicas para React/Node
+  - [x] Scripts de lint y format en package.json
   - Commits: [ ] Linting y formatting
 
 **Checkpoint Día 1**:
 
-- [ ] `pnpm install` funciona sin errores
-- [ ] `pnpm typecheck` pasa
+- [x] `pnpm install` funciona sin errores
+- [x] `pnpm typecheck` pasa
 - [x] `pnpm install` funciona sin errores [21/11/2025]
 - [x] `pnpm typecheck` pasa
-- [ ] `pnpm lint` pasa
+- [x] `pnpm lint` pasa
 - [x] Estructura de carpetas completa [21/11/2025] 
 
-**Estado**: ⏸️ Pendiente  
-**Fecha**: [PENDIENTE]
+**Estado**: COMPLETADO
+**Fecha**: [21/11/2025]
 
 ### DÍA 2: Tipos Compartidos y Base de Datos
 
