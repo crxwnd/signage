@@ -5,6 +5,8 @@
 
 import express, { type Application } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -19,6 +21,39 @@ export function createApp(): Application {
   // ==============================================
   // MIDDLEWARE
   // ==============================================
+
+  // Security headers with Helmet.js
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow embedding for signage displays
+    })
+  );
+
+  // Rate limiting
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+    legacyHeaders: false, // Disable `X-RateLimit-*` headers
+    message: {
+      success: false,
+      error: {
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Too many requests from this IP, please try again later',
+      },
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  app.use(limiter);
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
