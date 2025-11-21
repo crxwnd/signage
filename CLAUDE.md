@@ -1,7 +1,9 @@
 # PROYECTO: Sistema de Señalización Digital para Hoteles
 
 ## 🎯 OBJETIVO DEL PROYECTO
+
 Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hoteles con:
+
 - Sincronización exacta entre pantallas (50-200ms de precisión)
 - Streaming de videos pesados (3GB+) con HLS adaptativo
 - Caché local hasta 5GB por dispositivo
@@ -12,6 +14,7 @@ Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hotel
 ## 🛠️ TECH STACK (OBLIGATORIO)
 
 ### Frontend
+
 - **React 18** con TypeScript 5.2+ (strict mode)
 - **Next.js 14** con App Router
 - **Tailwind CSS 3.x** + **shadcn/ui** para componentes
@@ -22,6 +25,7 @@ Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hotel
 - **Workbox** para Service Workers
 
 ### Backend
+
 - **Node.js 20 LTS**
 - **Express.js** para API REST
 - **Socket.io 4.x** para WebSocket
@@ -33,6 +37,7 @@ Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hotel
 - **MinIO** para almacenamiento de objetos (20-100TB)
 
 ### DevOps
+
 - **Turborepo** para monorepo
 - **PM2** para process management
 - **Docker** para desarrollo y producción
@@ -64,6 +69,7 @@ signage/
 ## 🎨 CONVENCIONES DE CÓDIGO
 
 ### TypeScript
+
 ```typescript
 // ✅ SIEMPRE strict mode
 {
@@ -84,6 +90,7 @@ import type { Display, User } from '@shared-types';
 ```
 
 ### React
+
 ```tsx
 // ✅ SOLO componentes funcionales con hooks
 export function DisplayCard({ display }: DisplayCardProps) {
@@ -98,13 +105,14 @@ export function DisplayCard({ display }: DisplayCardProps) {
 // - Props interface: {ComponentName}Props
 
 // ✅ Server Components por defecto, 'use client' solo cuando necesario
-'use client'; // Solo si usa useState, useEffect, eventos, etc.
+('use client'); // Solo si usa useState, useEffect, eventos, etc.
 
 // ❌ NO clases de React
-class DisplayCard extends Component { } // NUNCA
+class DisplayCard extends Component {} // NUNCA
 ```
 
 ### Socket.io
+
 ```typescript
 // ✅ Eventos nombrados en kebab-case con prefijos
 socket.emit('display-status-changed', data);
@@ -123,6 +131,7 @@ socket.emit('display-status-changed', data satisfies DisplayStatusEvent);
 ```
 
 ### Estilos con Tailwind
+
 ```tsx
 // ✅ Utility classes como prioridad
 <div className="p-4 bg-white rounded-lg shadow-md">
@@ -141,6 +150,7 @@ import { Button, Card, Badge } from '@/components/ui';
 ```
 
 ### API y Validación
+
 ```typescript
 // ✅ Zod para validación de input
 import { z } from 'zod';
@@ -148,7 +158,7 @@ import { z } from 'zod';
 const createDisplaySchema = z.object({
   name: z.string().min(3).max(100),
   location: z.string(),
-  hotelId: z.string().uuid()
+  hotelId: z.string().uuid(),
 });
 
 // ✅ Response format consistente
@@ -172,12 +182,13 @@ interface ApiResponse<T> {
 ## 🔄 PATRONES DE ARQUITECTURA
 
 ### Gestión de Estado con Socket.io
+
 ```typescript
 // BACKEND: Broadcast a sala específica
 io.to(`display-${displayId}`).emit('display-update', {
   displayId,
   status: 'online',
-  timestamp: Date.now()
+  timestamp: Date.now(),
 });
 
 // FRONTEND: Escuchar y actualizar estado local
@@ -187,6 +198,7 @@ socket.on('display-update', (data) => {
 ```
 
 ### Conductor Pattern para Sincronización
+
 ```typescript
 // Una pantalla actúa como "conductor" (master)
 // Las demás son "workers" (followers)
@@ -198,13 +210,14 @@ if (device.role === 'conductor') {
     socket.emit('sync-command', {
       action: 'PLAY',
       timestamp: video.currentTime,
-      contentId: currentContent.id
+      contentId: currentContent.id,
     });
   }, 100);
 }
 ```
 
 ### Caché Local con IndexedDB
+
 ```typescript
 // Dexie.js con estrategia de chunking
 // Videos grandes (3GB+) se dividen en chunks de 10-20MB
@@ -212,12 +225,12 @@ if (device.role === 'conductor') {
 class VideoDatabase extends Dexie {
   videos!: Table<CachedVideo>;
   chunks!: Table<VideoChunk>;
-  
+
   constructor() {
     super('SignageDB');
     this.version(1).stores({
       videos: 'id, priority, scheduledTime, lastAccessed',
-      chunks: 'id, videoId, chunkIndex'
+      chunks: 'id, videoId, chunkIndex',
     });
   }
 }
@@ -259,12 +272,14 @@ pnpm docker:down      # Detener servicios
 ### Proceso Estándar para Nuevas Features
 
 1. **EXPLORACIÓN** (No código todavía)
+
    ```
    "Lee la estructura actual del proyecto y archivos relevantes.
    NO escribas código todavía. Solo confirma tu entendimiento."
    ```
 
 2. **PLANIFICACIÓN** (Thinking extendido)
+
    ```
    "Crea un plan detallado para [feature].
    Usa 'think harder' para razonamiento profundo.
@@ -285,6 +300,7 @@ pnpm docker:down      # Detener servicios
 ### Granularidad de Tareas
 
 ✅ **CORRECTO** (10-20 minutos):
+
 ```
 "Crea el componente DisplayCard:
 - Props: displayId, name, status, lastSeen
@@ -295,6 +311,7 @@ pnpm docker:down      # Detener servicios
 ```
 
 ❌ **INCORRECTO** (demasiado amplio):
+
 ```
 "Crea el módulo completo de gestión de pantallas"
 ```
@@ -304,6 +321,7 @@ pnpm docker:down      # Detener servicios
 ### AL CREAR COMPONENTES REACT
 
 ✅ **SIEMPRE**:
+
 - Importar tipos desde `@shared-types`
 - Usar componentes shadcn/ui existentes primero
 - Seguir sistema de espaciado de 8px
@@ -312,6 +330,7 @@ pnpm docker:down      # Detener servicios
 - Tests unitarios básicos con Vitest
 
 ❌ **NUNCA**:
+
 - Generar componentes sin entender contexto completo
 - Usar estilos inline CSS
 - Asumir requirements - PREGUNTAR si no está claro
@@ -320,6 +339,7 @@ pnpm docker:down      # Detener servicios
 ### AL CREAR APIs
 
 ✅ **SIEMPRE**:
+
 - Validación con Zod en todas las entradas
 - Try-catch en todos los handlers
 - Logging con Winston (nivel apropiado)
@@ -327,6 +347,7 @@ pnpm docker:down      # Detener servicios
 - Documentar con JSDoc
 
 **Ejemplo estándar**:
+
 ```typescript
 import { z } from 'zod';
 import { logger } from '@/utils/logger';
@@ -339,24 +360,24 @@ const schema = z.object({
 export async function createDisplay(req: Request, res: Response) {
   try {
     const data = schema.parse(req.body);
-    
+
     const display = await prisma.display.create({
-      data
+      data,
     });
-    
+
     logger.info('Display created', { displayId: display.id });
-    
+
     res.status(201).json({
       success: true,
       data: display,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error('Failed to create display', { error });
     res.status(400).json({
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -365,6 +386,7 @@ export async function createDisplay(req: Request, res: Response) {
 ### AL TRABAJAR CON SOCKET.IO
 
 ✅ **SIEMPRE**:
+
 - Usar tipos de `shared-types/socket-events.ts`
 - Implementar manejo de reconexión
 - Logs de eventos para debugging
@@ -377,7 +399,7 @@ socket.on('connect', () => {
   logger.info('Socket connected');
   socket.emit('device:register', {
     deviceId: localStorage.getItem('deviceId'),
-    type: 'smarttv'
+    type: 'smarttv',
   });
 });
 
@@ -392,6 +414,7 @@ socket.on('disconnect', (reason) => {
 ### AL MANEJAR ERRORES
 
 ✅ **Pattern estándar**:
+
 ```typescript
 try {
   // Operación
@@ -403,12 +426,14 @@ try {
   } else {
     // Error genérico
   }
-  
+
   logger.error('Operation failed', {
     error,
-    context: { /* ... */ }
+    context: {
+      /* ... */
+    },
   });
-  
+
   throw new AppError('User-friendly message', 500);
 }
 ```
@@ -422,6 +447,7 @@ try {
 - **E2E tests**: Flujos críticos de usuario
 
 ### Ejemplo Unit Test
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { calculateSyncOffset } from './sync-utils';
@@ -435,6 +461,7 @@ describe('calculateSyncOffset', () => {
 ```
 
 ### Ejemplo E2E Test
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -450,6 +477,7 @@ test('admin can create new display', async ({ page }) => {
 ## 📝 COMMITS
 
 ### Convención de Commits
+
 ```
 type(scope): subject
 
@@ -458,6 +486,7 @@ type(scope): subject
 ```
 
 **Types**:
+
 - `feat`: Nueva feature
 - `fix`: Bug fix
 - `docs`: Documentación
@@ -467,6 +496,7 @@ type(scope): subject
 - `chore`: Build, dependencies
 
 **Ejemplo**:
+
 ```
 feat(displays): add DisplayCard component
 
@@ -505,6 +535,7 @@ Closes #123
 ## 📊 MONITOREO
 
 ### Métricas Clave
+
 - Conexiones WebSocket activas
 - Tasa de desconexión de displays
 - Latencia de entrega de contenido (p50, p95, p99)
