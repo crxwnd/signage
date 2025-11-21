@@ -4,7 +4,7 @@
   "private": true,
   "description": "Shared ESLint and Prettier configurations",
   "main": "./eslint/base.js",
-  "devDependencies": {
+  "dependencies": {
     "@typescript-eslint/eslint-plugin": "^7.10.0",
     "@typescript-eslint/parser": "^7.10.0",
     "eslint": "^8.57.0",
