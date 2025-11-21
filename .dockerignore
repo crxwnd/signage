@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Turborepo
+.turbo/
+
+# Tests
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab/
+.gitlab-ci.yml
