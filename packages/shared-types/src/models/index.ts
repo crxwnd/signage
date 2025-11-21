@@ -1,7 +1,13 @@
 /**
  * Shared model types
- * Will contain types for: Display, Content, User, Hotel, etc.
+ * Exports all model interfaces and enums
  */
 
-// Placeholder - will be populated when Prisma schema is created
-export {};
+// Display model
+export * from './display';
+
+// Content model
+export * from './content';
+
+// User model and authentication
+export * from './user';
