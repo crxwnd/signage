@@ -105,6 +105,19 @@
 **Estado**: ✅ COMPLETADO
 **Fecha inicio**: 20/11/2025
 **Fecha fin**: 21/11/2025
+  - Commits: [x] Linting y formatting
+
+**Checkpoint Día 1**:
+
+- [x] `pnpm install` funciona sin errores
+- [x] `pnpm typecheck` pasa
+- [x] `pnpm install` funciona sin errores [21/11/2025]
+- [x] `pnpm typecheck` pasa
+- [x] `pnpm lint` pasa
+- [x] Estructura de carpetas completa [21/11/2025] 
+
+**Estado**: COMPLETADO
+**Fecha**: [21/11/2025]
 
 ### DÍA 2: Tipos Compartidos y Base de Datos
 
