@@ -1,12 +1,15 @@
 /**
  * Server entry point
- * Starts the HTTP server and handles graceful shutdown
+ * Starts the HTTP server with Express and Socket.io
+ * Handles graceful shutdown
  */
 
+import { createServer } from 'http';
 import { createApp } from './app';
 import { config, validateConfig } from './config';
 import { log } from './middleware/logger';
 import { PrismaClient } from '@prisma/client';
+import { initializeSocketIO, disconnectAll } from './socket/socketManager';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -23,6 +26,13 @@ async function startServer(): Promise<void> {
     // Create Express app
     const app = createApp();
 
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Initialize Socket.io
+    log.info('Initializing Socket.io...');
+    initializeSocketIO(httpServer);
+
     // Test database connection
     log.info('Testing database connection...');
     try {
@@ -34,7 +44,7 @@ async function startServer(): Promise<void> {
     }
 
     // Start HTTP server
-    const server = app.listen(config.port, () => {
+    httpServer.listen(config.port, () => {
       log.info(`
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
@@ -43,6 +53,7 @@ async function startServer(): Promise<void> {
 ║  Environment: ${config.env.padEnd(47)}║
 ║  Port:        ${config.port.toString().padEnd(47)}║
 ║  Health:      http://localhost:${config.port}/health${' '.repeat(23)}║
+║  Socket.io:   ws://localhost:${config.port}${' '.repeat(28)}║
 ║                                                                ║
 ║  Ready to accept requests! 🎉                                  ║
 ║                                                                ║
@@ -55,8 +66,12 @@ async function startServer(): Promise<void> {
       log.info(`${signal} received. Starting graceful shutdown...`);
 
       // Stop accepting new connections
-      server.close(async () => {
+      httpServer.close(async () => {
         log.info('HTTP server closed');
+
+        // Disconnect all Socket.io clients
+        await disconnectAll();
+        log.info('Socket.io disconnected');
 
         // Disconnect from database
         try {
