@@ -8,7 +8,6 @@
 
     // Emit
     "outDir": "./dist",
-    "rootDir": "./src",
     "noEmit": false,
 
     // Module Resolution
@@ -22,6 +21,6 @@
       "@utils": ["../../packages/utils/src"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/shared-types/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
