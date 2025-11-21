@@ -5,6 +5,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
+import { Toaster } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Signage - Digital Signage System',
@@ -18,7 +19,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
