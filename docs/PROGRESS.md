@@ -157,40 +157,40 @@
 
 ### DÍA 3: Backend Base
 
-- [ ] **3.1** - Express server básico
-  - [ ] apps/backend con Express
-  - [ ] Server.ts con configuración
-  - [ ] Health check endpoint
-  - Commits: [ ] Express server básico
+- [x] **3.1** - Express server básico
+  - [x] apps/backend con Express
+  - [x] Server.ts con configuración
+  - [x] Health check endpoint
+  - Commits: [x] Express server básico COMPLETADO [21/11/2025]
 
-- [ ] **3.2** - Socket.io server
-  - [ ] Socket.io integrado con Express
-  - [ ] Manejo de conexión/desconexión
-  - [ ] Logging de eventos
-  - Commits: [ ] Socket.io server
+- [x] **3.2** - Socket.io server
+  - [x] Socket.io integrado con Express
+  - [x] Manejo de conexión/desconexión
+  - [x] Logging de eventos
+  - Commits: [x] Socket.io server COMPLETADO [21/11/2025]
 
-- [ ] **3.3** - Redis setup
-  - [ ] Redis en docker-compose
-  - [ ] Socket.io Redis adapter
-  - [ ] Test de clustering
-  - Commits: [ ] Redis adapter
+- [x] **3.3** - Redis setup
+  - [x] Redis en docker-compose
+  - [x] Socket.io Redis adapter
+  - [x] Test de clustering
+  - Commits: [x] Redis adapter [21/11/2025]
 
-- [ ] **3.4** - Middleware básico
-  - [ ] CORS configurado
-  - [ ] Helmet.js para seguridad
-  - [ ] Rate limiting
-  - [ ] Error handling
-  - Commits: [ ] Middleware de seguridad
+- [x] **3.4** - Middleware básico
+  - [x] CORS configurado
+  - [x] Helmet.js para seguridad
+  - [x] Rate limiting
+  - [x] Error handling
+  - Commits: [x] Middleware de seguridad [21/11/2025]
 
 **Checkpoint Día 3**:
 
-- [ ] Backend inicia en puerto 3001
-- [ ] `/health` responde con 200
-- [ ] Socket.io acepta conexiones
-- [ ] Redis conectado correctamente
+- [X] Backend inicia en puerto 3001
+- [X] `/health` responde con 200
+- [X] Socket.io acepta conexiones
+- [X] Redis conectado correctamente
 
-**Estado**: ⏸️ Pendiente  
-**Fecha**: [PENDIENTE]
+**Estado**: COMPLETADO 
+**Fecha**: [21/11/2025]
 
 ### DÍA 4: Frontend Base
 
