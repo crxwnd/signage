@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // Package specific
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Module
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // No emit for types-only package
+    "noEmit": true,
+
+    // Base URL
+    "baseUrl": ".",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
