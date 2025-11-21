@@ -50,21 +50,21 @@ Ninguna todavía - proyecto iniciando
 
 ### DÍA 1: Setup Monorepo
 
-- [ ] **1.1** - Exploración inicial (SIN CÓDIGO)
-  - [ ] Claude lee archivos de contexto
-  - [ ] Confirma entendimiento del proyecto
-  - Estado: ⏸️ Pendiente
+- [x] **1.1** - Exploración inicial (SIN CÓDIGO)
+  - [x] Claude lee archivos de contexto
+  - [x] Confirma entendimiento del proyecto
+  - Estado: COMPLETADO 20/11/2025
 
-- [ ] **1.2** - Plan de estructura monorepo
-  - [ ] Plan detallado en markdown
-  - [ ] Revisión y aprobación del plan
-  - Estado: ⏸️ Pendiente
+- [x] **1.2** - Plan de estructura monorepo
+  - [x] Plan detallado en markdown
+  - [x] Revisión y aprobación del plan
+  - Estado: COMPLETADO 20/11/2025
 
-- [ ] **1.3** - Implementar estructura base
-  - [ ] Turborepo configurado
-  - [ ] Carpetas apps/ y packages/
-  - [ ] package.json raíz con workspaces
-  - Commits: [ ] Estructura monorepo básica
+- [x] **1.3** - Implementar estructura base
+  - [x] Turborepo configurado
+  - [x] Carpetas apps/ y packages/
+  - [x] package.json raíz con workspaces
+  - Commits: [x] "Merge pull request #1 Prompt de implementación 1.3" 20/11/2025
 
 - [ ] **1.4** - TypeScript configs
   - [ ] tsconfig.json raíz y por package
@@ -79,10 +79,10 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Linting y formatting
 
 **Checkpoint Día 1**:
-- [ ] `pnpm install` funciona sin errores
+- [x] `pnpm install` funciona sin errores [20/11/2025]
 - [ ] `pnpm typecheck` pasa
 - [ ] `pnpm lint` pasa
-- [ ] Estructura de carpetas completa
+- [x] Estructura de carpetas completa [20/11/2025]
 
 **Estado**: ⏸️ Pendiente  
 **Fecha**: [PENDIENTE]
