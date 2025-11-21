@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // Package specific
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // React
+    "jsx": "react-jsx",
+    "lib": ["dom", "ES2022"],
+
+    // Module
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // No emit for library package
+    "noEmit": true,
+
+    // Base URL
+    "baseUrl": ".",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

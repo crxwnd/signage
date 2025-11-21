@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // Node.js specific
+    "module": "CommonJS",
+    "lib": ["ES2022"],
+
+    // Emit
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noEmit": false,
+
+    // Module Resolution
+    "moduleResolution": "node",
+
+    // Path Aliases
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared-types": ["../../packages/shared-types/src"],
+      "@utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
