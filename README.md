@@ -34,6 +34,7 @@ pnpm dev:backend        # Solo backend (localhost:3001)
 ### Stack Tecnológico
 
 **Frontend**:
+
 - React 18 + TypeScript 5.2+
 - Next.js 14 con App Router
 - Tailwind CSS + shadcn/ui
@@ -43,6 +44,7 @@ pnpm dev:backend        # Solo backend (localhost:3001)
 - Dexie.js para IndexedDB
 
 **Backend**:
+
 - Node.js 20 + TypeScript 5.2+
 - Express.js para API REST
 - Socket.io para WebSocket
@@ -53,6 +55,7 @@ pnpm dev:backend        # Solo backend (localhost:3001)
 - MinIO para object storage
 
 **DevOps**:
+
 - Turborepo para monorepo
 - Docker para desarrollo y producción
 - GitLab CI/CD para pipelines
@@ -84,6 +87,7 @@ signage/
 ## 🎯 Features Principales
 
 ### Gestión de Pantallas
+
 - ✅ CRUD completo de displays
 - ✅ Estado en tiempo real (online/offline/error)
 - ✅ Sincronización exacta entre 100+ pantallas (50-200ms)
@@ -92,6 +96,7 @@ signage/
 - ✅ Agrupación por hotel y área
 
 ### Sistema de Contenidos
+
 - 🔄 Upload de videos (hasta 3GB+)
 - 🔄 Transcoding automático a HLS
 - 🔄 Streaming adaptativo
@@ -100,6 +105,7 @@ signage/
 - 🔄 Biblioteca de medios
 
 ### Playlists y Programación
+
 - 🔄 Crear playlists mixtas (videos + imágenes + HTML)
 - 🔄 Drag-and-drop ordering
 - 🔄 Programación temporal
@@ -107,12 +113,14 @@ signage/
 - 🔄 Actualización en tiempo real (<10 segundos)
 
 ### Usuarios y Permisos
+
 - 🔄 Super Admin → Admin Hotel → Area Manager
 - 🔄 Autenticación JWT + 2FA
 - 🔄 Permisos granulares por recurso
 - 🔄 Logs de auditoría
 
 ### Monitoreo y Analytics
+
 - 🔄 Dashboard de estado en tiempo real
 - 🔄 Estadísticas de reproducción
 - 🔄 Uptime por pantalla
@@ -213,6 +221,7 @@ Ver `.env.example` para lista completa.
 ### Fase Actual: Semana 1 - Fundación
 
 **Completado**:
+
 - ✅ Setup de monorepo con Turborepo
 - ✅ Configuración TypeScript strict
 - ✅ ESLint y Prettier
@@ -301,11 +310,13 @@ pnpm test:e2e tests/e2e/displays.spec.ts
 Este proyecto está optimizado para desarrollo asistido por IA con Claude Code.
 
 **Antes de empezar**:
+
 1. Lee [CLAUDE.md](./CLAUDE.md) completamente
 2. Sigue [CLAUDE_CODE_PROMPTS.md](./CLAUDE_CODE_PROMPTS.md) paso a paso
 3. Actualiza [PROGRESS.md](./docs/PROGRESS.md) después de cada tarea
 
 **Workflow recomendado**:
+
 1. Explorar (sin código)
 2. Planificar (con "think harder")
 3. Implementar (componente/endpoint a la vez)
@@ -356,6 +367,7 @@ type(scope): subject
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 **Ejemplo**:
+
 ```
 feat(displays): add real-time status updates
 
@@ -394,6 +406,7 @@ Propietario - Hotel XYZ
 ## 🆘 Soporte
 
 Para reportar bugs o solicitar features:
+
 1. Verifica [PROGRESS.md](./docs/PROGRESS.md) primero
 2. Crea un issue en GitLab con template apropiado
 3. Incluye steps to reproduce y logs relevantes

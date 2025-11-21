@@ -6,12 +6,14 @@
     "jsx": "preserve",
     "lib": ["dom", "dom.iterable", "ES2022"],
     "incremental": true,
-    "plugins": [{ "name": "next" }],
-
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     // Module Resolution
     "module": "ESNext",
     "moduleResolution": "bundler",
-
     // Path Aliases
     "baseUrl": ".",
     "paths": {
@@ -19,17 +21,9 @@
       "@shared-types": ["../../packages/shared-types/src"],
       "@ui": ["../../packages/ui/src"],
       "@utils": ["../../packages/utils/src"]
-    }
+    },
+    "allowJs": true
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "out"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "out"]
 }

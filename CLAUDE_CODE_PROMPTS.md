@@ -37,7 +37,7 @@
 ```
 1. Copiar prompt → Pegarlo en Claude Code
 2. Claude responde → Revisar código/plan
-3. ¿Está correcto? 
+3. ¿Está correcto?
    ✅ SÍ → Continuar con siguiente prompt
    ❌ NO → Dar feedback específico y repetir
 4. Marcar tarea en PROGRESS.md
@@ -52,6 +52,7 @@
 - Después de commits importantes
 
 **IMPORTANTE**: Después de /clear, siempre empieza con:
+
 ```
 "Lee CLAUDE.md y PROGRESS.md. Estamos en [fase/día actual]. Continuemos con..."
 ```
@@ -61,6 +62,7 @@
 ## FASE 0: PREPARACIÓN (1 día)
 
 ### Objetivo
+
 Crear archivos de contexto y estructura inicial antes de cualquier código.
 
 ---
@@ -79,6 +81,7 @@ Lee estos archivos y responde con un resumen muy breve (3-4 líneas) de lo que e
 ```
 
 **Validación**:
+
 - [ ] Claude puede leer CLAUDE.md
 - [ ] Claude entiende que es un sistema de señalización digital
 - [ ] Claude NO generó código
@@ -103,6 +106,7 @@ REGLAS QUE DEBES SEGUIR SIEMPRE:
 ```
 
 **Validación**:
+
 - [ ] Claude acepta trabajar incrementalmente
 - [ ] Claude entiende que debe esperar aprobación
 
@@ -111,6 +115,7 @@ REGLAS QUE DEBES SEGUIR SIEMPRE:
 ## FASE 1: FUNDACIÓN - SEMANA 1 (5 días)
 
 ### Objetivo
+
 Setup del monorepo, configuración base, primera feature end-to-end.
 
 ---
@@ -138,6 +143,7 @@ Tu respuesta debe ser en bullets, máximo 10 líneas totales.
 ```
 
 **Validación**:
+
 - [ ] Claude menciona: Turborepo, React, Node.js, TypeScript, Socket.io
 - [ ] Claude identifica: 2-3 apps (frontend, backend, player)
 - [ ] Claude identifica: 3-4 packages (shared-types, ui, config, utils)
@@ -161,7 +167,7 @@ El plan debe incluir:
 4. Configuración de Turborepo (workspace, pipelines básicos)
 5. Scripts necesarios en package.json raíz
 
-IMPORTANTE: 
+IMPORTANTE:
 - Solo genera el plan en formato markdown
 - NO escribas código real todavía
 - Sé específico con versiones (React 18, Node 20, etc.)
@@ -169,17 +175,23 @@ IMPORTANTE:
 
 Formato esperado:
 ```
+
 ## Estructura de Carpetas
+
 [árbol de directorios aquí]
 
 ## Dependencias por Package
+
 [lista detallada]
 
 ## Configuración de Turborepo
+
 [explicación]
 
 ## Scripts de package.json raíz
+
 [lista de scripts]
+
 ```
 
 **Validación antes de continuar**:
@@ -195,11 +207,13 @@ Formato esperado:
 ### PROMPT 1.3 - Implementar Estructura Base
 
 ```
+
 FASE: Implementación - Crear estructura del monorepo
 
 Ahora SÍ vamos a crear la estructura física del proyecto siguiendo tu plan.
 
 Crea:
+
 1. Estructura de carpetas exactamente como planeaste
 2. package.json raíz con workspaces de pnpm
 3. turbo.json con configuración básica
@@ -207,6 +221,7 @@ Crea:
 5. .env.example con variables necesarias
 
 Después de crear, ejecuta:
+
 ```bash
 pnpm install
 ```
@@ -214,6 +229,7 @@ pnpm install
 Y confirma que no hay errores.
 
 REGLA IMPORTANTE: Crea TODO de una sola vez en este caso ya que es solo estructura sin lógica.
+
 ```
 
 **Validación**:
@@ -233,6 +249,7 @@ REGLA IMPORTANTE: Crea TODO de una sola vez en este caso ya que es solo estructu
 ### PROMPT 1.4 - Configuración TypeScript
 
 ```
+
 FASE: Implementación - Configuración TypeScript
 
 Configura TypeScript para el monorepo:
@@ -243,6 +260,7 @@ Configura TypeScript para el monorepo:
 4. Configura path aliases (@shared-types, @/components, etc.)
 
 REQUISITOS CRÍTICOS (de CLAUDE.md):
+
 - strict: true SIEMPRE
 - noImplicitAny: true
 - strictNullChecks: true
@@ -250,11 +268,13 @@ REQUISITOS CRÍTICOS (de CLAUDE.md):
 - skipLibCheck: true
 
 Después de crear, ejecuta:
+
 ```bash
 pnpm typecheck
 ```
 
 Y confirma que no hay errores.
+
 ```
 
 **Validación**:
@@ -270,6 +290,7 @@ Y confirma que no hay errores.
 ### PROMPT 1.5 - ESLint y Prettier
 
 ```
+
 FASE: Implementación - Linting y Formatting
 
 Configura ESLint y Prettier:
@@ -285,15 +306,18 @@ Configura ESLint y Prettier:
    - pnpm format
 
 Usa estas reglas base:
+
 - ESLint: plugin:@typescript-eslint/recommended
 - React: plugin:react/recommended, plugin:react-hooks/recommended
 - Prettier: semi: true, singleQuote: true, trailingComma: 'es5'
 
 Después de crear, ejecuta:
+
 ```bash
 pnpm lint
 pnpm format
 ```
+
 ```
 
 **Validación**:
@@ -311,6 +335,7 @@ pnpm format
 Antes de continuar al Día 2, verifica:
 
 ```
+
 CHECKPOINT - Fin del Día 1
 
 Ejecuta estos comandos y confirma que todos pasan:
@@ -324,6 +349,7 @@ ls -la packages/      # ✅ Ve shared-types/, config/
 ```
 
 Verifica manualmente:
+
 - [ ] Estructura de carpetas completa
 - [ ] package.json raíz con workspaces
 - [ ] turbo.json existe
@@ -331,11 +357,13 @@ Verifica manualmente:
 - [ ] ESLint y Prettier funcionando
 
 Si TODO está ✅, actualiza docs/PROGRESS.md:
+
 - Marca Día 1 como completo
 - Pon fecha de completado
 - Anota cualquier issue encontrado
 
 LUEGO haz:
+
 ```bash
 git add .
 git commit -m "feat: monorepo foundation complete (Day 1)"
@@ -355,6 +383,7 @@ git push
 ### PROMPT 2.1 - Setup PostgreSQL y Prisma
 
 ```
+
 FASE: Implementación - Base de datos
 
 Vamos a configurar PostgreSQL y Prisma.
@@ -365,6 +394,7 @@ Vamos a configurar PostgreSQL y Prisma.
    - pgAdmin (opcional, para debugging)
 
 2. En apps/backend, instala y configura Prisma:
+
    ```bash
    cd apps/backend
    pnpm add prisma @prisma/client
@@ -383,6 +413,7 @@ Vamos a configurar PostgreSQL y Prisma.
    ```
 
 IMPORTANTE: No crees el schema todavía, solo la infraestructura.
+
 ```
 
 **Validación**:
@@ -399,6 +430,7 @@ IMPORTANTE: No crees el schema todavía, solo la infraestructura.
 ### PROMPT 2.2 - Schema Prisma
 
 ```
+
 FASE: Implementación - Prisma Schema
 
 Crea el schema de Prisma en apps/backend/prisma/schema.prisma
@@ -435,10 +467,12 @@ Modelos necesarios (de CLAUDE.md y docs/ARQUITECTURA.md):
    - order, startTime, endTime
    - timestamps
 
-IMPORTANTE: 
+IMPORTANTE:
+
 - Agrega índices para queries frecuentes
 - Usa @unique donde corresponda
 - Agrega @@map para nombres de tabla en snake_case si prefieres
+
 ```
 
 **Validación**:
@@ -449,6 +483,7 @@ IMPORTANTE:
 
 **PROMPT 2.2.1 - Migración**:
 ```
+
 Ahora crea la primera migración:
 
 ```bash
@@ -458,6 +493,7 @@ npx prisma generate
 ```
 
 Confirma que se ejecutó sin errores.
+
 ```
 
 **Validación**:
@@ -472,6 +508,7 @@ Confirma que se ejecutó sin errores.
 ### PROMPT 2.3 - Tipos TypeScript Compartidos
 
 ```
+
 FASE: Implementación - Shared Types
 
 En packages/shared-types, crea las interfaces TypeScript que frontend y backend compartirán.
@@ -507,9 +544,11 @@ Archivos a crear:
    - Export todo desde un solo punto
 
 Sigue las convenciones de CLAUDE.md:
+
 - Interfaces para objetos
 - Types para unions
 - Nombres en PascalCase
+
 ```
 
 **Validación**:
@@ -525,38 +564,43 @@ Sigue las convenciones de CLAUDE.md:
 ### PROMPT 2.4 - Verificación de Importación
 
 ```
+
 FASE: Validación - Test de tipos compartidos
 
 Crea dos archivos de prueba para verificar que shared-types funciona:
 
 1. apps/backend/src/test-types.ts
+
    ```typescript
    import type { Display, User } from '@shared-types';
-   
+
    const testDisplay: Display = {
      // ... completar con datos de prueba
    };
-   
+
    console.log('Backend puede importar tipos ✅');
    ```
 
 2. apps/frontend/src/test-types.ts
+
    ```typescript
    import type { Display, Content } from '@shared-types';
-   
+
    const testDisplay: Display = {
      // ... completar con datos de prueba
    };
-   
+
    console.log('Frontend puede importar tipos ✅');
    ```
 
 Ejecuta:
+
 ```bash
 pnpm typecheck
 ```
 
 Si pasa, puedes borrar los archivos test-types.ts (fueron solo para validar).
+
 ```
 
 **Validación**:
@@ -571,18 +615,21 @@ Si pasa, puedes borrar los archivos test-types.ts (fueron solo para validar).
 ### CHECKPOINT DÍA 2
 
 ```
+
 CHECKPOINT - Fin del Día 2
 
 Verifica:
+
 ```bash
 docker ps                           # ✅ PostgreSQL y Redis corriendo
-docker exec -it [postgres] psql -U postgres -d signage -c "\\dt"  
+docker exec -it [postgres] psql -U postgres -d signage -c "\\dt"
                                     # ✅ Ve las 5 tablas creadas
 cd apps/backend && npx prisma studio # ✅ Prisma Studio abre
 pnpm typecheck                      # ✅ Pasa sin errores
 ```
 
 Checklist:
+
 - [ ] PostgreSQL operando correctamente
 - [ ] Prisma Studio accesible
 - [ ] Migración inicial aplicada
@@ -590,6 +637,7 @@ Checklist:
 - [ ] Sin errores de TypeScript
 
 Actualiza PROGRESS.md y commitea:
+
 ```bash
 git add .
 git commit -m "feat: database and shared types complete (Day 2)"
@@ -598,6 +646,7 @@ git push
 
 Si PROGRESS.md no ha empezado, dile a Claude:
 "Actualiza docs/PROGRESS.md marcando Day 2 como completo con fecha de hoy."
+
 ```
 
 **Uso de créditos estimado Día 2**: ~$6-10 USD
@@ -609,6 +658,7 @@ Si PROGRESS.md no ha empezado, dile a Claude:
 ### PROMPT 3.1 - Express Server Básico
 
 ```
+
 FASE: Implementación - Backend API Base
 
 En apps/backend, crea la estructura base del servidor Express:
@@ -621,6 +671,7 @@ En apps/backend, crea la estructura base del servidor Express:
 6. src/routes/health.ts (health check endpoint)
 
 El servidor debe:
+
 - Correr en puerto 3001 (configurable por env)
 - Tener endpoint GET /health que responda:
   ```json
@@ -635,6 +686,7 @@ El servidor debe:
 - Manejo de errores global
 
 Instala dependencias necesarias:
+
 ```bash
 cd apps/backend
 pnpm add express cors dotenv
@@ -642,6 +694,7 @@ pnpm add -D @types/express @types/cors @types/node nodemon ts-node
 ```
 
 Agrega script en package.json:
+
 ```json
 {
   "scripts": {
@@ -651,6 +704,7 @@ Agrega script en package.json:
   }
 }
 ```
+
 ```
 
 **Validación**:
@@ -666,11 +720,13 @@ Agrega script en package.json:
 ### PROMPT 3.2 - Socket.io Server
 
 ```
+
 FASE: Implementación - Socket.io Server
 
 Integra Socket.io con el servidor Express:
 
 1. Instala Socket.io:
+
    ```bash
    cd apps/backend
    pnpm add socket.io
@@ -689,13 +745,15 @@ Integra Socket.io con el servidor Express:
    - Servidor responde: 'test-response'
 
 El servidor debe:
+
 - Aceptar conexiones en mismo puerto que Express (3001)
 - CORS configurado para http://localhost:3000 (frontend)
 - Logging de cada conexión/desconexión
 - Usar tipos de @shared-types/socket-events
 
 IMPORTANTE: No implementes Redis adapter todavía, eso viene después.
-```
+
+````
 
 **Validación**:
 - [ ] Socket.io configurado
@@ -711,7 +769,7 @@ IMPORTANTE: No implementes Redis adapter todavía, eso viene después.
    socket.on('connect', () => console.log('Conectado!'));
    socket.emit('test-message', { data: 'hola' });
    socket.on('test-response', (data) => console.log('Respuesta:', data));
-   ```
+````
 
 **COMMIT 3.2**: `feat: integrate socket.io server`
 
@@ -719,7 +777,7 @@ IMPORTANTE: No implementes Redis adapter todavía, eso viene después.
 
 ### PROMPT 3.3 - Redis y Socket.io Adapter
 
-```
+````
 FASE: Implementación - Redis Adapter para Socket.io
 
 Configura Redis adapter para permitir escalabilidad horizontal de Socket.io:
@@ -728,7 +786,7 @@ Configura Redis adapter para permitir escalabilidad horizontal de Socket.io:
    ```bash
    cd apps/backend
    pnpm add @socket.io/redis-adapter ioredis
-   ```
+````
 
 2. Modifica src/socket/socketManager.ts para:
    - Conectar a Redis
@@ -744,8 +802,10 @@ Configura Redis adapter para permitir escalabilidad horizontal de Socket.io:
    - Verifica que ambas instancias se comunican vía Redis
 
 El código debe:
+
 - Fallar gracefully si Redis no está disponible (log warning pero no crash)
 - Reconectar automáticamente si Redis se desconecta
+
 ```
 
 **Validación**:
@@ -761,11 +821,13 @@ El código debe:
 ### PROMPT 3.4 - Middleware de Seguridad
 
 ```
+
 FASE: Implementación - Security Middleware
 
 Agrega middleware de seguridad esencial:
 
 1. Instala dependencias:
+
    ```bash
    cd apps/backend
    pnpm add helmet express-rate-limit
@@ -790,17 +852,23 @@ Agrega middleware de seguridad esencial:
    - Error handler (último)
 
 Ejemplo de uso de validación:
+
 ```typescript
 import { z } from 'zod';
 import { validateBody } from '@/middleware/validation';
 
 const createDisplaySchema = z.object({
   name: z.string().min(3),
-  location: z.string()
+  location: z.string(),
 });
 
-router.post('/displays', validateBody(createDisplaySchema), createDisplayHandler);
+router.post(
+  '/displays',
+  validateBody(createDisplaySchema),
+  createDisplayHandler
+);
 ```
+
 ```
 
 **Validación**:
@@ -816,6 +884,7 @@ router.post('/displays', validateBody(createDisplaySchema), createDisplayHandler
 ### CHECKPOINT DÍA 3
 
 ```
+
 CHECKPOINT - Fin del Día 3
 
 Verifica que el backend está funcionando completamente:
@@ -826,6 +895,7 @@ pnpm dev               # ✅ Inicia sin errores
 ```
 
 En otra terminal:
+
 ```bash
 curl http://localhost:3001/health
 # ✅ Responde con status "ok"
@@ -835,6 +905,7 @@ curl -I http://localhost:3001/health
 ```
 
 Test de Socket.io:
+
 1. Backend corriendo
 2. Abrir navegador console
 3. Pegar:
@@ -845,6 +916,7 @@ Test de Socket.io:
 4. Ver log en terminal del backend confirmando conexión
 
 Checklist:
+
 - [ ] Express server funcionando en 3001
 - [ ] /health endpoint responde correctamente
 - [ ] Socket.io acepta conexiones
@@ -853,11 +925,13 @@ Checklist:
 - [ ] Logs claros en consola
 
 Actualiza PROGRESS.md y commitea:
+
 ```bash
 git add .
 git commit -m "feat: backend foundation complete (Day 3)"
 git push
 ```
+
 ```
 
 **Uso de créditos estimado Día 3**: ~$8-12 USD
@@ -869,17 +943,20 @@ git push
 ### PROMPT 4.1 - Next.js Setup
 
 ```
+
 FASE: Implementación - Frontend con Next.js 14
 
 Configura Next.js 14 con App Router en apps/frontend:
 
 1. Si no existe, inicializa Next.js:
+
    ```bash
    cd apps
    npx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir --no-import-alias
    ```
 
 2. Instala dependencias adicionales:
+
    ```bash
    cd frontend
    pnpm add @shared-types
@@ -891,6 +968,7 @@ Configura Next.js 14 con App Router en apps/frontend:
    - Optimizaciones de producción
 
 4. Crea estructura de carpetas:
+
    ```
    app/
    ├── layout.tsx           # Root layout
@@ -901,13 +979,13 @@ Configura Next.js 14 con App Router en apps/frontend:
    │   └── displays/
    │       └── page.tsx
    └── api/                 # API routes (si necesitas)
-   
+
    components/
    ├── ui/                  # shadcn/ui components
    └── layout/              # Layout components
        ├── Sidebar.tsx
        └── Header.tsx
-   
+
    lib/
    ├── utils.ts
    └── socket.ts            # Socket.io client setup
@@ -927,6 +1005,7 @@ Configura Next.js 14 con App Router en apps/frontend:
      }
    }
    ```
+
 ```
 
 **Validación**:
@@ -942,16 +1021,18 @@ Configura Next.js 14 con App Router en apps/frontend:
 ### PROMPT 4.2 - shadcn/ui Setup
 
 ```
+
 FASE: Implementación - shadcn/ui Component Library
 
 Configura shadcn/ui para componentes de UI:
 
 1. Inicializa shadcn/ui:
+
    ```bash
    cd apps/frontend
    npx shadcn-ui@latest init
    ```
-   
+
    Selecciona:
    - TypeScript: Yes
    - Style: Default
@@ -959,6 +1040,7 @@ Configura shadcn/ui para componentes de UI:
    - CSS variables: Yes
 
 2. Instala componentes básicos que usaremos:
+
    ```bash
    npx shadcn-ui@latest add button
    npx shadcn-ui@latest add card
@@ -972,14 +1054,17 @@ Configura shadcn/ui para componentes de UI:
 3. Crea components/ui/index.ts para exports centralizados
 
 4. Prueba un componente en app/page.tsx:
+
    ```tsx
    import { Button, Card, Badge } from '@/components/ui';
-   
+
    export default function Home() {
      return (
        <div className="p-8">
          <Card className="p-6">
-           <h1 className="text-2xl font-bold mb-4">Sistema de Señalización Digital</h1>
+           <h1 className="mb-4 text-2xl font-bold">
+             Sistema de Señalización Digital
+           </h1>
            <Badge variant="success">Online</Badge>
            <Button className="mt-4">Test Button</Button>
          </Card>
@@ -987,6 +1072,7 @@ Configura shadcn/ui para componentes de UI:
      );
    }
    ```
+
 ```
 
 **Validación**:
@@ -1002,6 +1088,7 @@ Configura shadcn/ui para componentes de UI:
 ### PROMPT 4.3 - Layout Base con Sidebar
 
 ```
+
 FASE: Implementación - Dashboard Layout
 
 Crea el layout principal del dashboard con sidebar:
@@ -1029,9 +1116,11 @@ Crea el layout principal del dashboard con sidebar:
    - Usa Card de shadcn/ui
 
 Estilos importantes (de CLAUDE.md):
+
 - Sistema de espaciado de 8px (p-2, p-4, p-6, p-8)
 - NO usar fuentes genéricas (Inter, Roboto)
 - Colores consistentes con theme de shadcn/ui
+
 ```
 
 **Validación**:
@@ -1049,11 +1138,13 @@ Estilos importantes (de CLAUDE.md):
 ### PROMPT 4.4 - Socket.io Client
 
 ```
+
 FASE: Implementación - Socket.io Client Integration
 
 Configura Socket.io client para conexión con backend:
 
 1. Instala Socket.io client:
+
    ```bash
    cd apps/frontend
    pnpm add socket.io-client
@@ -1071,16 +1162,15 @@ Configura Socket.io client para conexión con backend:
    - Connection status indicator
 
 4. Integra SocketProvider en app/layout.tsx:
+
    ```tsx
    import { SocketProvider } from '@/providers/SocketProvider';
-   
+
    export default function RootLayout({ children }) {
      return (
        <html>
          <body>
-           <SocketProvider>
-             {children}
-           </SocketProvider>
+           <SocketProvider>{children}</SocketProvider>
          </body>
        </html>
      );
@@ -1096,6 +1186,7 @@ Configura Socket.io client para conexión con backend:
 6. Agrega ConnectionStatus al Header
 
 Ejemplo de uso del hook:
+
 ```tsx
 'use client';
 
@@ -1103,22 +1194,23 @@ import { useSocket } from '@/providers/SocketProvider';
 
 export function MyComponent() {
   const { socket, isConnected } = useSocket();
-  
+
   useEffect(() => {
     if (!socket) return;
-    
+
     socket.on('test-event', (data) => {
       console.log('Received:', data);
     });
-    
+
     return () => {
       socket.off('test-event');
     };
   }, [socket]);
-  
+
   return <div>Connected: {isConnected ? 'Yes' : 'No'}</div>;
 }
 ```
+
 ```
 
 **Validación**:
@@ -1142,16 +1234,19 @@ export function MyComponent() {
 ### CHECKPOINT DÍA 4
 
 ```
+
 CHECKPOINT - Fin del Día 4
 
 Verifica que frontend está completamente funcional:
 
 1. Backend corriendo:
+
    ```bash
    cd apps/backend && pnpm dev
    ```
 
 2. Frontend corriendo:
+
    ```bash
    cd apps/frontend && pnpm dev
    ```
@@ -1159,6 +1254,7 @@ Verifica que frontend está completamente funcional:
 3. Abre http://localhost:3000
 
 Checklist visual:
+
 - [ ] Página carga sin errores
 - [ ] Layout renderiza (sidebar + header + content)
 - [ ] Navigation funciona (/displays muestra página)
@@ -1166,6 +1262,7 @@ Checklist visual:
 - [ ] shadcn/ui components se ven bien
 
 Checklist técnico:
+
 ```bash
 cd apps/frontend
 pnpm build              # ✅ Build exitoso
@@ -1174,6 +1271,7 @@ pnpm lint               # ✅ Sin errores de lint
 ```
 
 Test de integración básico:
+
 1. Frontend conectado
 2. Backend muestra log de nueva conexión
 3. Desconecta backend (Ctrl+C)
@@ -1182,6 +1280,7 @@ Test de integración básico:
 6. Badge cambia a VERDE automáticamente
 
 Si TODO funciona ✅:
+
 ```bash
 git add .
 git commit -m "feat: frontend foundation complete (Day 4)"
@@ -1189,6 +1288,7 @@ git push
 ```
 
 Actualiza PROGRESS.md marcando Día 4 completo.
+
 ```
 
 **Uso de créditos estimado Día 4**: ~$10-15 USD
@@ -1200,6 +1300,7 @@ Actualiza PROGRESS.md marcando Día 4 completo.
 ### PROMPT 5.1 - Primera Feature End-to-End
 
 ```
+
 FASE: Implementación - Primera Feature Integrada
 
 Vamos a crear la primera feature completa: Lista de displays (mock data por ahora).
@@ -1207,6 +1308,7 @@ Vamos a crear la primera feature completa: Lista de displays (mock data por ahor
 BACKEND (API REST):
 
 1. apps/backend/src/routes/displays.ts:
+
    ```typescript
    // GET /api/displays
    // POST /api/displays (validar con Zod)
@@ -1233,6 +1335,7 @@ BACKEND (API REST):
    - CRUD operations con Prisma
 
 4. Integra rutas en app.ts:
+
    ```typescript
    app.use('/api/displays', displaysRoutes);
    ```
@@ -1262,10 +1365,12 @@ FRONTEND (Lista con datos de API):
    - TypeScript con tipos de @shared-types
 
 Esta tarea es más grande, así que tómala en dos partes si es necesario:
+
 - Parte A: Backend API completo
 - Parte B: Frontend conectado al API
 
 IMPORTANTE: Usa datos reales de la DB (crea algunos displays manualmente con Prisma Studio si es necesario).
+
 ```
 
 **Validación Parte A (Backend)**:
@@ -1288,6 +1393,7 @@ IMPORTANTE: Usa datos reales de la DB (crea algunos displays manualmente con Pri
 ### PROMPT 5.2 - Socket.io Event para Displays
 
 ```
+
 FASE: Implementación - Real-time Display Updates
 
 Agrega eventos Socket.io para actualizaciones en tiempo real de displays:
@@ -1295,10 +1401,11 @@ Agrega eventos Socket.io para actualizaciones en tiempo real de displays:
 BACKEND:
 
 1. Cuando se crea/actualiza/elimina un display en la API, emitir evento:
+
    ```typescript
    // En displaysController.ts después de operación exitosa
    import { io } from '@/socket/socketManager';
-   
+
    io.emit('display-created', { display });
    io.emit('display-updated', { display });
    io.emit('display-deleted', { displayId });
@@ -1309,22 +1416,23 @@ BACKEND:
 FRONTEND:
 
 1. En app/(dashboard)/displays/page.tsx, escuchar eventos:
+
    ```typescript
    useEffect(() => {
      if (!socket) return;
-     
+
      socket.on('display-created', (data) => {
        // Agregar nuevo display a la lista
      });
-     
+
      socket.on('display-updated', (data) => {
        // Actualizar display en la lista
      });
-     
+
      socket.on('display-deleted', (data) => {
        // Remover display de la lista
      });
-     
+
      return () => {
        socket.off('display-created');
        socket.off('display-updated');
@@ -1334,23 +1442,26 @@ FRONTEND:
    ```
 
 2. Agrega toast notification cuando hay cambios:
+
    ```typescript
    import { toast } from '@/components/ui/use-toast';
-   
+
    socket.on('display-created', (data) => {
      toast({
        title: 'Display created',
-       description: `${data.display.name} is now online`
+       description: `${data.display.name} is now online`,
      });
    });
    ```
 
 TEST:
+
 1. Abre frontend en http://localhost:3000/displays
 2. Abre Prisma Studio en otra ventana
 3. Crea un nuevo display en Prisma Studio
 4. Frontend debe mostrar el nuevo display INMEDIATAMENTE sin refresh
 5. Debe aparecer toast notification
+
 ```
 
 **Validación**:
@@ -1372,6 +1483,7 @@ TEST:
 ### PROMPT 5.3 - Testing Setup
 
 ```
+
 FASE: Implementación - Testing Infrastructure
 
 Configura testing para el proyecto:
@@ -1379,10 +1491,11 @@ Configura testing para el proyecto:
 VITEST SETUP:
 
 1. Instala Vitest en ambos apps:
+
    ```bash
    cd apps/backend
    pnpm add -D vitest @vitest/ui
-   
+
    cd apps/frontend
    pnpm add -D vitest @vitest/ui @testing-library/react @testing-library/jest-dom
    ```
@@ -1420,6 +1533,7 @@ UNIT TESTS (Frontend):
 PLAYWRIGHT SETUP:
 
 1. Instala Playwright en frontend:
+
    ```bash
    cd apps/frontend
    pnpm add -D @playwright/test
@@ -1434,6 +1548,7 @@ PLAYWRIGHT SETUP:
    - Test básico de UI elements
 
 IMPORTANTE: Solo crea tests básicos, no completos. Es solo para tener la infraestructura lista.
+
 ```
 
 **Validación**:
@@ -1451,6 +1566,7 @@ IMPORTANTE: Solo crea tests básicos, no completos. Es solo para tener la infrae
 ### PROMPT 5.4 - Docker y CI/CD
 
 ```
+
 FASE: Implementación - Docker y GitLab CI
 
 Finaliza el setup de DevOps:
@@ -1491,6 +1607,7 @@ GITLAB CI/CD:
 3. Artifacts de coverage reports
 
 Ejemplo mínimo de .gitlab-ci.yml:
+
 ```yaml
 stages:
   - lint
@@ -1498,7 +1615,7 @@ stages:
   - build
 
 cache:
-  key: "$CI_COMMIT_REF_SLUG"
+  key: '$CI_COMMIT_REF_SLUG'
   paths:
     - node_modules/
     - .pnpm-store/
@@ -1540,6 +1657,7 @@ build:
 ```
 
 IMPORTANTE: No implementes deployment todavía, solo build.
+
 ```
 
 **Validación**:
@@ -1556,6 +1674,7 @@ IMPORTANTE: No implementes deployment todavía, solo build.
 ### CHECKPOINT SEMANA 1 COMPLETA
 
 ```
+
 🎉 CHECKPOINT FINAL - SEMANA 1 COMPLETA 🎉
 
 Antes de continuar a Semana 2, valida COMPLETAMENTE el sistema:
@@ -1563,11 +1682,12 @@ Antes de continuar a Semana 2, valida COMPLETAMENTE el sistema:
 TESTS DE SISTEMA COMPLETO:
 
 1. Levantar todo con Docker:
+
    ```bash
    docker-compose down -v
    docker-compose up --build
    ```
-   
+
    Espera que todos los servicios inicien:
    - ✅ PostgreSQL healthy
    - ✅ Redis healthy
@@ -1575,10 +1695,11 @@ TESTS DE SISTEMA COMPLETO:
    - ✅ Frontend listening on 3000
 
 2. Test de Backend:
+
    ```bash
    curl http://localhost:3001/health
    # Debe responder status "ok"
-   
+
    curl http://localhost:3001/api/displays
    # Debe responder con array de displays
    ```
@@ -1614,6 +1735,7 @@ TESTS DE SISTEMA COMPLETO:
 CHECKLIST FINAL SEMANA 1:
 
 Infraestructura:
+
 - [ ] Monorepo con Turborepo funcionando
 - [ ] TypeScript strict mode en todos los packages
 - [ ] ESLint y Prettier configurados
@@ -1621,6 +1743,7 @@ Infraestructura:
 - [ ] GitLab CI pipeline configurado
 
 Backend:
+
 - [ ] Express server en 3001
 - [ ] Socket.io con Redis adapter
 - [ ] PostgreSQL + Prisma
@@ -1629,6 +1752,7 @@ Backend:
 - [ ] Logging con Winston (si implementado)
 
 Frontend:
+
 - [ ] Next.js 14 App Router en 3000
 - [ ] shadcn/ui components
 - [ ] Layout con Sidebar + Header
@@ -1636,6 +1760,7 @@ Frontend:
 - [ ] Página /displays funcional
 
 Integración:
+
 - [ ] Frontend ↔ Backend vía API REST
 - [ ] Frontend ↔ Backend vía Socket.io
 - [ ] Actualizaciones en tiempo real funcionando
@@ -1643,6 +1768,7 @@ Integración:
 - [ ] Error handling
 
 Testing:
+
 - [ ] Vitest configurado
 - [ ] Al menos 3 unit tests pasando
 - [ ] Playwright configurado
@@ -1658,6 +1784,7 @@ git push origin main --tags
 ```
 
 Actualiza docs/PROGRESS.md:
+
 - Marca Semana 1 completa
 - Anota créditos usados hasta ahora
 - Lista issues encontrados
@@ -1675,9 +1802,10 @@ Actualiza docs/PROGRESS.md:
 - Líneas de código: ~3,000-5,000
 
 SIGUIENTE: Semana 2 - Features Core (Gestión avanzada de Displays, Contenidos, Streaming)
+
 ```
 
-**Uso de créditos estimado Día 5**: ~$12-18 USD  
+**Uso de créditos estimado Día 5**: ~$12-18 USD
 **Total Semana 1**: ~$41-63 USD de los $184 disponibles
 
 ---
@@ -1765,15 +1893,18 @@ SIGUIENTE: Semana 2 - Features Core (Gestión avanzada de Displays, Contenidos, 
 
 **Después de /clear**:
 ```
+
 "Lee CLAUDE.md y PROGRESS.md.
 
 Estamos en: Semana [X], Día [Y], Tarea [Z]
 
 Lo que hemos completado hasta ahora:
+
 - [lista breve de features completadas]
 
 Ahora continuemos con: [próxima tarea específica]"
-```
+
+````
 
 ### Manejo de Errores Comunes
 
@@ -1798,7 +1929,7 @@ Ahora continuemos con: [próxima tarea específica]"
 // Backend
 socket.on('connection', (socket) => {
   console.log('✅ Client connected:', socket.id);
-  
+
   socket.onAny((event, ...args) => {
     console.log('📥', event, args);
   });
@@ -1808,9 +1939,10 @@ socket.on('connection', (socket) => {
 socket.onAny((event, ...args) => {
   console.log('📤', event, args);
 });
-```
+````
 
 **Ver queries de Prisma**:
+
 ```typescript
 // apps/backend/src/config/prisma.ts
 const prisma = new PrismaClient({
@@ -1825,7 +1957,7 @@ const prisma = new PrismaClient({
 Una vez completada la Semana 1, solicita:
 
 ```
-"Hola! Completamos exitosamente la Semana 1. 
+"Hola! Completamos exitosamente la Semana 1.
 
 Por favor proporciona los prompts detallados para Semana 2:
 - Días 6-10

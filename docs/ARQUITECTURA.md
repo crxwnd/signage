@@ -26,16 +26,16 @@ Para CI/CD en servidores locales, **GitLab CI/CD con runners auto-hospedados** p
 
 **Tabla de herramientas esenciales recomendadas:**
 
-| Herramienta | Versión | Propósito | Descargas semanales | Estado TypeScript |
-|-------------|---------|-----------|---------------------|-------------------|
-| BullMQ | 5.1.x | Colas de trabajos | 200K+ | Nativo |
-| Socket.io | 4.7.x | WebSocket en tiempo real | 600K+ | Nativo |
-| fluent-ffmpeg | 2.1.3 | Procesamiento video | 1.1M+ | @types |
-| MobX | 6.12.x | Estado reactivo | 900K+ | Nativo |
-| Winston | 3.11.x | Logging estructurado | 6M+ | @types |
-| PM2 | 5.3.x | Gestión procesos | 1.5M+ | @types |
-| prom-client | 15.1.x | Métricas Prometheus | 3M+ | @types |
-| otplib | 12.0.1 | 2FA/Autenticación | 300K+ | Nativo |
+| Herramienta   | Versión | Propósito                | Descargas semanales | Estado TypeScript |
+| ------------- | ------- | ------------------------ | ------------------- | ----------------- |
+| BullMQ        | 5.1.x   | Colas de trabajos        | 200K+               | Nativo            |
+| Socket.io     | 4.7.x   | WebSocket en tiempo real | 600K+               | Nativo            |
+| fluent-ffmpeg | 2.1.3   | Procesamiento video      | 1.1M+               | @types            |
+| MobX          | 6.12.x  | Estado reactivo          | 900K+               | Nativo            |
+| Winston       | 3.11.x  | Logging estructurado     | 6M+                 | @types            |
+| PM2           | 5.3.x   | Gestión procesos         | 1.5M+               | @types            |
+| prom-client   | 15.1.x  | Métricas Prometheus      | 3M+                 | @types            |
+| otplib        | 12.0.1  | 2FA/Autenticación        | 300K+               | Nativo            |
 
 ## Sincronización exacta entre 100+ pantallas SmartTV
 
@@ -71,13 +71,13 @@ En términos de codecs de video, **H.264 (AVC) debe ser el codec primario** con 
 
 La **escalera ABR (Adaptive Bitrate) óptima** para tu caso de uso incluye cinco niveles de calidad diseñados para adaptarse a condiciones de red variables:
 
-| Resolución | Bitrate | Perfil H.264 | Caso de uso |
-|------------|---------|--------------|-------------|
-| 3840x2160 (4K) | 12-25 Mbps | High | TVs 4K premium con excelente conexión |
-| 1920x1080 (FHD) | 5-8 Mbps | High | TVs HD estándar con buena conexión |
-| 1280x720 (HD) | 2.5-4 Mbps | Main | Fallback HD con conexión moderada |
-| 854x480 (SD) | 1-1.5 Mbps | Main | Fallback con conexión pobre |
-| 640x360 (Low) | 400-800 Kbps | Baseline | Mínimo viable para emergencias |
+| Resolución      | Bitrate      | Perfil H.264 | Caso de uso                           |
+| --------------- | ------------ | ------------ | ------------------------------------- |
+| 3840x2160 (4K)  | 12-25 Mbps   | High         | TVs 4K premium con excelente conexión |
+| 1920x1080 (FHD) | 5-8 Mbps     | High         | TVs HD estándar con buena conexión    |
+| 1280x720 (HD)   | 2.5-4 Mbps   | Main         | Fallback HD con conexión moderada     |
+| 854x480 (SD)    | 1-1.5 Mbps   | Main         | Fallback con conexión pobre           |
+| 640x360 (Low)   | 400-800 Kbps | Baseline     | Mínimo viable para emergencias        |
 
 Para cumplir con el requisito de latencia de 10 segundos para actualizaciones, los **segmentos de 2 segundos** representan el tamaño óptimo, balanceando latencia end-to-end con eficiencia de codificación. Segmentos tradicionales de 6-10 segundos ofrecen mejor compresión pero añaden latencia inaceptable. Segmentos de 1 segundo o menos introducen overhead excesivo y fragmentación. Con segmentos de 2 segundos y buffer de 3 segmentos, la latencia total es aproximadamente 6-8 segundos desde que el administrador ejecuta cambio hasta que las pantallas lo muestran, cumpliendo confortablemente el requisito de 10 segundos.
 
