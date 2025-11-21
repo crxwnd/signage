@@ -7,6 +7,7 @@
 
 import { Bell, Menu, LogOut, Settings, User } from 'lucide-react';
 import { Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -30,8 +31,11 @@ export function Header({ onMenuClick }: HeaderProps) {
         <h1 className="text-lg font-semibold">Digital Signage System</h1>
       </div>
 
-      {/* Right Section - Notifications + User Menu */}
+      {/* Right Section - Connection Status + Notifications + User Menu */}
       <div className="flex items-center gap-2">
+        {/* Connection Status */}
+        <ConnectionStatus />
+
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
