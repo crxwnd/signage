@@ -8,15 +8,24 @@
 
 ## 🎯 FASE ACTUAL
 
-**Fase 0: Preparación** ⏸️ Pendiente
+**Fase 1: FUNDACIÓN - DÍA 2** 🚀 En progreso
 
-**Próximo paso**: Crear estructura de monorepo
+**Próximo paso**: Setup PostgreSQL y Prisma (Tarea 2.1)
 
 ---
 
 ## ✅ FASES COMPLETADAS
 
-Ninguna todavía - proyecto iniciando
+### Fase 0: Preparación ✅
+- Archivos de contexto creados (CLAUDE.md, ARQUITECTURA.md, PROGRESS.md)
+- Primera interacción con Claude Code
+- Completado: 20/11/2025
+
+### Fase 1 - Día 1: Setup Monorepo ✅
+- Estructura de monorepo con Turborepo
+- TypeScript configurado con strict mode
+- ESLint y Prettier configurados
+- Completado: 21/11/2025
 
 ---
 
@@ -76,23 +85,26 @@ Ninguna todavía - proyecto iniciando
   - TypeScript no estaba instalado como devDependency en workspaces (resuelto con `pnpm add -D typescript --filter [package]`)
 
 
-- [ ] **1.5** - ESLint y Prettier
-  - [ ] Configs compartidas en packages/config
-  - [ ] Rules específicas para React/Node
-  - [ ] Scripts de lint y format en package.json
-  - Commits: [ ] Linting y formatting
+- [x] **1.5** - ESLint y Prettier
+  - [x] Configs compartidas en packages/config
+  - [x] Rules específicas para React/Node
+  - [x] Scripts de lint y format en package.json
+  - Estado: ✅ Completado - [21/11/2025]
+  - Commits: ✅ chore: configure linting and formatting
+  - Commits: ✅ fix: move ESLint dependencies to dependencies field
+  **Issues Encontrados**:
+  - Dependencias de ESLint estaban en devDependencies en lugar de dependencies (resuelto moviendo a dependencies para correcta resolución de peer dependencies)
 
 **Checkpoint Día 1**:
 
-- [ ] `pnpm install` funciona sin errores
-- [ ] `pnpm typecheck` pasa
 - [x] `pnpm install` funciona sin errores [21/11/2025]
-- [x] `pnpm typecheck` pasa
-- [ ] `pnpm lint` pasa
-- [x] Estructura de carpetas completa [21/11/2025] 
+- [x] `pnpm typecheck` pasa (6 workspaces, 3.0s) [21/11/2025]
+- [x] `pnpm lint` pasa (3 apps, sin errores ni warnings) [21/11/2025]
+- [x] Estructura de carpetas completa [21/11/2025]
 
-**Estado**: ⏸️ Pendiente  
-**Fecha**: [PENDIENTE]
+**Estado**: ✅ COMPLETADO
+**Fecha inicio**: 20/11/2025
+**Fecha fin**: 21/11/2025
 
 ### DÍA 2: Tipos Compartidos y Base de Datos
 
