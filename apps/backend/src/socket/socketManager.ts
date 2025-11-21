@@ -5,6 +5,8 @@
 
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import Redis from 'ioredis';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -33,6 +35,12 @@ let io: SocketIOServer<
   InterServerEvents,
   SocketData
 > | null = null;
+
+/**
+ * Redis clients for pub/sub
+ */
+let pubClient: Redis | null = null;
+let subClient: Redis | null = null;
 
 /**
  * Initialize Socket.io server
@@ -64,6 +72,9 @@ export function initializeSocketIO(
     // Transports
     transports: ['websocket', 'polling'],
   });
+
+  // Setup Redis adapter for clustering
+  setupRedisAdapter();
 
   // Connection handler
   io.on('connection', (socket) => {
@@ -105,6 +116,91 @@ export function initializeSocketIO(
   });
 
   return io;
+}
+
+/**
+ * Setup Redis adapter for Socket.io clustering
+ * Allows multiple Socket.io instances to communicate via Redis
+ */
+function setupRedisAdapter(): void {
+  if (!io) {
+    log.warn('Cannot setup Redis adapter: Socket.io not initialized');
+    return;
+  }
+
+  try {
+    // Parse Redis URL
+    const redisUrl = config.redisUrl || 'redis://localhost:6379';
+
+    log.info('Connecting to Redis for Socket.io adapter...', { redisUrl });
+
+    // Create Redis clients for pub/sub
+    pubClient = new Redis(redisUrl, {
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        log.debug(`Redis retry attempt ${times}, delay: ${delay}ms`);
+        return delay;
+      },
+      maxRetriesPerRequest: null, // Required for Redis adapter
+      enableReadyCheck: false,
+      lazyConnect: false,
+    });
+
+    subClient = pubClient.duplicate();
+
+    // Handle connection events for pub client
+    pubClient.on('connect', () => {
+      log.info('✓ Redis pub client connected');
+    });
+
+    pubClient.on('ready', () => {
+      log.info('✓ Redis pub client ready');
+    });
+
+    pubClient.on('error', (error) => {
+      log.error('Redis pub client error', error);
+    });
+
+    pubClient.on('reconnecting', () => {
+      log.warn('Redis pub client reconnecting...');
+    });
+
+    pubClient.on('close', () => {
+      log.warn('Redis pub client connection closed');
+    });
+
+    // Handle connection events for sub client
+    subClient.on('connect', () => {
+      log.info('✓ Redis sub client connected');
+    });
+
+    subClient.on('ready', () => {
+      log.info('✓ Redis sub client ready');
+    });
+
+    subClient.on('error', (error) => {
+      log.error('Redis sub client error', error);
+    });
+
+    subClient.on('reconnecting', () => {
+      log.warn('Redis sub client reconnecting...');
+    });
+
+    subClient.on('close', () => {
+      log.warn('Redis sub client connection closed');
+    });
+
+    // Create and set Redis adapter
+    io.adapter(createAdapter(pubClient, subClient));
+
+    log.info('✓ Redis adapter configured for Socket.io clustering', {
+      redisUrl,
+    });
+  } catch (error) {
+    log.error('Failed to setup Redis adapter', error);
+    log.warn('Socket.io will work without Redis adapter (single instance mode)');
+    // Don't throw - allow server to start without Redis
+  }
 }
 
 /**
@@ -210,4 +306,17 @@ export async function disconnectAll(): Promise<void> {
   }
 
   log.info(`Disconnected ${sockets.length} clients`);
+
+  // Close Redis connections
+  if (pubClient) {
+    log.info('Closing Redis pub client...');
+    await pubClient.quit();
+    pubClient = null;
+  }
+
+  if (subClient) {
+    log.info('Closing Redis sub client...');
+    await subClient.quit();
+    subClient = null;
+  }
 }
