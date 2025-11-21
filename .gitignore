@@ -100,3 +100,5 @@ minio_data/
 
 # PM2
 .pm2/
+
+/generated/prisma
