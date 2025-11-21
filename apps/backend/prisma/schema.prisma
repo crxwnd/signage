@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma Schema for Signage Digital System
+// Stack: PostgreSQL 15 + Prisma ORM
+// Project: Sistema de Señalización Digital para Hoteles
 
 generator client {
   provider = "prisma-client-js"
@@ -8,4 +9,158 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ==============================================
+// ENUMS
+// ==============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  HOTEL_ADMIN
+  AREA_MANAGER
+}
+
+enum DisplayStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum ContentType {
+  VIDEO
+  IMAGE
+  HTML
+}
+
+// ==============================================
+// MODELS
+// ==============================================
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  password String
+  name     String
+  role     UserRole @default(AREA_MANAGER)
+
+  // 2FA Authentication
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+
+  // Hotel relationship (optional, only for HOTEL_ADMIN and AREA_MANAGER)
+  hotelId String?
+  hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([hotelId])
+  @@index([role])
+  @@map("users")
+}
+
+model Hotel {
+  id      String @id @default(cuid())
+  name    String
+  address String
+
+  // Relationships
+  users    User[]
+  displays Display[]
+  contents Content[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@map("hotels")
+}
+
+model Display {
+  id       String        @id @default(cuid())
+  name     String
+  location String
+  status   DisplayStatus @default(OFFLINE)
+
+  // Hotel relationship
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  // Area relationship (optional for grouping displays)
+  areaId String?
+
+  // Device information
+  lastSeen   DateTime?
+  deviceInfo Json?
+
+  // Pairing information
+  pairingCode String?   @unique
+  pairedAt    DateTime?
+
+  // Relationships
+  displayContents DisplayContent[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([status])
+  @@index([areaId])
+  @@index([pairingCode])
+  @@map("displays")
+}
+
+model Content {
+  id       String      @id @default(cuid())
+  title    String
+  type     ContentType
+  url      String
+  duration Int? // Duration in seconds (for videos)
+  fileSize BigInt? // File size in bytes
+
+  // Hotel relationship
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  displayContents DisplayContent[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([type])
+  @@map("contents")
+}
+
+model DisplayContent {
+  id String @id @default(cuid())
+
+  // Many-to-many relationship between Display and Content
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  // Scheduling
+  order     Int
+  startTime DateTime?
+  endTime   DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([displayId, contentId])
+  @@index([displayId])
+  @@index([contentId])
+  @@index([startTime, endTime])
+  @@map("display_contents")
 }
