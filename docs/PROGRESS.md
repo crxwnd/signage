@@ -121,39 +121,39 @@
 
 ### DÍA 2: Tipos Compartidos y Base de Datos
 
-- [ ] **2.1** - Setup PostgreSQL y Prisma
-  - [ ] docker-compose.yml con PostgreSQL
-  - [ ] Prisma init en backend
-  - [ ] Connection string en .env
-  - Commits: [ ] Database setup
+- [x] **2.1** - Setup PostgreSQL y Prisma
+  - [x] docker-compose.yml con PostgreSQL
+  - [x] Prisma init en backend
+  - [x] Connection string en .env
+  - Commits: [x] Database setup COMPLETADO [21/11/2025]
 
-- [ ] **2.2** - Schema Prisma inicial
-  - [ ] Models: User, Hotel, Display, Content
-  - [ ] Relaciones entre modelos
-  - [ ] Índices para queries frecuentes
-  - Commits: [ ] Prisma schema inicial
+- [x] **2.2** - Schema Prisma inicial
+  - [x] Models: User, Hotel, Display, Content
+  - [x] Relaciones entre modelos
+  - [x] Índices para queries frecuentes
+  - Commits: [x] Prisma schema inicial COMPLETADO [21/11/2025]
 
-- [ ] **2.3** - Tipos TypeScript compartidos
-  - [ ] packages/shared-types creado
-  - [ ] Interfaces básicas: Display, User, Content
-  - [ ] Socket.io event types
-  - [ ] API request/response types
-  - Commits: [ ] Shared types package
+- [x] **2.3** - Tipos TypeScript compartidos
+  - [x] packages/shared-types creado
+  - [x] Interfaces básicas: Display, User, Content
+  - [x] Socket.io event types
+  - [x] API request/response types
+  - Commits: [x] Shared types package COMPLETADO [21/11/2025]
 
-- [ ] **2.4** - Primera migración
-  - [ ] `pnpm db:migrate` exitoso
-  - [ ] `pnpm db:studio` abre Prisma Studio
-  - Commits: [ ] Database migrated
+- [x] **2.4** - Primera migración
+  - [x] `pnpm db:migrate` exitoso
+  - [x] `pnpm db:studio` abre Prisma Studio
+  - Commits: [x] Database migrated COMPLETADO [21/11/2025]
 
 **Checkpoint Día 2**:
 
-- [ ] PostgreSQL corriendo en Docker
-- [ ] Prisma Studio accesible
-- [ ] Tipos compartidos importables desde apps
-- [ ] Sin errores de TypeScript
+- [x] PostgreSQL corriendo en Docker
+- [x] Prisma Studio accesible
+- [x] Tipos compartidos importables desde apps
+- [x] Sin errores de TypeScript
 
-**Estado**: ⏸️ Pendiente  
-**Fecha**: [PENDIENTE]
+**Estado**: COMPLETADO 
+**Fecha**: COMPLETADO [21/11/2025]
 
 ### DÍA 3: Backend Base
 
