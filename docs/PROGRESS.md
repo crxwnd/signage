@@ -79,6 +79,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Linting y formatting
 
 **Checkpoint Día 1**:
+
 - [ ] `pnpm install` funciona sin errores
 - [ ] `pnpm typecheck` pasa
 - [ ] `pnpm lint` pasa
@@ -114,6 +115,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Database migrated
 
 **Checkpoint Día 2**:
+
 - [ ] PostgreSQL corriendo en Docker
 - [ ] Prisma Studio accesible
 - [ ] Tipos compartidos importables desde apps
@@ -150,6 +152,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Middleware de seguridad
 
 **Checkpoint Día 3**:
+
 - [ ] Backend inicia en puerto 3001
 - [ ] `/health` responde con 200
 - [ ] Socket.io acepta conexiones
@@ -186,6 +189,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Socket.io client
 
 **Checkpoint Día 4**:
+
 - [ ] Frontend inicia en puerto 3000
 - [ ] Página carga sin errores
 - [ ] Socket.io conecta con backend
@@ -221,6 +225,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] CI/CD setup
 
 **Checkpoint Semana 1 COMPLETA**:
+
 - [ ] ✅ Monorepo funcional con Turborepo
 - [ ] ✅ Backend + Frontend + Database conectados
 - [ ] ✅ Socket.io funcionando en tiempo real
@@ -320,6 +325,7 @@ Ninguna todavía - proyecto iniciando
   - Commits: [ ] Conductor manager
 
 **Checkpoint Feature 1**:
+
 - [ ] ✅ Displays CRUD funcional end-to-end
 - [ ] ✅ Actualizaciones en tiempo real funcionando
 - [ ] ✅ Tests pasando
@@ -376,16 +382,19 @@ Ninguna todavía - proyecto iniciando
 ## 📈 MÉTRICAS Y KPIs
 
 ### Desarrollo
+
 - **Velocidad**: [Calcular al completar Fase 1]
 - **Tasa de errores**: [Tracking durante desarrollo]
 - **Coverage de tests**: Target 70%+, Actual: [TBD]
 
 ### Calidad de Código
+
 - **TypeScript strict**: ✅ Habilitado desde inicio
 - **ESLint violations**: Target 0, Actual: [TBD]
 - **Prettier conformance**: Automático
 
 ### Claude Code
+
 - **Créditos iniciales**: $184 USD
 - **Créditos usados**: $0 (no iniciado)
 - **Créditos restantes**: $184
@@ -402,6 +411,7 @@ Ninguno todavía - proyecto iniciando
 ### Decisiones Técnicas
 
 **[2024-11-20]** - Decisiones iniciales de arquitectura:
+
 - ✅ Monorepo con Turborepo
 - ✅ Next.js 14 con App Router
 - ✅ PostgreSQL + Prisma
