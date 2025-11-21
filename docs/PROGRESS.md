@@ -66,11 +66,15 @@ Ninguna todavía - proyecto iniciando
   - [x] package.json raíz con workspaces
   - Commits: [x] "Merge pull request #1 Prompt de implementación 1.3" 20/11/2025
 
-- [ ] **1.4** - TypeScript configs
-  - [ ] tsconfig.json raíz y por package
-  - [ ] Modo strict habilitado
-  - [ ] Path aliases configurados (@shared-types, etc.)
-  - Commits: [ ] TypeScript configs
+- [x] **1.4** - TypeScript configs
+  - [x] tsconfig.json raíz y por package
+  - [x] Modo strict habilitado
+  - [x] Path aliases configurados (@shared-types, etc.)
+  - Estado: ✅ Completado - [21/11/2025]
+  - Commits: ✅ chore: configure typescript
+  **Issues Encontrados**:
+  - TypeScript no estaba instalado como devDependency en workspaces (resuelto con `pnpm add -D typescript --filter [package]`)
+
 
 - [ ] **1.5** - ESLint y Prettier
   - [ ] Configs compartidas en packages/config
@@ -80,7 +84,7 @@ Ninguna todavía - proyecto iniciando
 
 **Checkpoint Día 1**:
 - [x] `pnpm install` funciona sin errores [20/11/2025]
-- [ ] `pnpm typecheck` pasa
+- [x] `pnpm typecheck` pasa
 - [ ] `pnpm lint` pasa
 - [x] Estructura de carpetas completa [20/11/2025]
 
