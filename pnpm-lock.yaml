@@ -112,7 +112,7 @@ importers:
         version: 5.9.3
 
   packages/config:
-    devDependencies:
+    dependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.10.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
