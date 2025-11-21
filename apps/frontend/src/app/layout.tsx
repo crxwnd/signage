@@ -6,6 +6,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui';
+import { SocketProvider } from '@/providers/SocketProvider';
 
 export const metadata: Metadata = {
   title: 'Signage - Digital Signage System',
@@ -20,8 +21,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {children}
-        <Toaster />
+        <SocketProvider>
+          {children}
+          <Toaster />
+        </SocketProvider>
       </body>
     </html>
   );
