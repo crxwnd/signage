@@ -26,21 +26,21 @@ Ninguna todavía - proyecto iniciando
 
 ### Tareas
 
-- [ ] **0.1** - Crear estructura de archivos de contexto
-  - [ ] CLAUDE.md
-  - [ ] docs/ARQUITECTURA.md
-  - [ ] docs/PROGRESS.md (este archivo)
-  - [ ] .claude/settings.json
+- [x] **0.1** - Crear estructura de archivos de contexto
+  - [x] CLAUDE.md
+  - [x] docs/ARQUITECTURA.md
+  - [x] docs/PROGRESS.md (este archivo)
+  - [x] .claude/settings.json
   - Commits: [ ] Archivos de contexto creados
 
-- [ ] **0.2** - Primera interacción con Claude Code
-  - [ ] Verificar que Claude puede leer CLAUDE.md
-  - [ ] Test de exploración sin código
+- [x] **0.2** - Primera interacción con Claude Code
+  - [x] Verificar que Claude puede leer CLAUDE.md
+  - [x] Test de exploración sin código
   - Commits: [ ]
 
-**Estado**: ⏸️ Pendiente  
-**Fecha inicio**: [PENDIENTE]  
-**Fecha fin**: [PENDIENTE]
+**Estado**: COMPLETADA  
+**Fecha inicio**: 20/11/2025  
+**Fecha fin**: 20/11/2025
 
 ---
 
@@ -50,27 +50,31 @@ Ninguna todavía - proyecto iniciando
 
 ### DÍA 1: Setup Monorepo
 
-- [ ] **1.1** - Exploración inicial (SIN CÓDIGO)
-  - [ ] Claude lee archivos de contexto
-  - [ ] Confirma entendimiento del proyecto
-  - Estado: ⏸️ Pendiente
+- [x] **1.1** - Exploración inicial (SIN CÓDIGO)
+  - [x] Claude lee archivos de contexto
+  - [x] Confirma entendimiento del proyecto
+  - Estado: COMPLETADO 20/11/2025
 
-- [ ] **1.2** - Plan de estructura monorepo
-  - [ ] Plan detallado en markdown
-  - [ ] Revisión y aprobación del plan
-  - Estado: ⏸️ Pendiente
+- [x] **1.2** - Plan de estructura monorepo
+  - [x] Plan detallado en markdown
+  - [x] Revisión y aprobación del plan
+  - Estado: COMPLETADO 20/11/2025
 
-- [ ] **1.3** - Implementar estructura base
-  - [ ] Turborepo configurado
-  - [ ] Carpetas apps/ y packages/
-  - [ ] package.json raíz con workspaces
-  - Commits: [ ] Estructura monorepo básica
+- [x] **1.3** - Implementar estructura base
+  - [x] Turborepo configurado
+  - [x] Carpetas apps/ y packages/
+  - [x] package.json raíz con workspaces
+  - Commits: [x] "Merge pull request #1 Prompt de implementación 1.3" 20/11/2025
 
-- [ ] **1.4** - TypeScript configs
-  - [ ] tsconfig.json raíz y por package
-  - [ ] Modo strict habilitado
-  - [ ] Path aliases configurados (@shared-types, etc.)
-  - Commits: [ ] TypeScript configs
+- [x] **1.4** - TypeScript configs
+  - [x] tsconfig.json raíz y por package
+  - [x] Modo strict habilitado
+  - [x] Path aliases configurados (@shared-types, etc.)
+  - Estado: ✅ Completado - [21/11/2025]
+  - Commits: ✅ chore: configure typescript
+  **Issues Encontrados**:
+  - TypeScript no estaba instalado como devDependency en workspaces (resuelto con `pnpm add -D typescript --filter [package]`)
+
 
 - [ ] **1.5** - ESLint y Prettier
   - [ ] Configs compartidas en packages/config
@@ -82,8 +86,10 @@ Ninguna todavía - proyecto iniciando
 
 - [ ] `pnpm install` funciona sin errores
 - [ ] `pnpm typecheck` pasa
+- [x] `pnpm install` funciona sin errores [21/11/2025]
+- [x] `pnpm typecheck` pasa
 - [ ] `pnpm lint` pasa
-- [ ] Estructura de carpetas completa
+- [x] Estructura de carpetas completa [21/11/2025] 
 
 **Estado**: ⏸️ Pendiente  
 **Fecha**: [PENDIENTE]
