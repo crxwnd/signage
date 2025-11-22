@@ -11,6 +11,7 @@ import { config } from './config';
 import { logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRouter from './routes/health';
+import displaysRouter from './routes/displays';
 
 /**
  * Create and configure Express application
@@ -79,8 +80,8 @@ export function createApp(): Application {
   // Health check routes
   app.use(healthRouter);
 
-  // API routes will be added here in future tasks
-  // app.use('/api', apiRouter);
+  // API routes
+  app.use('/api/displays', displaysRouter);
 
   // ==============================================
   // ERROR HANDLING
