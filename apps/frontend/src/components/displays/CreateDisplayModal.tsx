@@ -211,7 +211,6 @@ export function CreateDisplayModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       <SelectItem value="lobby">Lobby</SelectItem>
                       <SelectItem value="reception">Reception</SelectItem>
                       <SelectItem value="restaurant">Restaurant</SelectItem>
