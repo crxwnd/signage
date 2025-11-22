@@ -153,6 +153,39 @@
 **Fecha**: 21/11/2025
 
 **Nota**: PostgreSQL y Prisma no implementados en Día 2 - pospuestos para después
+- [x] **2.1** - Setup PostgreSQL y Prisma
+  - [x] docker-compose.yml con PostgreSQL
+  - [x] Prisma init en backend
+  - [x] Connection string en .env
+  - Commits: [x] Database setup COMPLETADO [21/11/2025]
+
+- [x] **2.2** - Schema Prisma inicial
+  - [x] Models: User, Hotel, Display, Content
+  - [x] Relaciones entre modelos
+  - [x] Índices para queries frecuentes
+  - Commits: [x] Prisma schema inicial COMPLETADO [21/11/2025]
+
+- [x] **2.3** - Tipos TypeScript compartidos
+  - [x] packages/shared-types creado
+  - [x] Interfaces básicas: Display, User, Content
+  - [x] Socket.io event types
+  - [x] API request/response types
+  - Commits: [x] Shared types package COMPLETADO [21/11/2025]
+
+- [x] **2.4** - Primera migración
+  - [x] `pnpm db:migrate` exitoso
+  - [x] `pnpm db:studio` abre Prisma Studio
+  - Commits: [x] Database migrated COMPLETADO [21/11/2025]
+
+**Checkpoint Día 2**:
+
+- [x] PostgreSQL corriendo en Docker
+- [x] Prisma Studio accesible
+- [x] Tipos compartidos importables desde apps
+- [x] Sin errores de TypeScript
+
+**Estado**: COMPLETADO 
+**Fecha**: COMPLETADO [21/11/2025]
 
 ### DÍA 3: Backend Base
 
@@ -161,6 +194,9 @@
   - [x] Server.ts con configuración y logging
   - [x] Health check endpoint
   - Commits: [x] feat: create express server foundation
+  - [x] Server.ts con configuración
+  - [x] Health check endpoint
+  - Commits: [x] Express server básico COMPLETADO [21/11/2025]
 
 - [x] **3.2** - Socket.io server
   - [x] Socket.io integrado con Express
@@ -188,6 +224,31 @@
 
 **Estado**: ✅ COMPLETADO
 **Fecha**: 21/11/2025
+  - [x] Logging de eventos
+  - Commits: [x] Socket.io server COMPLETADO [21/11/2025]
+
+- [x] **3.3** - Redis setup
+  - [x] Redis en docker-compose
+  - [x] Socket.io Redis adapter
+  - [x] Test de clustering
+  - Commits: [x] Redis adapter [21/11/2025]
+
+- [x] **3.4** - Middleware básico
+  - [x] CORS configurado
+  - [x] Helmet.js para seguridad
+  - [x] Rate limiting
+  - [x] Error handling
+  - Commits: [x] Middleware de seguridad [21/11/2025]
+
+**Checkpoint Día 3**:
+
+- [X] Backend inicia en puerto 3001
+- [X] `/health` responde con 200
+- [X] Socket.io acepta conexiones
+- [X] Redis conectado correctamente
+
+**Estado**: COMPLETADO 
+**Fecha**: [21/11/2025]
 
 ### DÍA 4: Frontend Base
 
