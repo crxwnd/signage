@@ -3,7 +3,11 @@
  * List and manage digital signage displays
  */
 
-import { Monitor, Plus, AlertCircle } from 'lucide-react';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Monitor, Plus, AlertCircle, Loader2 } from 'lucide-react';
 import {
   Button,
   Card,
@@ -13,29 +17,65 @@ import {
   CardContent,
 } from '@/components/ui';
 import { DisplaysList } from '@/components/displays/DisplaysList';
+import { DisplaysFilters } from '@/components/displays/DisplaysFilters';
 import { getDisplays, getDisplayStats } from '@/lib/api/displays';
+import type { Display, DisplayFilter } from '@shared-types';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export default function DisplaysPage() {
+  const searchParams = useSearchParams();
 
-export default async function DisplaysPage() {
-  // Fetch data server-side
-  let displays;
-  let stats;
-  let error = null;
+  const [displays, setDisplays] = useState<Display[]>([]);
+  const [totalDisplays, setTotalDisplays] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
+  const [stats, setStats] = useState({
+    total: 0,
+    online: 0,
+    offline: 0,
+    error: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  try {
-    [displays, stats] = await Promise.all([
-      getDisplays({}, { page: 1, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
-      getDisplayStats(),
-    ]);
-  } catch (err) {
-    error = err instanceof Error ? err.message : 'Failed to load displays';
-    displays = { items: [], meta: { page: 1, limit: 50, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
-    stats = { total: 0, online: 0, offline: 0, error: 0 };
-  }
+  // Fetch displays and stats
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      setError(null);
 
-  const hasDisplays = displays.items.length > 0;
+      try {
+        // Build filter from URL params
+        const filter: DisplayFilter = {};
+        const search = searchParams.get('search');
+        const status = searchParams.get('status');
+
+        if (search) filter.search = search;
+        if (status) filter.status = status as any;
+
+        // Fetch data
+        const [displaysData, statsData] = await Promise.all([
+          getDisplays(filter, { page: 1, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
+          getDisplayStats(),
+        ]);
+
+        setDisplays(displaysData.items);
+        setFilteredCount(displaysData.meta.total);
+        setStats(statsData);
+        setTotalDisplays(statsData.total);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load displays');
+        setDisplays([]);
+        setFilteredCount(0);
+        setStats({ total: 0, online: 0, offline: 0, error: 0 });
+        setTotalDisplays(0);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [searchParams]);
+
+  const hasDisplays = totalDisplays > 0;
 
   return (
     <div className="space-y-6">
@@ -120,34 +160,74 @@ export default async function DisplaysPage() {
         </Card>
       </div>
 
-      {/* Main Content */}
-      {!hasDisplays && !error ? (
+      {/* Filters */}
+      {hasDisplays && (
+        <DisplaysFilters
+          totalDisplays={totalDisplays}
+          filteredCount={filteredCount}
+        />
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
         <Card>
-          <CardHeader>
-            <CardTitle>All Displays</CardTitle>
-            <CardDescription>
-              View and manage all your digital signage displays
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Monitor className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-semibold">No displays yet</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Get started by adding your first display
-              </p>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Display
-              </Button>
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center justify-center gap-4 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Loading displays...</p>
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <DisplaysList
-          initialDisplays={displays.items}
-          initialTotal={displays.meta.total}
-        />
+      )}
+
+      {/* Main Content */}
+      {!isLoading && (
+        <>
+          {!hasDisplays && !error ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>All Displays</CardTitle>
+                <CardDescription>
+                  View and manage all your digital signage displays
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Monitor className="mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-semibold">No displays yet</h3>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Get started by adding your first display
+                  </p>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Your First Display
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredCount > 0 ? (
+              <DisplaysList
+                initialDisplays={displays}
+                initialTotal={filteredCount}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <Monitor className="h-12 w-12 text-muted-foreground" />
+                    <div>
+                      <h3 className="mb-2 text-lg font-semibold">No displays found</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Try adjusting your filters to see more results
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          )}
+        </>
       )}
     </div>
   );

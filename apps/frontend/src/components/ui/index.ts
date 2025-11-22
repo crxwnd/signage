@@ -36,6 +36,18 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
 } from './dropdown-menu';
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+} from './select';
 export { Toaster } from './toaster';
 export { useToast, toast } from '@/hooks/use-toast';
 export type { Toast } from '@/hooks/use-toast';
