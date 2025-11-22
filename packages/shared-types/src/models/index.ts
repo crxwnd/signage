@@ -6,6 +6,9 @@
 // Display model
 export * from './display';
 
+// Area model
+export * from './area';
+
 // Content model
 export * from './content';
 

@@ -35,7 +35,8 @@ import {
   toast,
 } from '@/components/ui';
 import { createDisplay, getDisplays } from '@/lib/api/displays';
-import type { CreateDisplayPayload } from '@shared-types';
+import { getAreas } from '@/lib/api/areas';
+import type { CreateDisplayPayload, Area } from '@shared-types';
 
 // Validation schema
 const createDisplaySchema = z.object({
@@ -70,6 +71,7 @@ export function CreateDisplayModal({
   const [isLoading, setIsLoading] = useState(false);
   // Use seed hotel ID as default fallback
   const [hotelId, setHotelId] = useState<string>('seed-hotel-1');
+  const [areas, setAreas] = useState<Area[]>([]);
 
   const form = useForm<CreateDisplayFormValues>({
     resolver: zodResolver(createDisplaySchema),
@@ -81,23 +83,32 @@ export function CreateDisplayModal({
     },
   });
 
-  // Fetch hotelId from existing displays
+  // Fetch hotelId and areas from existing displays
   useEffect(() => {
-    async function fetchHotelId() {
+    async function fetchData() {
       try {
+        // Fetch hotelId from first display
         const response = await getDisplays({}, { page: 1, limit: 1 });
+        let fetchedHotelId = 'seed-hotel-1';
+
         if (response.items.length > 0 && response.items[0]) {
           console.log('Fetched hotelId from existing display:', response.items[0].hotelId);
-          setHotelId(response.items[0].hotelId);
+          fetchedHotelId = response.items[0].hotelId;
+          setHotelId(fetchedHotelId);
         } else {
           console.log('No existing displays, using default hotelId: seed-hotel-1');
         }
+
+        // Fetch areas for this hotel
+        const areasData = await getAreas(fetchedHotelId);
+        console.log('Fetched areas:', areasData);
+        setAreas(areasData);
       } catch (error) {
-        console.error('Failed to fetch hotelId, using default:', error);
+        console.error('Failed to fetch data, using defaults:', error);
       }
     }
 
-    fetchHotelId();
+    fetchData();
   }, []);
 
   async function onSubmit(values: CreateDisplayFormValues) {
@@ -233,13 +244,17 @@ export function CreateDisplayModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="lobby">Lobby</SelectItem>
-                      <SelectItem value="reception">Reception</SelectItem>
-                      <SelectItem value="restaurant">Restaurant</SelectItem>
-                      <SelectItem value="spa">Spa</SelectItem>
-                      <SelectItem value="gym">Gym</SelectItem>
-                      <SelectItem value="conference">Conference Room</SelectItem>
-                      <SelectItem value="elevators">Elevators</SelectItem>
+                      {areas.length === 0 ? (
+                        <SelectItem value="loading" disabled>
+                          Loading areas...
+                        </SelectItem>
+                      ) : (
+                        areas.map((area) => (
+                          <SelectItem key={area.id} value={area.id}>
+                            {area.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormDescription>
