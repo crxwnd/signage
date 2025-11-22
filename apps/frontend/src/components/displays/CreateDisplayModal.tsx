@@ -68,7 +68,8 @@ export function CreateDisplayModal({
   onSuccess,
 }: CreateDisplayModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [hotelId, setHotelId] = useState<string | null>(null);
+  // Use seed hotel ID as default fallback
+  const [hotelId, setHotelId] = useState<string>('seed-hotel-1');
 
   const form = useForm<CreateDisplayFormValues>({
     resolver: zodResolver(createDisplaySchema),
@@ -86,10 +87,13 @@ export function CreateDisplayModal({
       try {
         const response = await getDisplays({}, { page: 1, limit: 1 });
         if (response.items.length > 0 && response.items[0]) {
+          console.log('Fetched hotelId from existing display:', response.items[0].hotelId);
           setHotelId(response.items[0].hotelId);
+        } else {
+          console.log('No existing displays, using default hotelId: seed-hotel-1');
         }
       } catch (error) {
-        console.error('Failed to fetch hotelId:', error);
+        console.error('Failed to fetch hotelId, using default:', error);
       }
     }
 
@@ -100,11 +104,6 @@ export function CreateDisplayModal({
     setIsLoading(true);
 
     try {
-      // Validate hotelId is available
-      if (!hotelId) {
-        throw new Error('Hotel ID not available. Please try again.');
-      }
-
       // Prepare payload for API
       const payload: CreateDisplayPayload = {
         name: values.name,
@@ -112,6 +111,8 @@ export function CreateDisplayModal({
         hotelId: hotelId,
         areaId: values.areaId && values.areaId.trim() !== '' ? values.areaId : null,
       };
+
+      console.log('Creating display with payload:', payload);
 
       await createDisplay(payload);
 
