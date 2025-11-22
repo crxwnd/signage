@@ -9,6 +9,7 @@ import { log } from '../middleware/logger';
 import * as displaysService from '../services/displaysService';
 import type { ApiSuccessResponse, ApiErrorResponse } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
+import { broadcast } from '../socket/socketManager';
 
 // ==============================================
 // ZOD VALIDATION SCHEMAS
@@ -176,6 +177,19 @@ export async function createDisplay(
     // Create display
     const display = await displaysService.createDisplay(payload);
 
+    // Emit Socket.io event for real-time updates
+    broadcast('display:created', {
+      display: {
+        id: display.id,
+        name: display.name,
+        location: display.location,
+        status: display.status,
+        hotelId: display.hotelId,
+        areaId: display.areaId,
+      },
+      timestamp: Date.now(),
+    });
+
     const response: ApiSuccessResponse = {
       success: true,
       data: display,
@@ -256,6 +270,19 @@ export async function updateDisplay(
     // Update display
     const display = await displaysService.updateDisplay(id, payload);
 
+    // Emit Socket.io event for real-time updates
+    broadcast('display:updated', {
+      display: {
+        id: display.id,
+        name: display.name,
+        location: display.location,
+        status: display.status,
+        hotelId: display.hotelId,
+        areaId: display.areaId,
+      },
+      timestamp: Date.now(),
+    });
+
     const response: ApiSuccessResponse = {
       success: true,
       data: display,
@@ -331,6 +358,12 @@ export async function deleteDisplay(
     }
 
     await displaysService.deleteDisplay(id);
+
+    // Emit Socket.io event for real-time updates
+    broadcast('display:deleted', {
+      displayId: id,
+      timestamp: Date.now(),
+    });
 
     const response: ApiSuccessResponse = {
       success: true,
