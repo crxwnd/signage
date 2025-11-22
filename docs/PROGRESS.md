@@ -341,25 +341,25 @@
 
 #### Día 6: Backend API
 
-- [ ] **6.1** - Endpoints REST
-  - [ ] GET /api/displays (con paginación)
-  - [ ] POST /api/displays
-  - [ ] PATCH /api/displays/:id
-  - [ ] DELETE /api/displays/:id
-  - [ ] GET /api/displays/:id/status
-  - Commits: [ ] Displays CRUD API
+- [x] **6.1** - Endpoints REST
+  - [x] GET /api/displays (con paginación)
+  - [x] POST /api/displays
+  - [x] PATCH /api/displays/:id
+  - [x] DELETE /api/displays/:id
+  - [x] GET /api/displays/:id/status
+  - Commits: [x] Displays CRUD API COMPLETADO [22/11/2025]
 
-- [ ] **6.2** - Validación con Zod
-  - [ ] Schemas de validación
-  - [ ] Error handling mejorado
-  - Commits: [ ] Validation schemas
+- [x] **6.2** - Validación con Zod
+  - [x] Schemas de validación
+  - [x] Error handling mejorado
+  - Commits: [x] Validation schemas COMPLETADO [22/11/2025]
 
-- [ ] **6.3** - Tests de API
-  - [ ] Tests unitarios de controllers
-  - [ ] Tests de integración de endpoints
-  - Commits: [ ] API tests
+- [x] **6.3** - Tests de API
+  - [x] Tests unitarios de controllers
+  - [x] Tests de integración de endpoints
+  - Commits: [x] API tests COMPLETADO [22/11/2025]
 
-**Estado**: ⏸️ Pendiente
+**Estado**: COMPLETADO [22/11/2025]
 
 #### Día 7: Frontend con Mock Data
 
