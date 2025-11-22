@@ -23,7 +23,8 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@config/eslint": "workspace:*",
