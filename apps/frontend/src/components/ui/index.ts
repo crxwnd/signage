@@ -51,3 +51,14 @@ export {
 export { Toaster } from './toaster';
 export { useToast, toast } from '@/hooks/use-toast';
 export type { Toast } from '@/hooks/use-toast';
+export { Label } from './label';
+export { Textarea } from './textarea';
+export {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from './form';
