@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+.pnpm-store/
+.npm/
+.yarn/
 npm-debug.log
 yarn-error.log
 pnpm-debug.log
@@ -32,6 +35,8 @@ out/
 # Tests
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
 
 # Logs
 logs/
@@ -50,3 +55,12 @@ docs/
 .github/
 .gitlab/
 .gitlab-ci.yml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Cache
+.cache/
+temp/
+tmp/
