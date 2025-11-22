@@ -76,6 +76,44 @@ export interface DisplayErrorEvent {
   timestamp: number;
 }
 
+/**
+ * Display created (admin action)
+ */
+export interface DisplayCreatedEvent {
+  display: {
+    id: string;
+    name: string;
+    location: string;
+    status: DisplayStatus;
+    hotelId: string;
+    areaId: string | null;
+  };
+  timestamp: number;
+}
+
+/**
+ * Display updated (admin action)
+ */
+export interface DisplayUpdatedEvent {
+  display: {
+    id: string;
+    name: string;
+    location: string;
+    status: DisplayStatus;
+    hotelId: string;
+    areaId: string | null;
+  };
+  timestamp: number;
+}
+
+/**
+ * Display deleted (admin action)
+ */
+export interface DisplayDeletedEvent {
+  displayId: string;
+  timestamp: number;
+}
+
 // ==============================================
 // CONTENT EVENTS
 // ==============================================
@@ -332,6 +370,9 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
   'display:status-changed': (data: DisplayStatusChangedEvent) => void;
   'display:paired': (data: DisplayPairedEvent) => void;
+  'display:created': (data: DisplayCreatedEvent) => void;
+  'display:updated': (data: DisplayUpdatedEvent) => void;
+  'display:deleted': (data: DisplayDeletedEvent) => void;
   'content:uploaded': (data: ContentUploadedEvent) => void;
   'content:assigned': (data: ContentAssignedEvent) => void;
   'content:removed': (data: ContentRemovedEvent) => void;

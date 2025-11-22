@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui';
-import { DisplayCard } from '@/components/displays/DisplayCard';
+import { DisplaysList } from '@/components/displays/DisplaysList';
 import { getDisplays, getDisplayStats } from '@/lib/api/displays';
 
 export const dynamic = 'force-dynamic';
@@ -144,27 +144,10 @@ export default async function DisplaysPage() {
           </CardContent>
         </Card>
       ) : (
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              All Displays ({displays.meta.total})
-            </h3>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {displays.items.map((display) => (
-              <DisplayCard key={display.id} display={display} />
-            ))}
-          </div>
-
-          {/* Pagination info */}
-          {displays.meta.totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <p>
-                Page {displays.meta.page} of {displays.meta.totalPages}
-              </p>
-            </div>
-          )}
-        </div>
+        <DisplaysList
+          initialDisplays={displays.items}
+          initialTotal={displays.meta.total}
+        />
       )}
     </div>
   );

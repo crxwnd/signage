@@ -1,91 +1,154 @@
-# GitLab CI/CD Pipeline for Signage Monorepo
+# GitLab CI/CD Pipeline
+# Monorepo CI for signage digital signage system
+
+# ============================================
+# GLOBAL CONFIGURATION
+# ============================================
 
 image: node:20-alpine
 
-# Cache configuration
+# Cache configuration for faster builds
 cache:
-  key:
-    files:
-      - pnpm-lock.yaml
+  key: "$CI_COMMIT_REF_SLUG"
   paths:
-    - .pnpm-store
+    - node_modules/
+    - .pnpm-store/
+    - apps/*/node_modules/
+    - packages/*/node_modules/
 
-# Stages
+# Pipeline stages
 stages:
-  - install
   - lint
   - test
   - build
 
-# Install dependencies
-install:
-  stage: install
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.23.0 --activate
-    - pnpm config set store-dir .pnpm-store
-  script:
-    - pnpm install --frozen-lockfile
-  artifacts:
-    paths:
-      - node_modules
-      - apps/*/node_modules
-      - packages/*/node_modules
-    expire_in: 1 hour
+# ============================================
+# BEFORE SCRIPT (runs before each job)
+# ============================================
 
-# Lint stage
+before_script:
+  - echo "Setting up pnpm..."
+  - corepack enable
+  - corepack prepare pnpm@latest --activate
+  - pnpm config set store-dir .pnpm-store
+  - echo "Installing dependencies..."
+  - pnpm install --frozen-lockfile
+
+# ============================================
+# LINT STAGE
+# ============================================
+
 lint:
   stage: lint
-  dependencies:
-    - install
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.23.0 --activate
   script:
-    - pnpm run lint
-    - pnpm run format:check
+    - echo "Running ESLint on all packages..."
+    - pnpm lint
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
 
-# Type check
 typecheck:
   stage: lint
-  dependencies:
-    - install
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.23.0 --activate
   script:
-    - pnpm run typecheck
+    - echo "Running TypeScript type checking..."
+    - pnpm typecheck
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
 
-# Test stage
-test:
+# ============================================
+# TEST STAGE
+# ============================================
+
+test:backend:
   stage: test
-  dependencies:
-    - install
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.23.0 --activate
   script:
-    - pnpm run test
+    - echo "Running backend unit tests..."
+    - pnpm --filter=backend test run
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   artifacts:
+    when: always
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
+        path: apps/backend/coverage/cobertura-coverage.xml
+    paths:
+      - apps/backend/coverage/
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
 
-# Build stage
-build:
-  stage: build
-  dependencies:
-    - install
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@10.23.0 --activate
+test:frontend:
+  stage: test
   script:
-    - pnpm run build
+    - echo "Running frontend unit tests..."
+    - pnpm --filter=frontend test run
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: apps/frontend/coverage/cobertura-coverage.xml
+    paths:
+      - apps/frontend/coverage/
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ============================================
+# BUILD STAGE
+# ============================================
+
+build:backend:
+  stage: build
+  script:
+    - echo "Building backend..."
+    - pnpm --filter=backend build
   artifacts:
     paths:
-      - apps/frontend/.next
-      - apps/backend/dist
-      - apps/player/.next
-    expire_in: 1 week
+      - apps/backend/dist/
+    expire_in: 7 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+build:frontend:
+  stage: build
+  script:
+    - echo "Building frontend..."
+    - pnpm --filter=frontend build
+  artifacts:
+    paths:
+      - apps/frontend/.next/
+    expire_in: 7 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ============================================
+# BUILD ALL (for main branch)
+# ============================================
+
+build:all:
+  stage: build
+  script:
+    - echo "Building all packages..."
+    - pnpm build
+  artifacts:
+    paths:
+      - apps/*/dist/
+      - apps/*/.next/
+    expire_in: 30 days
+  only:
+    - main

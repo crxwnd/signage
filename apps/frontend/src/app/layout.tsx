@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from '@/components/ui';
+import { Toaster } from 'sonner';
 import { SocketProvider } from '@/providers/SocketProvider';
 
 export const metadata: Metadata = {
