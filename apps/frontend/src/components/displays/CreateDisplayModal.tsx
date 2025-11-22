@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,7 +34,7 @@ import {
   FormMessage,
   toast,
 } from '@/components/ui';
-import { createDisplay } from '@/lib/api/displays';
+import { createDisplay, getDisplays } from '@/lib/api/displays';
 import type { CreateDisplayPayload } from '@shared-types';
 
 // Validation schema
@@ -68,6 +68,7 @@ export function CreateDisplayModal({
   onSuccess,
 }: CreateDisplayModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [hotelId, setHotelId] = useState<string | null>(null);
 
   const form = useForm<CreateDisplayFormValues>({
     resolver: zodResolver(createDisplaySchema),
@@ -79,17 +80,37 @@ export function CreateDisplayModal({
     },
   });
 
+  // Fetch hotelId from existing displays
+  useEffect(() => {
+    async function fetchHotelId() {
+      try {
+        const response = await getDisplays({}, { page: 1, limit: 1 });
+        if (response.items.length > 0 && response.items[0]) {
+          setHotelId(response.items[0].hotelId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch hotelId:', error);
+      }
+    }
+
+    fetchHotelId();
+  }, []);
+
   async function onSubmit(values: CreateDisplayFormValues) {
     setIsLoading(true);
 
     try {
+      // Validate hotelId is available
+      if (!hotelId) {
+        throw new Error('Hotel ID not available. Please try again.');
+      }
+
       // Prepare payload for API
-      // Note: hotelId is hardcoded for now until authentication is implemented
       const payload: CreateDisplayPayload = {
         name: values.name,
         location: values.location,
-        hotelId: 'seed-hotel-1', // TODO: Get from authenticated user context
-        areaId: values.areaId || null,
+        hotelId: hotelId,
+        areaId: values.areaId && values.areaId.trim() !== '' ? values.areaId : null,
       };
 
       await createDisplay(payload);
