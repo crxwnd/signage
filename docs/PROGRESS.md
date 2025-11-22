@@ -294,42 +294,42 @@
 
 ### DÍA 5: Integración y Testing
 
-- [ ] **5.1** - Primera feature end-to-end
-  - [ ] Endpoint `/api/displays` (GET)
-  - [ ] Página `/displays` con lista
-  - [ ] Socket.io emite evento de test
-  - Commits: [ ] Primera feature integrada
+- [x] **5.1** - Primera feature end-to-end
+  - [x] Endpoint `/api/displays` (GET)
+  - [x] Página `/displays` con lista
+  - [x] Socket.io emite evento de test
+  - Commits: [x] Primera feature integrada COMPLETADO [22/11/2025]
 
-- [ ] **5.2** - Testing setup
-  - [ ] Vitest configurado
-  - [ ] Primer test unitario (utils)
-  - [ ] Playwright configurado
-  - [ ] Primer E2E test
-  - Commits: [ ] Testing setup
+- [x] **5.2** - Testing setup
+  - [x] Vitest configurado
+  - [x] Primer test unitario (utils)
+  - [x] Playwright configurado
+  - [x] Primer E2E test
+  - Commits: [x] Testing setup COMPLETADO [22/11/2025]
 
-- [ ] **5.3** - Docker development
-  - [ ] Dockerfile.dev para frontend
-  - [ ] Dockerfile.dev para backend
-  - [ ] docker-compose con todos los servicios
-  - Commits: [ ] Docker setup
+- [x] **5.3** - Docker development
+  - [x] Dockerfile.dev para frontend
+  - [x] Dockerfile.dev para backend
+  - [x] docker-compose con todos los servicios
+  - Commits: [x] Docker setup COMPLETADO [22/11/2025]
 
-- [ ] **5.4** - GitLab CI setup
-  - [ ] .gitlab-ci.yml básico
-  - [ ] Pipeline: lint → test → build
-  - Commits: [ ] CI/CD setup
+- [x] **5.4** - GitLab CI setup
+  - [x] .gitlab-ci.yml básico
+  - [x] Pipeline: lint → test → build
+  - Commits: [x] CI/CD setup COMPLETADO [22/11/2025]
 
 **Checkpoint Semana 1 COMPLETA**:
 
-- [ ] ✅ Monorepo funcional con Turborepo
-- [ ] ✅ Backend + Frontend + Database conectados
-- [ ] ✅ Socket.io funcionando en tiempo real
-- [ ] ✅ Primera feature end-to-end completada
-- [ ] ✅ Tests pasando
-- [ ] ✅ Docker y CI/CD configurados
+- [x] ✅ Monorepo funcional con Turborepo
+- [x] ✅ Backend + Frontend + Database conectados
+- [x] ✅ Socket.io funcionando en tiempo real
+- [x] ✅ Primera feature end-to-end completada
+- [x] ✅ Tests pasando
+- [x] ✅ Docker y CI/CD configurados
 
-**Estado**: ⏸️ Pendiente  
-**Fecha inicio semana**: [PENDIENTE]  
-**Fecha fin semana**: [PENDIENTE]
+**Estado**: COMPLETADO  
+**Fecha inicio semana**: [20/11/2025]  
+**Fecha fin semana**: COMPLETADO [22/11/2025]
 
 ---
 
