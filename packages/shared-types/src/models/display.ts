@@ -50,6 +50,7 @@ export interface CreateDisplayPayload {
   location: string;
   hotelId: string;
   areaId?: string | null;
+  deviceInfo?: Record<string, unknown>;
 }
 
 /**

@@ -20,6 +20,7 @@ const createDisplaySchema = z.object({
   location: z.string().min(3).max(200),
   hotelId: z.string().cuid(),
   areaId: z.string().cuid().optional().nullable(),
+  deviceInfo: z.record(z.string(), z.unknown()).optional(),
 });
 
 const updateDisplaySchema = z.object({

@@ -5,11 +5,10 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Monitor, Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { Monitor, AlertCircle, Loader2 } from 'lucide-react';
 import {
-  Button,
   Card,
   CardHeader,
   CardTitle,
@@ -18,10 +17,11 @@ import {
 } from '@/components/ui';
 import { DisplaysList } from '@/components/displays/DisplaysList';
 import { DisplaysFilters } from '@/components/displays/DisplaysFilters';
+import { CreateDisplayModal } from '@/components/displays/CreateDisplayModal';
 import { getDisplays, getDisplayStats } from '@/lib/api/displays';
 import type { Display, DisplayFilter } from '@shared-types';
 
-export default function DisplaysPage() {
+function DisplaysPageContent() {
   const searchParams = useSearchParams();
 
   const [displays, setDisplays] = useState<Display[]>([]);
@@ -36,46 +36,49 @@ export default function DisplaysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Build filter from URL params
+      const filter: DisplayFilter = {};
+      const search = searchParams.get('search');
+      const status = searchParams.get('status');
+
+      if (search) filter.search = search;
+      if (status) filter.status = status as any;
+
+      // Fetch data
+      const [displaysData, statsData] = await Promise.all([
+        getDisplays(filter, { page: 1, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
+        getDisplayStats(),
+      ]);
+
+      setDisplays(displaysData.items);
+      setFilteredCount(displaysData.meta.total);
+      setStats(statsData);
+      setTotalDisplays(statsData.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load displays');
+      setDisplays([]);
+      setFilteredCount(0);
+      setStats({ total: 0, online: 0, offline: 0, error: 0 });
+      setTotalDisplays(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch displays and stats
   useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Build filter from URL params
-        const filter: DisplayFilter = {};
-        const search = searchParams.get('search');
-        const status = searchParams.get('status');
-
-        if (search) filter.search = search;
-        if (status) filter.status = status as any;
-
-        // Fetch data
-        const [displaysData, statsData] = await Promise.all([
-          getDisplays(filter, { page: 1, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
-          getDisplayStats(),
-        ]);
-
-        setDisplays(displaysData.items);
-        setFilteredCount(displaysData.meta.total);
-        setStats(statsData);
-        setTotalDisplays(statsData.total);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load displays');
-        setDisplays([]);
-        setFilteredCount(0);
-        setStats({ total: 0, online: 0, offline: 0, error: 0 });
-        setTotalDisplays(0);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const hasDisplays = totalDisplays > 0;
+  // Use the first display's hotelId as the default hotel for new displays
+  const defaultHotelId = (displays.length > 0 && displays[0]) ? displays[0].hotelId : undefined;
 
   return (
     <div className="space-y-6">
@@ -87,10 +90,10 @@ export default function DisplaysPage() {
             Manage your digital signage displays
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Display
-        </Button>
+        <CreateDisplayModal
+          hotelId={defaultHotelId}
+          onSuccess={() => fetchData()}
+        />
       </div>
 
       {/* Error Alert */}
@@ -198,10 +201,10 @@ export default function DisplaysPage() {
                   <p className="mb-4 text-sm text-muted-foreground">
                     Get started by adding your first display
                   </p>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Display
-                  </Button>
+                  <CreateDisplayModal
+                    hotelId={defaultHotelId}
+                    onSuccess={() => fetchData()}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -230,5 +233,13 @@ export default function DisplaysPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function DisplaysPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DisplaysPageContent />
+    </Suspense>
   );
 }

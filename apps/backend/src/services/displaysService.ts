@@ -13,6 +13,7 @@ import type {
   PaginatedResponse,
   PaginationQuery,
 } from '@shared-types';
+import type { Prisma } from '@prisma/client';
 import { DisplayStatus } from '@shared-types';
 
 /**
@@ -115,7 +116,7 @@ export async function getDisplayById(id: string): Promise<Display | null> {
 export async function createDisplay(
   payload: CreateDisplayPayload
 ): Promise<Display> {
-  const { name, location, hotelId, areaId } = payload;
+  const { name, location, hotelId, areaId, deviceInfo } = payload;
 
   // Verify hotel exists
   const hotel = await prisma.hotel.findUnique({
@@ -134,6 +135,7 @@ export async function createDisplay(
       hotelId,
       areaId: areaId || null,
       status: DisplayStatus.OFFLINE,
+      deviceInfo: (deviceInfo as Prisma.InputJsonValue) ?? undefined,
     },
     include: {
       hotel: {
