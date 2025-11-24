@@ -2,7 +2,6 @@
  * Database Seed Script
  * Populates database with test data for development
  */
-
 import { PrismaClient, DisplayStatus } from '@prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -11,8 +10,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create a test hotel with CUID
+  // Generate real CUIDs
   const hotelId = createId();
+  const areaIds = {
+    lobby: createId(),
+    reception: createId(),
+    restaurant: createId(),
+    spa: createId(),
+    elevator: createId(),
+    conference: createId(),
+  };
+
+  // Create a test hotel
   const hotel = await prisma.hotel.upsert({
     where: { id: hotelId },
     update: {},
@@ -25,116 +34,89 @@ async function main() {
 
   console.log('✓ Created hotel:', hotel.name, `(${hotel.id})`);
 
-  // Create areas with CUIDs
-  const areasData = [
-    { name: 'Lobby', slug: 'lobby' },
-    { name: 'Reception', slug: 'reception' },
-    { name: 'Restaurant', slug: 'restaurant' },
-    { name: 'Spa & Wellness', slug: 'spa' },
-    { name: 'Gym', slug: 'gym' },
-    { name: 'Conference Rooms', slug: 'conference' },
-    { name: 'Elevators', slug: 'elevators' },
-  ];
-
-  const areas = await Promise.all(
-    areasData.map((areaData) => {
-      const areaId = createId();
-      return prisma.area.upsert({
-        where: {
-          hotelId_slug: {
-            hotelId: hotel.id,
-            slug: areaData.slug,
-          },
-        },
-        update: {},
-        create: {
-          id: areaId,
-          name: areaData.name,
-          slug: areaData.slug,
-          hotelId: hotel.id,
-        },
-      });
-    })
-  );
-
-  console.log(`✓ Created ${areas.length} areas`);
-
-  // Map area slugs to IDs for easy reference
-  const areaMap = areas.reduce(
-    (acc, area) => {
-      acc[area.slug] = area.id;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
-
-  // Create test displays with CUIDs
-  const displaysData = [
-    {
-      name: 'Lobby Main Display',
-      location: 'Main Lobby - Entrance',
-      status: DisplayStatus.ONLINE,
-      lastSeen: new Date(),
-      areaSlug: 'lobby',
-    },
-    {
-      name: 'Reception Display',
-      location: 'Reception Desk',
-      status: DisplayStatus.ONLINE,
-      lastSeen: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
-      areaSlug: 'reception',
-    },
-    {
-      name: 'Restaurant Menu Board',
-      location: 'Main Restaurant - Entrance',
-      status: DisplayStatus.ONLINE,
-      lastSeen: new Date(),
-      areaSlug: 'restaurant',
-    },
-    {
-      name: 'Spa Information Display',
-      location: 'Spa & Wellness Center',
-      status: DisplayStatus.OFFLINE,
-      lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      areaSlug: 'spa',
-    },
-    {
-      name: 'Elevator Lobby Display',
-      location: 'Elevator Lobby - Floor 2',
-      status: DisplayStatus.ONLINE,
-      lastSeen: new Date(),
-      areaSlug: 'elevators',
-    },
-    {
-      name: 'Conference Room Display',
-      location: 'Conference Room A',
-      status: DisplayStatus.ERROR,
-      lastSeen: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
-      areaSlug: 'conference',
-    },
-  ];
-
-  const displays = await Promise.all(
-    displaysData.map((displayData) => {
-      const displayId = createId();
-      return prisma.display.upsert({
-        where: { id: displayId },
-        update: {},
-        create: {
-          id: displayId,
-          name: displayData.name,
-          location: displayData.location,
-          hotelId: hotel.id,
-          status: displayData.status,
-          lastSeen: displayData.lastSeen,
-          areaId: areaMap[displayData.areaSlug],
-        },
-      });
-    })
-  );
+  // Create test displays
+  const displays = await Promise.all([
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Lobby Main Display',
+        location: 'Main Lobby - Entrance',
+        hotelId: hotel.id,
+        status: DisplayStatus.ONLINE,
+        lastSeen: new Date(),
+        areaId: areaIds.lobby,
+      },
+    }),
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Reception Display',
+        location: 'Reception Desk',
+        hotelId: hotel.id,
+        status: DisplayStatus.ONLINE,
+        lastSeen: new Date(Date.now() - 5 * 60 * 1000),
+        areaId: areaIds.reception,
+      },
+    }),
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Restaurant Menu Board',
+        location: 'Main Restaurant - Entrance',
+        hotelId: hotel.id,
+        status: DisplayStatus.ONLINE,
+        lastSeen: new Date(),
+        areaId: areaIds.restaurant,
+      },
+    }),
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Spa Information Display',
+        location: 'Spa & Wellness Center',
+        hotelId: hotel.id,
+        status: DisplayStatus.OFFLINE,
+        lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        areaId: areaIds.spa,
+      },
+    }),
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Elevator Lobby Display',
+        location: 'Elevator Lobby - Floor 2',
+        hotelId: hotel.id,
+        status: DisplayStatus.ONLINE,
+        lastSeen: new Date(),
+        areaId: areaIds.elevator,
+      },
+    }),
+    prisma.display.upsert({
+      where: { id: createId() },
+      update: {},
+      create: {
+        id: createId(),
+        name: 'Conference Room Display',
+        location: 'Conference Room A',
+        hotelId: hotel.id,
+        status: DisplayStatus.ERROR,
+        lastSeen: new Date(Date.now() - 30 * 60 * 1000),
+        areaId: areaIds.conference,
+      },
+    }),
+  ]);
 
   console.log(`✓ Created ${displays.length} displays`);
-
   console.log('\n✅ Seeding completed successfully!');
   console.log('\nTest Data Summary:');
   console.log(`  - Hotel: ${hotel.name} (ID: ${hotel.id})`);
