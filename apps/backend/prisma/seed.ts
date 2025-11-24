@@ -2,20 +2,31 @@
  * Database Seed Script
  * Populates database with test data for development
  */
-
 import { PrismaClient, DisplayStatus } from '@prisma/client';
+import { createId } from '@paralleldrive/cuid2';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Generate real CUIDs
+  const hotelId = createId();
+  const areaIds = {
+    lobby: createId(),
+    reception: createId(),
+    restaurant: createId(),
+    spa: createId(),
+    elevator: createId(),
+    conference: createId(),
+  };
+
   // Create a test hotel
   const hotel = await prisma.hotel.upsert({
-    where: { id: 'seed-hotel-1' },
+    where: { id: hotelId },
     update: {},
     create: {
-      id: 'seed-hotel-1',
+      id: hotelId,
       name: 'Grand Hotel Plaza',
       address: '123 Main Street, Downtown, NY 10001',
     },
@@ -26,87 +37,86 @@ async function main() {
   // Create test displays
   const displays = await Promise.all([
     prisma.display.upsert({
-      where: { id: 'seed-display-1' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-1',
+        id: createId(),
         name: 'Lobby Main Display',
         location: 'Main Lobby - Entrance',
         hotelId: hotel.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
-        areaId: 'lobby',
+        areaId: areaIds.lobby,
       },
     }),
     prisma.display.upsert({
-      where: { id: 'seed-display-2' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-2',
+        id: createId(),
         name: 'Reception Display',
         location: 'Reception Desk',
         hotelId: hotel.id,
         status: DisplayStatus.ONLINE,
-        lastSeen: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
-        areaId: 'reception',
+        lastSeen: new Date(Date.now() - 5 * 60 * 1000),
+        areaId: areaIds.reception,
       },
     }),
     prisma.display.upsert({
-      where: { id: 'seed-display-3' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-3',
+        id: createId(),
         name: 'Restaurant Menu Board',
         location: 'Main Restaurant - Entrance',
         hotelId: hotel.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
-        areaId: 'restaurant',
+        areaId: areaIds.restaurant,
       },
     }),
     prisma.display.upsert({
-      where: { id: 'seed-display-4' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-4',
+        id: createId(),
         name: 'Spa Information Display',
         location: 'Spa & Wellness Center',
         hotelId: hotel.id,
         status: DisplayStatus.OFFLINE,
-        lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        areaId: 'spa',
+        lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        areaId: areaIds.spa,
       },
     }),
     prisma.display.upsert({
-      where: { id: 'seed-display-5' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-5',
+        id: createId(),
         name: 'Elevator Lobby Display',
         location: 'Elevator Lobby - Floor 2',
         hotelId: hotel.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
-        areaId: 'elevator-lobby',
+        areaId: areaIds.elevator,
       },
     }),
     prisma.display.upsert({
-      where: { id: 'seed-display-6' },
+      where: { id: createId() },
       update: {},
       create: {
-        id: 'seed-display-6',
+        id: createId(),
         name: 'Conference Room Display',
         location: 'Conference Room A',
         hotelId: hotel.id,
         status: DisplayStatus.ERROR,
-        lastSeen: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
-        areaId: 'conference',
+        lastSeen: new Date(Date.now() - 30 * 60 * 1000),
+        areaId: areaIds.conference,
       },
     }),
   ]);
 
   console.log(`✓ Created ${displays.length} displays`);
-
   console.log('\n✅ Seeding completed successfully!');
   console.log('\nTest Data Summary:');
   console.log(`  - Hotel: ${hotel.name}`);
