@@ -361,7 +361,7 @@
 
 **Estado**: COMPLETADO [22/11/2025]
 
-#### Día 7: Frontend con Mock Data
+#### Día 7: Frontend con Mock Data /SEGUIMOS AQUÍ 24/11/2025
 
 - [ ] **7.1** - DisplayCard component
   - [ ] Props: displayId, name, status, lastSeen
