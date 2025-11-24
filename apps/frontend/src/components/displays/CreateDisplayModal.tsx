@@ -20,11 +20,6 @@ import {
   Button,
   Input,
   Textarea,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Form,
   FormControl,
   FormDescription,
@@ -35,8 +30,7 @@ import {
   toast,
 } from '@/components/ui';
 import { createDisplay, getDisplays } from '@/lib/api/displays';
-import { getAreas } from '@/lib/api/areas';
-import type { CreateDisplayPayload, Area } from '@shared-types';
+import type { CreateDisplayPayload } from '@shared-types';
 
 // Validation schema
 const createDisplaySchema = z.object({
@@ -71,7 +65,6 @@ export function CreateDisplayModal({
   const [isLoading, setIsLoading] = useState(false);
   // Use seed hotel ID as default fallback
   const [hotelId, setHotelId] = useState<string>('seed-hotel-1');
-  const [areas, setAreas] = useState<Area[]>([]);
 
   const form = useForm<CreateDisplayFormValues>({
     resolver: zodResolver(createDisplaySchema),
@@ -83,32 +76,24 @@ export function CreateDisplayModal({
     },
   });
 
-  // Fetch hotelId and areas from existing displays
+  // Fetch hotelId from existing displays
   useEffect(() => {
-    async function fetchData() {
+    async function fetchHotelId() {
       try {
-        // Fetch hotelId from first display
         const response = await getDisplays({}, { page: 1, limit: 1 });
-        let fetchedHotelId = 'seed-hotel-1';
 
         if (response.items.length > 0 && response.items[0]) {
           console.log('Fetched hotelId from existing display:', response.items[0].hotelId);
-          fetchedHotelId = response.items[0].hotelId;
-          setHotelId(fetchedHotelId);
+          setHotelId(response.items[0].hotelId);
         } else {
           console.log('No existing displays, using default hotelId: seed-hotel-1');
         }
-
-        // Fetch areas for this hotel
-        const areasData = await getAreas(fetchedHotelId);
-        console.log('Fetched areas:', areasData);
-        setAreas(areasData);
       } catch (error) {
-        console.error('Failed to fetch data, using defaults:', error);
+        console.error('Failed to fetch hotelId, using default:', error);
       }
     }
 
-    fetchData();
+    fetchHotelId();
   }, []);
 
   async function onSubmit(values: CreateDisplayFormValues) {
@@ -116,11 +101,12 @@ export function CreateDisplayModal({
 
     try {
       // Prepare payload for API
+      // Note: areaId is set to null for now until areas are properly configured in DB
       const payload: CreateDisplayPayload = {
         name: values.name,
         location: values.location,
         hotelId: hotelId,
-        areaId: values.areaId && values.areaId.trim() !== '' ? values.areaId : null,
+        areaId: null,
       };
 
       console.log('Creating display with payload:', payload);
@@ -216,50 +202,6 @@ export function CreateDisplayModal({
                       }}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Area ID Field */}
-            <FormField
-              control={form.control}
-              name="areaId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel style={{ color: '#254D6E' }}>Area</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger
-                        style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                          borderColor: 'rgba(37, 77, 110, 0.2)',
-                        }}
-                      >
-                        <SelectValue placeholder="Select an area (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {areas.length === 0 ? (
-                        <SelectItem value="loading" disabled>
-                          Loading areas...
-                        </SelectItem>
-                      ) : (
-                        areas.map((area) => (
-                          <SelectItem key={area.id} value={area.id}>
-                            {area.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Assign the display to a specific area of the hotel
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
