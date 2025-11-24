@@ -20,11 +20,6 @@ import {
   Button,
   Input,
   Textarea,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Form,
   FormControl,
   FormDescription,
@@ -86,6 +81,7 @@ export function CreateDisplayModal({
     async function fetchHotelId() {
       try {
         const response = await getDisplays({}, { page: 1, limit: 1 });
+
         if (response.items.length > 0 && response.items[0]) {
           console.log('Fetched hotelId from existing display:', response.items[0].hotelId);
           setHotelId(response.items[0].hotelId);
@@ -105,11 +101,12 @@ export function CreateDisplayModal({
 
     try {
       // Prepare payload for API
+      // Note: areaId is set to null for now until areas are properly configured in DB
       const payload: CreateDisplayPayload = {
         name: values.name,
         location: values.location,
         hotelId: hotelId,
-        areaId: values.areaId && values.areaId.trim() !== '' ? values.areaId : null,
+        areaId: null,
       };
 
       console.log('Creating display with payload:', payload);
@@ -205,46 +202,6 @@ export function CreateDisplayModal({
                       }}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Area ID Field */}
-            <FormField
-              control={form.control}
-              name="areaId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel style={{ color: '#254D6E' }}>Area</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger
-                        style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                          borderColor: 'rgba(37, 77, 110, 0.2)',
-                        }}
-                      >
-                        <SelectValue placeholder="Select an area (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="lobby">Lobby</SelectItem>
-                      <SelectItem value="reception">Reception</SelectItem>
-                      <SelectItem value="restaurant">Restaurant</SelectItem>
-                      <SelectItem value="spa">Spa</SelectItem>
-                      <SelectItem value="gym">Gym</SelectItem>
-                      <SelectItem value="conference">Conference Room</SelectItem>
-                      <SelectItem value="elevators">Elevators</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Assign the display to a specific area of the hotel
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -71,6 +71,7 @@ model Hotel {
   users    User[]
   displays Display[]
   contents Content[]
+  areas    Area[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -78,6 +79,28 @@ model Hotel {
 
   @@index([name])
   @@map("hotels")
+}
+
+model Area {
+  id   String @id @default(cuid())
+  name String
+  slug String // Unique identifier for the area (e.g., "lobby", "spa")
+
+  // Hotel relationship
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  displays Display[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([hotelId, slug])
+  @@index([hotelId])
+  @@index([slug])
+  @@map("areas")
 }
 
 model Display {
@@ -92,6 +115,7 @@ model Display {
 
   // Area relationship (optional for grouping displays)
   areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
   // Device information
   lastSeen   DateTime?

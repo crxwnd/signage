@@ -32,7 +32,7 @@ async function main() {
     },
   });
 
-  console.log('✓ Created hotel:', hotel.name);
+  console.log('✓ Created hotel:', hotel.name, `(${hotel.id})`);
 
   // Create test displays
   const displays = await Promise.all([
@@ -119,7 +119,8 @@ async function main() {
   console.log(`✓ Created ${displays.length} displays`);
   console.log('\n✅ Seeding completed successfully!');
   console.log('\nTest Data Summary:');
-  console.log(`  - Hotel: ${hotel.name}`);
+  console.log(`  - Hotel: ${hotel.name} (ID: ${hotel.id})`);
+  console.log(`  - Areas: ${areas.length}`);
   console.log(`  - Displays: ${displays.length}`);
   console.log(`    - Online: ${displays.filter((d) => d.status === DisplayStatus.ONLINE).length}`);
   console.log(`    - Offline: ${displays.filter((d) => d.status === DisplayStatus.OFFLINE).length}`);
