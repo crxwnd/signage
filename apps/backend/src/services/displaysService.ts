@@ -117,13 +117,24 @@ export async function createDisplay(
 ): Promise<Display> {
   const { name, location, hotelId, areaId } = payload;
 
-  // Verify hotel exists
-  const hotel = await prisma.hotel.findUnique({
+  // Verify hotel exists, create default hotel if not
+  let hotel = await prisma.hotel.findUnique({
     where: { id: hotelId },
   });
 
   if (!hotel) {
-    throw new Error(`Hotel with id ${hotelId} not found`);
+    log.info(`Hotel with id ${hotelId} not found, creating default hotel...`);
+
+    // Create default hotel automatically
+    hotel = await prisma.hotel.create({
+      data: {
+        id: hotelId,
+        name: 'Demo Hotel',
+        address: '123 Demo Street, Demo City',
+      },
+    });
+
+    log.info('Default hotel created successfully', { hotelId: hotel.id });
   }
 
   // Create display
