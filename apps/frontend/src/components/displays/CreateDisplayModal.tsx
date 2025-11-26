@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Validation schema for display creation form
@@ -51,6 +52,7 @@ export function CreateDisplayModal({
   onClose,
   onSuccess,
 }: CreateDisplayModalProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = React.useState<CreateDisplayFormData>({
     name: '',
     location: '',
@@ -123,17 +125,24 @@ export function CreateDisplayModal({
 
     try {
       // TODO: Replace with actual API call
-      console.log('Form data:', result.data);
+      console.log('✅ Display form data validated:', result.data);
 
-      // Simulate API call
+      // Simulate API call (1 second delay)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Success
-      console.log('Display created successfully!');
+      // Success - log and show toast
+      console.log('✅ Display created successfully!');
+
+      toast({
+        title: 'Display created',
+        description: `${result.data.name} has been added successfully.`,
+      });
+
+      // Call success callback and close modal
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
-      console.error('Error creating display:', error);
+      console.error('❌ Error creating display:', error);
       setErrorMessage(
         error instanceof Error ? error.message : 'Failed to create display'
       );
