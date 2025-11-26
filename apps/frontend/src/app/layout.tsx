@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { SocketProvider } from '@/providers/SocketProvider';
+import { QueryProvider } from '@/providers/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'Signage - Digital Signage System',
@@ -21,10 +22,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <SocketProvider>
-          {children}
-          <Toaster />
-        </SocketProvider>
+        <QueryProvider>
+          <SocketProvider>
+            {children}
+            <Toaster />
+          </SocketProvider>
+        </QueryProvider>
       </body>
     </html>
   );
