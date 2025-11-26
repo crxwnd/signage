@@ -363,41 +363,40 @@
 
 #### Día 7: Frontend con Mock Data /SEGUIMOS AQUÍ 24/11/2025
 
-- [ ] **7.1** - DisplayCard component
-  - [ ] Props: displayId, name, status, lastSeen
-  - [ ] Badge de estado con colores
-  - [ ] Hover effects
-  - [ ] Tests unitarios
-  - Commits: [ ] DisplayCard component
+- [x] **7.1** - DisplayCard component
+  - [x] Props: displayId, name, status, lastSeen
+  - [x] Badge de estado con colores
+  - [x] Hover effects
+  - [x] Tests unitarios
+  - Commits: [x] DisplayCard component COMPLETADO [26/11/2025]
 
-- [ ] **7.2** - Displays list page
-  - [ ] Grid responsive de DisplayCards
-  - [ ] Datos mock
-  - [ ] Filtros básicos
-  - Commits: [ ] Displays list page
+- [x] **7.2** - Displays list page
+  - [x] Grid responsive de DisplayCards
+  - [x] Datos mock
+  - [x] Filtros básicos
+  - Commits: [x] Displays list page COMPLETADO [26/11/2025]
 
-- [ ] **7.3** - Revisión de diseño
-  - [ ] Screenshot del diseño actual
-  - [ ] Revisión y aprobación
-  - [ ] Iteraciones de mejora si necesario
+- [x] **7.3** - Revisión de diseño
+  - [x] Screenshot del diseño actual
+  - [x] Revisión y aprobación
+  - [x] Iteraciones de mejora si necesario COMPLETADO [26/11/2025]
 
-**Estado**: ⏸️ Pendiente
-
+**Estado**: COMPLETADO [26/11/2025]
 #### Día 8: Conexión con API
 
-- [ ] **8.1** - Custom hook useDisplays
-  - [ ] Fetch desde API real
-  - [ ] Loading/error states
-  - [ ] React Query integration
-  - Commits: [ ] useDisplays hook
+- [x] **8.1** - Custom hook useDisplays
+  - [x] Fetch desde API real
+  - [x] Loading/error states
+  - [x] React Query integration
+  - Commits: [x] useDisplays hook COMPLETADO [26/11/2025]
 
-- [ ] **8.2** - Conectar componentes
-  - [ ] Reemplazar mock data con API
-  - [ ] Manejo de errores en UI
-  - [ ] Loading skeletons
-  - Commits: [ ] API integration
+- [x] **8.2** - Conectar componentes
+  - [x] Reemplazar mock data con API
+  - [x] Manejo de errores en UI
+  - [x] Loading skeletons
+  - Commits: [x] API integration COMPLETADO [26/11/2025]
 
-**Estado**: ⏸️ Pendiente
+**Estado**: COMPLETADO [26/11/2025]
 
 #### Días 9-10: Tiempo Real con Socket.io
 
