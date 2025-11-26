@@ -382,6 +382,7 @@
   - [x] Iteraciones de mejora si necesario COMPLETADO [26/11/2025]
 
 **Estado**: COMPLETADO [26/11/2025]
+
 #### Día 8: Conexión con API
 
 - [x] **8.1** - Custom hook useDisplays
