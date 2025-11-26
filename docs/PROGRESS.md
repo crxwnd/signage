@@ -363,25 +363,25 @@
 
 #### Día 7: Frontend con Mock Data /SEGUIMOS AQUÍ 24/11/2025
 
-- [ ] **7.1** - DisplayCard component
-  - [ ] Props: displayId, name, status, lastSeen
-  - [ ] Badge de estado con colores
-  - [ ] Hover effects
-  - [ ] Tests unitarios
-  - Commits: [ ] DisplayCard component
+- [x] **7.1** - DisplayCard component
+  - [x] Props: displayId, name, status, lastSeen
+  - [x] Badge de estado con colores
+  - [x] Hover effects
+  - [x] Tests unitarios
+  - Commits: [x] DisplayCard component COMPLETADO [26/11/2025]
 
-- [ ] **7.2** - Displays list page
-  - [ ] Grid responsive de DisplayCards
-  - [ ] Datos mock
-  - [ ] Filtros básicos
-  - Commits: [ ] Displays list page
+- [x] **7.2** - Displays list page
+  - [x] Grid responsive de DisplayCards
+  - [x] Datos mock
+  - [x] Filtros básicos
+  - Commits: [x] Displays list page COMPLETADO [26/11/2025]
 
-- [ ] **7.3** - Revisión de diseño
-  - [ ] Screenshot del diseño actual
-  - [ ] Revisión y aprobación
-  - [ ] Iteraciones de mejora si necesario
+- [x] **7.3** - Revisión de diseño
+  - [x] Screenshot del diseño actual
+  - [x] Revisión y aprobación
+  - [x] Iteraciones de mejora si necesario COMPLETADO [26/11/2025]
 
-**Estado**: ⏸️ Pendiente
+**Estado**: COMPLETADO [26/11/2025]
 
 #### Día 8: Conexión con API
 
