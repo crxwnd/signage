@@ -385,19 +385,19 @@
 
 #### Día 8: Conexión con API
 
-- [ ] **8.1** - Custom hook useDisplays
-  - [ ] Fetch desde API real
-  - [ ] Loading/error states
-  - [ ] React Query integration
-  - Commits: [ ] useDisplays hook
+- [x] **8.1** - Custom hook useDisplays
+  - [x] Fetch desde API real
+  - [x] Loading/error states
+  - [x] React Query integration
+  - Commits: [x] useDisplays hook COMPLETADO [26/11/2025]
 
-- [ ] **8.2** - Conectar componentes
-  - [ ] Reemplazar mock data con API
-  - [ ] Manejo de errores en UI
-  - [ ] Loading skeletons
-  - Commits: [ ] API integration
+- [x] **8.2** - Conectar componentes
+  - [x] Reemplazar mock data con API
+  - [x] Manejo de errores en UI
+  - [x] Loading skeletons
+  - Commits: [x] API integration COMPLETADO [26/11/2025]
 
-**Estado**: ⏸️ Pendiente
+**Estado**: COMPLETADO [26/11/2025]
 
 #### Días 9-10: Tiempo Real con Socket.io
 
