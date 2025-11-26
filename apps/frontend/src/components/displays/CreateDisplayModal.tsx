@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { createDisplay } from '@/lib/api/displays';
 
 /**
  * Validation schema for display creation form
@@ -31,6 +32,12 @@ const createDisplaySchema = z.object({
   orientation: z.enum(['horizontal', 'vertical']),
   resolution: z.enum(['1920x1080', '3840x2160']),
 });
+
+/**
+ * Temporary default hotel ID for development
+ * TODO: Replace with actual hotel selection from user context
+ */
+const DEFAULT_HOTEL_ID = 'cm3yq5k7z0000l308wvqw7h8g';
 
 type CreateDisplayFormData = z.infer<typeof createDisplaySchema>;
 
@@ -124,14 +131,17 @@ export function CreateDisplayModal({
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
       console.log('✅ Display form data validated:', result.data);
 
-      // Simulate API call (1 second delay)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call real API to create display
+      const display = await createDisplay({
+        name: result.data.name,
+        location: result.data.location,
+        hotelId: DEFAULT_HOTEL_ID,
+      });
 
       // Success - log and show toast
-      console.log('✅ Display created successfully!');
+      console.log('✅ Display created successfully!', display);
 
       toast({
         title: 'Display created',
@@ -143,9 +153,19 @@ export function CreateDisplayModal({
       onClose();
     } catch (error: unknown) {
       console.error('❌ Error creating display:', error);
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to create display'
-      );
+
+      // Extract error message from API error
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to create display';
+
+      setErrorMessage(errorMsg);
+
+      // Show error toast as well
+      toast({
+        title: 'Error',
+        description: errorMsg,
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
