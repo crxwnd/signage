@@ -51,3 +51,4 @@ export {
 export { Toaster } from './toaster';
 export { useToast, toast } from '@/hooks/use-toast';
 export type { Toast } from '@/hooks/use-toast';
+export { Skeleton } from './skeleton';
