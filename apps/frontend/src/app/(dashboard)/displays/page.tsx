@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Monitor, Plus, AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -19,73 +19,42 @@ import {
 import { DisplaysList } from '@/components/displays/DisplaysList';
 import { DisplaysFilters } from '@/components/displays/DisplaysFilters';
 import { CreateDisplayModal } from '@/components/displays/CreateDisplayModal';
-import { getDisplays, getDisplayStats } from '@/lib/api/displays';
-import type { Display, DisplayFilter } from '@shared-types';
+import { useDisplays } from '@/hooks/useDisplays';
+import type { DisplayFilter } from '@shared-types';
 
 export default function DisplaysPage() {
   const searchParams = useSearchParams();
-
-  const [displays, setDisplays] = useState<Display[]>([]);
-  const [totalDisplays, setTotalDisplays] = useState(0);
-  const [filteredCount, setFilteredCount] = useState(0);
-  const [stats, setStats] = useState({
-    total: 0,
-    online: 0,
-    offline: 0,
-    error: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch displays and stats
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Build filter from URL params
+  const filter = useMemo<DisplayFilter>(() => {
+    const displayFilter: DisplayFilter = {};
+    const search = searchParams.get('search');
+    const status = searchParams.get('status');
 
-    try {
-      // Build filter from URL params
-      const filter: DisplayFilter = {};
-      const search = searchParams.get('search');
-      const status = searchParams.get('status');
+    if (search) displayFilter.search = search;
+    if (status) displayFilter.status = status as any;
 
-      if (search) filter.search = search;
-      if (status) filter.status = status as any;
-
-      // Fetch data
-      const [displaysData, statsData] = await Promise.all([
-        getDisplays(filter, { page: 1, limit: 50, sortBy: 'createdAt', sortOrder: 'desc' }),
-        getDisplayStats(),
-      ]);
-
-      setDisplays(displaysData.items);
-      setFilteredCount(displaysData.meta.total);
-      setStats(statsData);
-      setTotalDisplays(statsData.total);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load displays');
-      setDisplays([]);
-      setFilteredCount(0);
-      setStats({ total: 0, online: 0, offline: 0, error: 0 });
-      setTotalDisplays(0);
-    } finally {
-      setIsLoading(false);
-    }
+    return displayFilter;
   }, [searchParams]);
+
+  // Fetch displays and stats using custom hook
+  const { displays, stats, isLoading, error, refetch } = useDisplays({
+    filter,
+  });
+
+  // Derived values
+  const totalDisplays = stats.total;
+  const filteredCount = displays.length;
+  const hasDisplays = totalDisplays > 0;
 
   // Modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
   const handleSuccess = () => {
     // Refresh displays list after successful creation
-    fetchData();
+    refetch();
   };
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const hasDisplays = totalDisplays > 0;
 
   return (
     <div className="space-y-6">
@@ -111,7 +80,7 @@ export default function DisplaysPage() {
               <AlertCircle className="h-5 w-5" />
               <div>
                 <p className="font-semibold">Failed to load displays</p>
-                <p className="text-sm text-red-600/80">{error}</p>
+                <p className="text-sm text-red-600/80">{error.message}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Make sure the backend is running on http://localhost:3001
                 </p>
