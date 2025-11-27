@@ -9,7 +9,11 @@ import { log } from '../middleware/logger';
 import * as displaysService from '../services/displaysService';
 import type { ApiSuccessResponse, ApiErrorResponse } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
-import { broadcast } from '../socket/socketManager';
+import {
+  emitDisplayCreated,
+  emitDisplayUpdated,
+  emitDisplayDeleted,
+} from '../socket/displayEvents';
 
 // ==============================================
 // ZOD VALIDATION SCHEMAS
@@ -178,7 +182,7 @@ export async function createDisplay(
     const display = await displaysService.createDisplay(payload);
 
     // Emit Socket.io event for real-time updates
-    broadcast('display:created', {
+    emitDisplayCreated({
       display: {
         id: display.id,
         name: display.name,
@@ -271,7 +275,7 @@ export async function updateDisplay(
     const display = await displaysService.updateDisplay(id, payload);
 
     // Emit Socket.io event for real-time updates
-    broadcast('display:updated', {
+    emitDisplayUpdated({
       display: {
         id: display.id,
         name: display.name,
@@ -360,7 +364,7 @@ export async function deleteDisplay(
     await displaysService.deleteDisplay(id);
 
     // Emit Socket.io event for real-time updates
-    broadcast('display:deleted', {
+    emitDisplayDeleted({
       displayId: id,
       timestamp: Date.now(),
     });
