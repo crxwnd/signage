@@ -86,6 +86,10 @@ export function initializeSocketIO(
     // Initialize socket data
     socket.data.authenticated = false;
 
+    // Automatically join 'displays' room for real-time updates
+    socket.join('displays');
+    log.info(`Socket ${socket.id} joined 'displays' room`);
+
     // Handle disconnection
     socket.on('disconnect', (reason) => {
       log.info(`Socket disconnected: ${socket.id}`, {

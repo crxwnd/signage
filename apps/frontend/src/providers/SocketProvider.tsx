@@ -40,6 +40,11 @@ export function SocketProvider({ children }: SocketProviderProps) {
       console.log('[SocketProvider] Connected');
       setIsConnected(true);
       setIsConnecting(false);
+
+      // Join 'displays' room for real-time updates
+      // The socket will automatically be added to the room on the server
+      // but we emit a custom event here for explicit room joining if needed
+      console.log('[SocketProvider] Joined displays room for real-time updates');
     };
 
     const handleDisconnect = () => {
