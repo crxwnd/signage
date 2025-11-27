@@ -22,6 +22,7 @@ import { CreateDisplayModal } from '@/components/displays/CreateDisplayModal';
 import { DisplayCardSkeleton } from '@/components/displays/DisplayCardSkeleton';
 import { StatsCardSkeleton } from '@/components/displays/StatsCardSkeleton';
 import { useDisplays } from '@/hooks/useDisplays';
+import { useDisplaysRealtime } from '@/hooks/useDisplaysRealtime';
 import type { DisplayFilter } from '@shared-types';
 
 export default function DisplaysPage() {
@@ -44,6 +45,9 @@ export default function DisplaysPage() {
   const { displays, stats, isLoading, error, refetch } = useDisplays({
     filter,
   });
+
+  // Enable real-time updates via Socket.io
+  useDisplaysRealtime({ filter });
 
   // Derived values
   const totalDisplays = stats.total;
