@@ -15,6 +15,7 @@ import type {
 } from '@shared-types';
 import { config } from '../config';
 import { log } from '../middleware/logger';
+import * as conductorManager from './conductorManager';
 
 /**
  * Typed Socket type for convenience
@@ -97,6 +98,9 @@ export function initializeSocketIO(
         displayId: socket.data.displayId,
         userId: socket.data.userId,
       });
+
+      // Unregister from conductor manager
+      conductorManager.unregisterDisplay(socket.id);
     });
 
     // Handle connection errors
@@ -107,8 +111,8 @@ export function initializeSocketIO(
     // Test event handlers
     setupTestHandlers(socket);
 
-    // Display event handlers (will be implemented in future tasks)
-    // setupDisplayHandlers(socket);
+    // Display event handlers
+    setupDisplayHandlers(socket);
 
     // Admin event handlers (will be implemented in future tasks)
     // setupAdminHandlers(socket);
@@ -236,6 +240,42 @@ function setupTestHandlers(socket: TypedSocket): void {
       }
     }
   );
+}
+
+/**
+ * Setup display event handlers
+ * Handlers for display device registration and heartbeat
+ */
+function setupDisplayHandlers(socket: TypedSocket): void {
+  // Display registration handler
+  socket.on('display:register', (data) => {
+    log.info(`Display registration from ${socket.id}`, {
+      deviceId: data.deviceId,
+      platform: data.deviceInfo.platform,
+    });
+
+    // Store display ID in socket data
+    socket.data.displayId = data.deviceId;
+    socket.data.role = 'display';
+
+    // Register with conductor manager for role assignment
+    conductorManager.registerDisplay(socket.id, data);
+  });
+
+  // Display heartbeat handler
+  socket.on('display:heartbeat', (data) => {
+    log.debug(`Heartbeat from display ${data.displayId}`, {
+      socketId: socket.id,
+      currentContentId: data.currentContentId,
+      playbackPosition: data.playbackPosition,
+    });
+
+    // Update last seen time in socket data
+    socket.data.displayId = data.displayId;
+
+    // TODO: Update display status in database
+    // TODO: Track heartbeat for health monitoring
+  });
 }
 
 /**
