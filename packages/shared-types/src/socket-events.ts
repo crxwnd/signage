@@ -114,6 +114,16 @@ export interface DisplayDeletedEvent {
   timestamp: number;
 }
 
+/**
+ * Display role assigned (conductor/worker)
+ */
+export interface DisplayRoleAssignedEvent {
+  displayId: string;
+  role: 'conductor' | 'worker';
+  areaId?: string;
+  timestamp: number;
+}
+
 // ==============================================
 // CONTENT EVENTS
 // ==============================================
@@ -373,6 +383,7 @@ export interface ServerToClientEvents {
   'display:created': (data: DisplayCreatedEvent) => void;
   'display:updated': (data: DisplayUpdatedEvent) => void;
   'display:deleted': (data: DisplayDeletedEvent) => void;
+  'display:role-assigned': (data: DisplayRoleAssignedEvent) => void;
   'content:uploaded': (data: ContentUploadedEvent) => void;
   'content:assigned': (data: ContentAssignedEvent) => void;
   'content:removed': (data: ContentRemovedEvent) => void;
