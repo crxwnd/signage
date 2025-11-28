@@ -14,15 +14,30 @@ export enum ContentType {
 }
 
 /**
+ * Content status enum
+ * Represents the processing status of content
+ */
+export enum ContentStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  READY = 'READY',
+  ERROR = 'ERROR',
+}
+
+/**
  * Content interface
  * Represents a piece of media content (video, image, or HTML)
  */
 export interface Content {
   id: string;
-  title: string;
+  name: string;
   type: ContentType;
-  url: string;
+  status: ContentStatus;
+  originalUrl: string;
+  hlsUrl: string | null;
+  thumbnailUrl: string | null;
   duration: number | null;
+  resolution: string | null;
   fileSize: bigint | null;
   hotelId: string;
   createdAt: Date;
@@ -34,10 +49,14 @@ export interface Content {
  */
 export interface ContentDTO {
   id: string;
-  title: string;
+  name: string;
   type: ContentType;
-  url: string;
+  status: ContentStatus;
+  originalUrl: string;
+  hlsUrl: string | null;
+  thumbnailUrl: string | null;
   duration: number | null;
+  resolution: string | null;
   fileSize: number | null; // In bytes, converted from BigInt
   fileSizeFormatted?: string; // Human-readable format (e.g., "3.2 GB")
   hotelId: string;
@@ -76,22 +95,23 @@ export interface DisplayContentWithRelations extends DisplayContent {
  * Content creation payload
  */
 export interface CreateContentPayload {
-  title: string;
+  name: string;
   type: ContentType;
-  url: string;
-  duration?: number | null;
-  fileSize?: number | null;
+  originalUrl: string;
   hotelId: string;
+  fileSize?: number | null;
 }
 
 /**
  * Content update payload
  */
 export interface UpdateContentPayload {
-  title?: string;
-  type?: ContentType;
-  url?: string;
+  name?: string;
+  status?: ContentStatus;
+  hlsUrl?: string | null;
+  thumbnailUrl?: string | null;
   duration?: number | null;
+  resolution?: string | null;
 }
 
 /**
