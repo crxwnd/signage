@@ -33,6 +33,13 @@ enum ContentType {
   HTML
 }
 
+enum ContentStatus {
+  PENDING
+  PROCESSING
+  READY
+  ERROR
+}
+
 // ==============================================
 // MODELS
 // ==============================================
@@ -116,12 +123,20 @@ model Display {
 }
 
 model Content {
-  id       String      @id @default(cuid())
-  title    String
-  type     ContentType
-  url      String
-  duration Int? // Duration in seconds (for videos)
-  fileSize BigInt? // File size in bytes
+  id     String        @id @default(cuid())
+  name   String
+  type   ContentType
+  status ContentStatus @default(PENDING)
+
+  // File URLs
+  originalUrl  String // Original uploaded file
+  hlsUrl       String? // HLS m3u8 URL (for videos after transcoding)
+  thumbnailUrl String? // Thumbnail/preview image
+
+  // Metadata
+  duration   Int? // Duration in seconds (for videos)
+  resolution String? // Video resolution (e.g., "1920x1080")
+  fileSize   BigInt? // File size in bytes
 
   // Hotel relationship
   hotelId String
@@ -136,6 +151,7 @@ model Content {
 
   @@index([hotelId])
   @@index([type])
+  @@index([status])
   @@map("contents")
 }
 
