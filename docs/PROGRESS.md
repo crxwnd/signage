@@ -401,33 +401,33 @@
 
 #### Días 9-10: Tiempo Real con Socket.io
 
-- [ ] **9.1** - Backend Socket.io events
-  - [ ] `display-status-changed` event
-  - [ ] `display-created` event
-  - [ ] `display-deleted` event
-  - Commits: [ ] Display Socket.io events
+- [x] **9.1** - Backend Socket.io events
+  - [x] `display-status-changed` event
+  - [x] `display-created` event
+  - [x] `display-deleted` event
+  - Commits: [x] Display Socket.io events COMPLETADO [27/11/2025]
 
-- [ ] **9.2** - Frontend Socket.io listeners
-  - [ ] Escuchar eventos de displays
-  - [ ] Actualizar estado en tiempo real
-  - [ ] Notificaciones toast
-  - Commits: [ ] Real-time display updates
+- [x] **9.2** - Frontend Socket.io listeners
+  - [x] Escuchar eventos de displays
+  - [x] Actualizar estado en tiempo real
+  - [x] Notificaciones toast
+  - Commits: [x] Real-time display updates COMPLETADO [28/11/2025]
 
-- [ ] **9.3** - Conductor Manager básico
-  - [ ] Asignación de roles (conductor/worker)
-  - [ ] Manejo de desconexión
-  - Commits: [ ] Conductor manager
+- [x] **9.3** - Conductor Manager básico
+  - [x] Asignación de roles (conductor/worker)
+  - [x] Manejo de desconexión
+  - Commits: [x] Conductor manager COMPLETADO [28/11/2025]
 
 **Checkpoint Feature 1**:
 
-- [ ] ✅ Displays CRUD funcional end-to-end
-- [ ] ✅ Actualizaciones en tiempo real funcionando
+- [x] ✅ Displays CRUD funcional end-to-end
+- [x] ✅ Actualizaciones en tiempo real funcionando
 - [ ] ✅ Tests pasando
-- [ ] ✅ Sin regresiones en funcionalidad previa
+- [x] ✅ Sin regresiones en funcionalidad previa
 
-**Estado**: ⏸️ Pendiente  
-**Fecha inicio**: [PENDIENTE]  
-**Fecha fin**: [PENDIENTE]
+**Estado**: COMPLETADO
+**Fecha inicio**: [23/11/2025]  
+**Fecha fin**: COMPLETADO [28/11/2025]
 
 ---
 
@@ -435,12 +435,12 @@
 
 ### FEATURE 2: Streaming HLS (Placeholder)
 
-- [ ] Backend: FFmpeg transcoding
-- [ ] Backend: HLS server
-- [ ] Frontend: VideoPlayer component
+- [x] Backend: FFmpeg transcoding
+- [x] Backend: HLS server
+- [x] Frontend: VideoPlayer component
 - [ ] Asociar contenido a displays
 
-**Estado**: ⏸️ Pendiente
+**Estado**: COMPLETADO 75% [29/11/2025]
 
 ### FEATURE 3: Sistema de Contenidos (Placeholder)
 
