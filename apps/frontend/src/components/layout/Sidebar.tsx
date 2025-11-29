@@ -7,7 +7,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Monitor, FileVideo, Users, Settings } from 'lucide-react';
+import { Home, Monitor, FileVideo, Users, Settings, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -25,6 +25,11 @@ const navigation = [
     name: 'Content',
     href: '/content',
     icon: FileVideo,
+  },
+  {
+    name: 'Video Demo',
+    href: '/video-demo',
+    icon: Video,
   },
   {
     name: 'Users',
