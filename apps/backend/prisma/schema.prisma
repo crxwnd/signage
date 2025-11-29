@@ -33,6 +33,13 @@ enum ContentType {
   HTML
 }
 
+enum ContentStatus {
+  PENDING
+  PROCESSING
+  READY
+  ERROR
+}
+
 // ==============================================
 // MODELS
 // ==============================================
@@ -123,6 +130,11 @@ model Content {
   duration Int? // Duration in seconds (for videos)
   fileSize BigInt? // File size in bytes
 
+  // Processing status (for videos)
+  status       ContentStatus @default(PENDING)
+  hlsUrl       String? // URL to HLS master playlist (.m3u8)
+  thumbnailUrl String? // URL to generated thumbnail
+
   // Hotel relationship
   hotelId String
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
@@ -136,6 +148,7 @@ model Content {
 
   @@index([hotelId])
   @@index([type])
+  @@index([status])
   @@map("contents")
 }
 

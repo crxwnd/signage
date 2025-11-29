@@ -1,0 +1,11 @@
+# Ignore all files in storage directories
+*
+
+# Keep the directory structure
+!.gitkeep
+!.gitignore
+
+# Keep subdirectory structure
+!hls/
+!thumbnails/
+!uploads/
