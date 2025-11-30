@@ -5,8 +5,16 @@
 
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import path from 'path';
 import { log } from '../middleware/logger';
 import * as contentService from '../services/contentService';
+import {
+  validateFileSize,
+  getContentTypeFromMime,
+  formatFileSize,
+} from '../middleware/upload';
+import { addVideoTranscodeJob } from '../queue/videoQueue';
+import { getVideoInfo } from '../services/ffmpegService';
 
 // ============================================================================
 // TYPES
@@ -64,6 +72,11 @@ const getContentsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
   sortBy: z.string().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+const uploadContentSchema = z.object({
+  name: z.string().min(3).max(200),
+  hotelId: z.string().cuid(),
 });
 
 // ============================================================================
@@ -425,6 +438,198 @@ export async function getContentStats(
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to fetch content statistics',
+      },
+      timestamp: new Date().toISOString(),
+    };
+    res.status(500).json(errorResponse);
+  }
+}
+
+/**
+ * POST /api/content/upload
+ * Upload content file (video or image)
+ */
+export async function uploadContentFile(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'No file uploaded',
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    // Validate body parameters
+    const body = uploadContentSchema.parse(req.body);
+    const { name, hotelId } = body;
+
+    const file = req.file;
+
+    // Validate file size based on type
+    const sizeError = validateFileSize(file);
+    if (sizeError) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: sizeError,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    // Get content type from MIME type
+    const contentType = getContentTypeFromMime(file.mimetype);
+    if (!contentType) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'INVALID_FILE_TYPE',
+          message: `Unsupported file type: ${file.mimetype}`,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    log.info('File uploaded successfully', {
+      filename: file.filename,
+      originalName: file.originalname,
+      size: formatFileSize(file.size),
+      type: contentType,
+      mimetype: file.mimetype,
+    });
+
+    // Build originalUrl (relative path to uploaded file)
+    const originalUrl = `/uploads/${file.filename}`;
+
+    // Extract video metadata if it's a video
+    let duration: number | undefined;
+    let resolution: string | undefined;
+
+    if (contentType === 'VIDEO') {
+      try {
+        const videoPath = path.join(
+          __dirname,
+          '../../storage/uploads',
+          file.filename
+        );
+        const videoMetadata = await getVideoInfo(videoPath);
+
+        duration = videoMetadata.duration;
+        resolution = videoMetadata.resolution;
+
+        log.info('Video metadata extracted', {
+          filename: file.filename,
+          duration,
+          resolution,
+        });
+      } catch (error) {
+        log.warn('Failed to extract video metadata', {
+          error,
+          filename: file.filename,
+        });
+        // Continue without metadata - not critical
+      }
+    }
+
+    // Create content in database
+    const content = await contentService.createContent({
+      name,
+      type: contentType,
+      originalUrl,
+      hotelId,
+      duration,
+      resolution,
+      fileSize: BigInt(file.size),
+    });
+
+    log.info('Content created in database', {
+      contentId: content.id,
+      name: content.name,
+      type: content.type,
+    });
+
+    // If it's a video, add to transcoding queue
+    if (contentType === 'VIDEO') {
+      try {
+        const inputPath = path.join(
+          __dirname,
+          '../../storage/uploads',
+          file.filename
+        );
+        const outputDir = path.join(__dirname, '../../storage/hls', content.id);
+        const thumbnailPath = path.join(
+          __dirname,
+          '../../storage/thumbnails',
+          `${content.id}.jpg`
+        );
+
+        await addVideoTranscodeJob({
+          contentId: content.id,
+          inputPath,
+          outputDir,
+          thumbnailPath,
+        });
+
+        log.info('Video transcoding job added to queue', {
+          contentId: content.id,
+        });
+      } catch (error) {
+        log.error('Failed to add video to transcoding queue', {
+          error,
+          contentId: content.id,
+        });
+        // Don't fail the upload - transcoding can be retried later
+      }
+    }
+
+    const response: ApiSuccessResponse = {
+      success: true,
+      data: content,
+      message: `Content uploaded successfully. ${
+        contentType === 'VIDEO'
+          ? 'Video transcoding has been queued.'
+          : ''
+      }`,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    log.error('Failed to upload content', error);
+
+    if (error instanceof z.ZodError) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request body',
+          details: { errors: error.issues },
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    const errorResponse: ApiErrorResponse = {
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to upload content',
       },
       timestamp: new Date().toISOString(),
     };
