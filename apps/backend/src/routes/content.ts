@@ -5,8 +5,19 @@
 
 import { Router, type Router as ExpressRouter } from 'express';
 import * as contentController from '../controllers/contentController';
+import { uploadContent } from '../middleware/upload';
 
 const router: ExpressRouter = Router();
+
+/**
+ * POST /api/content/upload
+ * Upload content file (video or image)
+ */
+router.post(
+  '/upload',
+  uploadContent.single('file'),
+  contentController.uploadContentFile
+);
 
 /**
  * GET /api/content/stats
