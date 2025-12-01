@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FileBox, Upload, AlertCircle } from 'lucide-react';
 import {
@@ -19,12 +19,14 @@ import {
 import { ContentList } from '@/components/content/ContentList';
 import { ContentFilters } from '@/components/content/ContentFilters';
 import { ContentCardSkeleton } from '@/components/content/ContentCardSkeleton';
+import { UploadContentModal } from '@/components/content/UploadContentModal';
 import { StatsCardSkeleton } from '@/components/displays/StatsCardSkeleton';
 import { useContent } from '@/hooks/useContent';
 import type { ContentFilter } from '@/lib/api/content';
 
 export default function ContentPage() {
   const searchParams = useSearchParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Build filter from URL params
   const filter = useMemo<ContentFilter>(() => {
@@ -41,7 +43,7 @@ export default function ContentPage() {
   }, [searchParams]);
 
   // Fetch content and stats using custom hook
-  const { contents, stats, isLoading, error } = useContent({
+  const { contents, stats, isLoading, error, refetch } = useContent({
     filter,
   });
 
@@ -50,10 +52,12 @@ export default function ContentPage() {
   const filteredCount = contents.length;
   const hasContent = totalContent > 0;
 
-  // Upload handler (placeholder for now - no modal yet)
-  const handleUpload = () => {
-    // TODO: Implement upload modal in future
-    console.log('Upload button clicked - modal not implemented yet');
+  // Modal handlers
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+  const handleSuccess = () => {
+    // Refresh content list after successful upload
+    refetch();
   };
 
   return (
@@ -66,7 +70,7 @@ export default function ContentPage() {
             Manage your videos, images, and HTML content
           </p>
         </div>
-        <Button onClick={handleUpload}>
+        <Button onClick={handleOpenModal}>
           <Upload className="mr-2 h-4 w-4" />
           Upload Content
         </Button>
@@ -231,7 +235,7 @@ export default function ContentPage() {
                   <p className="mb-4 text-sm text-muted-foreground">
                     Get started by uploading your first video or image
                   </p>
-                  <Button onClick={handleUpload}>
+                  <Button onClick={handleOpenModal}>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Your First Content
                   </Button>
@@ -262,6 +266,13 @@ export default function ContentPage() {
           )}
         </>
       )}
+
+      {/* Upload Content Modal */}
+      <UploadContentModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleSuccess}
+      />
     </div>
   );
 }
