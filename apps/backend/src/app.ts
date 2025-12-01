@@ -12,6 +12,7 @@ import { logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRouter from './routes/health';
 import displaysRouter from './routes/displays';
+import contentRouter from './routes/content';
 
 /**
  * Create and configure Express application
@@ -82,6 +83,7 @@ export function createApp(): Application {
 
   // API routes
   app.use('/api/displays', displaysRouter);
+  app.use('/api/content', contentRouter);
 
   // ==============================================
   // ERROR HANDLING

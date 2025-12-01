@@ -129,19 +129,14 @@ model Content {
   status ContentStatus @default(PENDING)
 
   // File URLs
-  originalUrl  String // Original uploaded file
+  originalUrl  String  // Original uploaded file
   hlsUrl       String? // HLS m3u8 URL (for videos after transcoding)
   thumbnailUrl String? // Thumbnail/preview image
 
   // Metadata
-  duration   Int? // Duration in seconds (for videos)
+  duration   Int?    // Duration in seconds (for videos)
   resolution String? // Video resolution (e.g., "1920x1080")
   fileSize   BigInt? // File size in bytes
-
-  // Processing status (for videos)
-  status       ContentStatus @default(PENDING)
-  hlsUrl       String? // URL to HLS master playlist (.m3u8)
-  thumbnailUrl String? // URL to generated thumbnail
 
   // Hotel relationship
   hotelId String

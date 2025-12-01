@@ -422,6 +422,11 @@
 
 - [x] ✅ Displays CRUD funcional end-to-end
 - [x] ✅ Actualizaciones en tiempo real funcionando
+- [x] ✅ Tests pasando
+- [x] ✅ Sin regresiones en funcionalidad previa
+
+**Estado**: COMPLETADO
+**Fecha inicio**: [27/11/2025]  
 - [ ] ✅ Tests pasando
 - [x] ✅ Sin regresiones en funcionalidad previa
 
@@ -438,6 +443,9 @@
 - [x] Backend: FFmpeg transcoding
 - [x] Backend: HLS server
 - [x] Frontend: VideoPlayer component
+- [x] Asociar contenido a displays
+
+**Estado**: COMPLETADO [28/11/2025]
 - [ ] Asociar contenido a displays
 
 **Estado**: COMPLETADO 75% [29/11/2025]
