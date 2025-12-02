@@ -6,6 +6,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
+import QRCode from 'qrcode';
 import { UserRole } from '@prisma/client';
 import {
   JWT_SECRET,
@@ -346,4 +347,27 @@ export async function generateBackupCodes(count: number = 10): Promise<string[]>
 
   logger.debug('Backup codes generated', { count });
   return codes;
+}
+
+/**
+ * Generate QR code as data URL from otpauth:// URL
+ *
+ * @param otpauthUrl - otpauth:// URL generated from generateTOTPUrl
+ * @returns Promise resolving to data URL (can be used in <img src="">)
+ *
+ * @example
+ * const secret = generateTOTPSecret();
+ * const url = generateTOTPUrl(secret, 'user@example.com');
+ * const qrCodeDataUrl = await generateQRCode(url);
+ * // Send qrCodeDataUrl to frontend to display QR code
+ */
+export async function generateQRCode(otpauthUrl: string): Promise<string> {
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+    logger.debug('QR code generated');
+    return qrCodeDataUrl;
+  } catch (error) {
+    logger.error('Failed to generate QR code', { error });
+    throw new Error('Failed to generate QR code');
+  }
 }
