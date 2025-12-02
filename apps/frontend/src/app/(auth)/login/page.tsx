@@ -86,6 +86,10 @@ export default function LoginPage() {
     // Submit login request
     setIsLoading(true);
     try {
+      // Note: login from auth.ts API is imported at the top
+      // but we'll keep using it directly for now as AuthContext
+      // wraps it. In a real scenario, we could use AuthContext's login
+      // but this also works fine.
       await login(result.data);
 
       // Redirect to displays page on success
