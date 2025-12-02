@@ -8,6 +8,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import { SocketProvider } from '@/providers/SocketProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Signage - Digital Signage System',
@@ -23,10 +24,12 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <QueryProvider>
-          <SocketProvider>
-            {children}
-            <Toaster />
-          </SocketProvider>
+          <AuthProvider>
+            <SocketProvider>
+              {children}
+              <Toaster />
+            </SocketProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>
