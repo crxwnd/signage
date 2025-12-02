@@ -7,12 +7,14 @@ import express, { type Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { config } from './config';
 import { logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRouter from './routes/health';
 import displaysRouter from './routes/displays';
 import contentRouter from './routes/content';
+import authRouter from './routes/auth';
 
 /**
  * Create and configure Express application
@@ -61,6 +63,9 @@ export function createApp(): Application {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Cookie parsing
+  app.use(cookieParser());
+
   // CORS
   app.use(
     cors({
@@ -82,6 +87,7 @@ export function createApp(): Application {
   app.use(healthRouter);
 
   // API routes
+  app.use('/api/auth', authRouter);
   app.use('/api/displays', displaysRouter);
   app.use('/api/content', contentRouter);
 
