@@ -459,13 +459,17 @@
 
 **Estado**: COMPLETADO [01/12/2025]
 
-### FEATURE 4: Autenticación (Placeholder)
+### FEATURE 4: Autenticación
 
-- [ ] Backend: JWT + 2FA
-- [ ] Frontend: Login/Register
-- [ ] Frontend: Gestión de usuarios
+- [x] Backend: JWT + Refresh tokens COMPLETADO [29/11/2025]
+- [x] Backend: 2FA con TOTP COMPLETADO [29/11/2025]
+- [x] Backend: Middleware auth COMPLETADO [29/11/2025]
+- [x] Frontend: Login/Register COMPLETADO [02/12/2025]
+- [x] Frontend: AuthContext + Protected Routes COMPLETADO [02/12/2025]
+- [ ] Frontend: 2FA modal (pendiente)
+- [ ] Frontend: Gestión de usuarios (pendiente)
 
-**Estado**: ⏸️ Pendiente
+**Estado**: 85% Completado [02/12/2025]
 
 ---
 
@@ -485,22 +489,21 @@
 
 ### Desarrollo
 
-- **Velocidad**: [Calcular al completar Fase 1]
-- **Tasa de errores**: [Tracking durante desarrollo]
-- **Coverage de tests**: Target 70%+, Actual: [TBD]
+- **Velocidad**: ~2 features por semana
+- **Tasa de errores**: Bajo (TypeScript strict)
+- **Coverage de tests**: Target 70%+, Actual: TBD
 
 ### Calidad de Código
 
-- **TypeScript strict**: ✅ Habilitado desde inicio
-- **ESLint violations**: Target 0, Actual: [TBD]
+- **TypeScript strict**: ✅ Habilitado
+- **ESLint violations**: Target 0
 - **Prettier conformance**: Automático
 
 ### Claude Code
 
 - **Créditos iniciales**: $184 USD
-- **Créditos usados**: $0 (no iniciado)
-- **Créditos restantes**: $184
-- **Eficiencia**: [TBD] prompts por feature
+- **Fecha expiración**: 23/11/2025 (expirados)
+- **Eficiencia**: ~5-8 prompts por feature
 
 ---
 
@@ -508,17 +511,17 @@
 
 ### Issues Encontrados
 
-Ninguno todavía - proyecto iniciando
+- Schema Prisma duplicados (resuelto)
+- Merge conflicts en ramas (resuelto con rebase)
 
 ### Decisiones Técnicas
 
-**[2024-11-20]** - Decisiones iniciales de arquitectura:
-
+**[20/11/2024]** - Arquitectura inicial:
 - ✅ Monorepo con Turborepo
 - ✅ Next.js 14 con App Router
 - ✅ PostgreSQL + Prisma
 - ✅ Socket.io para tiempo real
-- ✅ MobX para state management
+- ✅ React Query para state (no MobX)
 - ✅ Tailwind + shadcn/ui para UI
 
 ---
@@ -527,14 +530,18 @@ Ninguno todavía - proyecto iniciando
 
 ### Aprendizajes de Claude Code
 
-(Se irá llenando durante el desarrollo)
+- Prompts incrementales funcionan mejor que prompts grandes
+- Hacer /clear entre features evita confusión de contexto
+- Verificar commits con git log antes de continuar
 
 ### Mejores Prácticas Descubiertas
 
-(Se irá llenando durante el desarrollo)
+- Frontend-first con validación en cada paso
+- Usar patrón existente (ej: displaysController) como referencia
+- Merge frecuente a main para evitar divergencia
 
 ---
 
-**Última actualización**: [FECHA]  
-**Actualizado por**: [NOMBRE]  
-**Versión**: 1.0.0
+**Última actualización**: 02/12/2025
+**Actualizado por**: Janick
+**Versión**: 1.1.0
