@@ -44,4 +44,32 @@ router.post('/logout', authController.logout);
  */
 router.get('/me', authenticate, authController.me);
 
+/**
+ * POST /api/auth/login/2fa
+ * Complete 2FA login with TOTP token
+ * Public route
+ */
+router.post('/login/2fa', authController.login2FA);
+
+/**
+ * POST /api/auth/2fa/setup
+ * Setup 2FA for authenticated user
+ * Protected route - requires authentication
+ */
+router.post('/2fa/setup', authenticate, authController.setup2FA);
+
+/**
+ * POST /api/auth/2fa/verify
+ * Verify TOTP code and enable 2FA
+ * Protected route - requires authentication
+ */
+router.post('/2fa/verify', authenticate, authController.verify2FA);
+
+/**
+ * POST /api/auth/2fa/disable
+ * Disable 2FA for authenticated user
+ * Protected route - requires authentication
+ */
+router.post('/2fa/disable', authenticate, authController.disable2FA);
+
 export default router;
