@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FileBox, Upload, AlertCircle } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ import { StatsCardSkeleton } from '@/components/displays/StatsCardSkeleton';
 import { useContent } from '@/hooks/useContent';
 import type { ContentFilter } from '@/lib/api/content';
 
-export default function ContentPage() {
+function ContentPageContent() {
   const searchParams = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -274,5 +274,13 @@ export default function ContentPage() {
         onSuccess={handleSuccess}
       />
     </div>
+  );
+}
+
+export default function ContentPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <ContentPageContent />
+    </Suspense>
   );
 }
