@@ -15,6 +15,7 @@ import healthRouter from './routes/health';
 import displaysRouter from './routes/displays';
 import contentRouter from './routes/content';
 import authRouter from './routes/auth';
+import videoRouter from './routes/video';
 
 /**
  * Create and configure Express application
@@ -90,6 +91,7 @@ export function createApp(): Application {
   app.use('/api/auth', authRouter);
   app.use('/api/displays', displaysRouter);
   app.use('/api/content', contentRouter);
+  app.use('/api/video', videoRouter);
 
   // ==============================================
   // ERROR HANDLING
