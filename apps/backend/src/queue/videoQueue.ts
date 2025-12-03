@@ -6,7 +6,7 @@
  */
 
 import { Queue, Worker, Job } from 'bullmq';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma';
 import { config } from '../config';
 import { log } from '../middleware/logger';
 import {
@@ -81,12 +81,6 @@ export const videoQueue = new Queue<VideoTranscodeJobData, VideoTranscodeJobResu
   QUEUE_NAME,
   QUEUE_OPTIONS
 );
-
-// ============================================================================
-// PRISMA CLIENT
-// ============================================================================
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // QUEUE METHODS

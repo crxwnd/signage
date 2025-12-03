@@ -5,11 +5,10 @@
 
 import { Router, type Request, type Response, type IRouter } from 'express';
 import type { ApiSuccessResponse, HealthCheckResponse } from '@shared-types';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma';
 import { log } from '../middleware/logger';
 
 const router: IRouter = Router();
-const prisma = new PrismaClient();
 
 // Track server start time for uptime calculation
 const startTime = Date.now();
