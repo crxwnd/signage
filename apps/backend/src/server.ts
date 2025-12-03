@@ -8,11 +8,8 @@ import { createServer } from 'http';
 import { createApp } from './app';
 import { config, validateConfig } from './config';
 import { log } from './middleware/logger';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './utils/prisma';
 import { initializeSocketIO, disconnectAll } from './socket/socketManager';
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 /**
  * Start the server

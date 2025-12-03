@@ -15,6 +15,7 @@ import type {
 } from '@shared-types';
 import { config } from '../config';
 import { log } from '../middleware/logger';
+import { prisma } from '../utils/prisma';
 import * as conductorManager from './conductorManager';
 
 /**
@@ -92,12 +93,28 @@ export function initializeSocketIO(
     log.info(`Socket ${socket.id} joined 'displays' room`);
 
     // Handle disconnection
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', async (reason) => {
       log.info(`Socket disconnected: ${socket.id}`, {
         reason,
         displayId: socket.data.displayId,
         userId: socket.data.userId,
       });
+
+      // Update display status to OFFLINE in database
+      if (socket.data.displayId) {
+        try {
+          await prisma.display.update({
+            where: { id: socket.data.displayId },
+            data: {
+              status: 'OFFLINE',
+              lastSeen: new Date(),
+            },
+          });
+          log.info(`Display ${socket.data.displayId} marked as OFFLINE`);
+        } catch (error) {
+          log.error(`Failed to update display status on disconnect`, error);
+        }
+      }
 
       // Unregister from conductor manager
       conductorManager.unregisterDisplay(socket.id);
@@ -248,7 +265,7 @@ function setupTestHandlers(socket: TypedSocket): void {
  */
 function setupDisplayHandlers(socket: TypedSocket): void {
   // Display registration handler
-  socket.on('display:register', (data) => {
+  socket.on('display:register', async (data) => {
     log.info(`Display registration from ${socket.id}`, {
       deviceId: data.deviceId,
       platform: data.deviceInfo.platform,
@@ -258,12 +275,26 @@ function setupDisplayHandlers(socket: TypedSocket): void {
     socket.data.displayId = data.deviceId;
     socket.data.role = 'display';
 
+    // Update display status to ONLINE in database
+    try {
+      await prisma.display.update({
+        where: { id: data.deviceId },
+        data: {
+          status: 'ONLINE',
+          lastSeen: new Date(),
+        },
+      });
+      log.info(`Display ${data.deviceId} marked as ONLINE`);
+    } catch (error) {
+      log.error(`Failed to update display status on register`, error);
+    }
+
     // Register with conductor manager for role assignment
     conductorManager.registerDisplay(socket.id, data);
   });
 
   // Display heartbeat handler
-  socket.on('display:heartbeat', (data) => {
+  socket.on('display:heartbeat', async (data) => {
     log.debug(`Heartbeat from display ${data.displayId}`, {
       socketId: socket.id,
       currentContentId: data.currentContentId,
@@ -273,8 +304,18 @@ function setupDisplayHandlers(socket: TypedSocket): void {
     // Update last seen time in socket data
     socket.data.displayId = data.displayId;
 
-    // TODO: Update display status in database
-    // TODO: Track heartbeat for health monitoring
+    // Update display lastSeen timestamp in database
+    try {
+      await prisma.display.update({
+        where: { id: data.displayId },
+        data: {
+          lastSeen: new Date(),
+          status: 'ONLINE', // Ensure status is ONLINE on heartbeat
+        },
+      });
+    } catch (error) {
+      log.error(`Failed to update display lastSeen on heartbeat`, error);
+    }
   });
 }
 
