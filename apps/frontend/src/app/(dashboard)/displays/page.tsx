@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Monitor, Plus, AlertCircle } from 'lucide-react';
 import {
@@ -25,7 +25,7 @@ import { useDisplays } from '@/hooks/useDisplays';
 import { useDisplaysRealtime } from '@/hooks/useDisplaysRealtime';
 import type { DisplayFilter } from '@shared-types';
 
-export default function DisplaysPage() {
+function DisplaysContent() {
   const searchParams = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -225,5 +225,13 @@ export default function DisplaysPage() {
         onSuccess={handleSuccess}
       />
     </div>
+  );
+}
+
+export default function DisplaysPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <DisplaysContent />
+    </Suspense>
   );
 }
