@@ -4,31 +4,46 @@
  */
 
 import { Router, type Router as ExpressRouter } from 'express';
+import rateLimit from 'express-rate-limit';
 import * as authController from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
+import { AUTH_RATE_LIMIT } from '../config/auth';
 
 const router: ExpressRouter = Router();
 
 /**
+ * Rate limiter for authentication endpoints
+ * Protects against brute force attacks
+ * 5 requests per 15 minutes for sensitive auth operations
+ */
+const authRateLimiter = rateLimit({
+  windowMs: AUTH_RATE_LIMIT.windowMs,
+  max: AUTH_RATE_LIMIT.max,
+  message: AUTH_RATE_LIMIT.message,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
  * POST /api/auth/register
  * Register a new user
- * Public route
+ * Public route - rate limited (5 req/15min)
  */
-router.post('/register', authController.register);
+router.post('/register', authRateLimiter, authController.register);
 
 /**
  * POST /api/auth/login
  * Authenticate user and return tokens
- * Public route
+ * Public route - rate limited (5 req/15min)
  */
-router.post('/login', authController.login);
+router.post('/login', authRateLimiter, authController.login);
 
 /**
  * POST /api/auth/refresh
  * Refresh access token using refresh token from cookie
- * Public route (uses httpOnly cookie)
+ * Public route (uses httpOnly cookie) - rate limited (5 req/15min)
  */
-router.post('/refresh', authController.refresh);
+router.post('/refresh', authRateLimiter, authController.refresh);
 
 /**
  * POST /api/auth/logout
