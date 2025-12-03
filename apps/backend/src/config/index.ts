@@ -34,6 +34,11 @@ export const config = {
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
 
   /**
+   * Uploads directory for video files
+   */
+  uploadsDir: process.env.UPLOADS_DIR || './uploads',
+
+  /**
    * CORS allowed origins
    */
   corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
