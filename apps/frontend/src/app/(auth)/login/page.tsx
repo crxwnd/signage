@@ -62,9 +62,17 @@ export default function LoginPage() {
 
   /**
    * Handle form submission
+   * SECURITY: Multiple layers of protection against form GET submission
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    // CRITICAL: Prevent default form submission behavior
     e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent multiple submissions
+    if (isLoading) {
+      return false;
+    }
 
     // Clear previous errors
     setErrors({});
@@ -80,16 +88,13 @@ export default function LoginPage() {
         fieldErrors[field] = issue.message;
       });
       setErrors(fieldErrors);
-      return;
+      return false;
     }
 
-    // Submit login request
+    // Submit login request via API (POST)
     setIsLoading(true);
     try {
-      // Note: login from auth.ts API is imported at the top
-      // but we'll keep using it directly for now as AuthContext
-      // wraps it. In a real scenario, we could use AuthContext's login
-      // but this also works fine.
+      // API call with POST method - credentials in body, NOT in URL
       await login(result.data);
 
       // Redirect to displays page on success
@@ -107,6 +112,26 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+
+    return false;
+  };
+
+  /**
+   * Handle button click - extra layer of security
+   */
+  const handleButtonClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Manually trigger form submission through our handler
+    const form = e.currentTarget.closest('form');
+    if (form) {
+      const syntheticEvent = new Event('submit', {
+        bubbles: true,
+        cancelable: true
+      }) as any;
+      await handleSubmit(syntheticEvent);
+    }
   };
 
   return (
@@ -122,6 +147,12 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/*
+            SECURITY NOTE:
+            - NO action attribute (prevents form GET submission)
+            - NO method attribute (prevents default GET behavior)
+            - onSubmit with preventDefault (programmatic control)
+          */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* API Error Message */}
             {apiError && (
@@ -169,9 +200,10 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button - type="button" for extra control */}
             <Button
-              type="submit"
+              type="button"
+              onClick={handleButtonClick}
               className="w-full"
               disabled={isLoading}
             >
