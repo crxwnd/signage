@@ -9,13 +9,15 @@ import type { NextRequest } from 'next/server';
 
 /**
  * Public routes that don't require authentication
+ * NOTE: /register has been removed - users must be created by admins
  */
-const PUBLIC_ROUTES = ['/login', '/register'];
+const PUBLIC_ROUTES = ['/login'];
 
 /**
  * Auth routes that authenticated users shouldn't access
+ * Authenticated users will be redirected to /displays
  */
-const AUTH_ROUTES = ['/login', '/register'];
+const AUTH_ROUTES = ['/login'];
 
 /**
  * Check if user has refresh token cookie
@@ -41,10 +43,10 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  // Check if route is auth route (login/register)
+  // Check if route is auth route (login)
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
 
-  // If user is authenticated and tries to access auth routes (login/register)
+  // If user is authenticated and tries to access auth routes (login)
   // Redirect to /displays
   if (isAuthenticated && isAuthRoute) {
     const url = request.nextUrl.clone();
