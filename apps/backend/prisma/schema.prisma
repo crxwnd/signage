@@ -59,12 +59,18 @@ model User {
   hotelId String?
   hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: SetNull)
 
+  // Area relationship (optional, only for AREA_MANAGER)
+  // CAMBIO: Agregado para vincular AREA_MANAGER a un área específica
+  areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([hotelId])
+  @@index([areaId])
   @@index([role])
   @@map("users")
 }
@@ -76,6 +82,7 @@ model Hotel {
 
   // Relationships
   users    User[]
+  areas    Area[]    // CAMBIO: Agregado para gestionar áreas del hotel
   displays Display[]
   contents Content[]
 
@@ -85,6 +92,29 @@ model Hotel {
 
   @@index([name])
   @@map("hotels")
+}
+
+// NUEVO MODELO: Area para organización jerárquica
+model Area {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Hotel relationship (obligatorio)
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  displays Display[] // Displays que pertenecen a esta área
+  users    User[]    // Area Managers asignados a esta área
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([name])
+  @@map("areas")
 }
 
 model Display {
@@ -98,7 +128,9 @@ model Display {
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   // Area relationship (optional for grouping displays)
+  // CAMBIO: Convertido de String? a relación FK real
   areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
   // Device information
   lastSeen   DateTime?
