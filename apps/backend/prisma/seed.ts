@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient, DisplayStatus } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,48 @@ async function main() {
   });
 
   console.log('✓ Created hotel:', hotel.name);
+
+  // Create test users with hashed passwords (bcrypt 12 rounds)
+  const users = await Promise.all([
+    // Super Admin - Full system access
+    prisma.user.upsert({
+      where: { email: 'admin@hotel.com' },
+      update: {},
+      create: {
+        email: 'admin@hotel.com',
+        password: await bcrypt.hash('Admin123!', 12),
+        name: 'Super Admin',
+        role: 'SUPER_ADMIN',
+        hotelId: null, // Super admin not tied to specific hotel
+      },
+    }),
+    // Hotel Admin - Manages specific hotel
+    prisma.user.upsert({
+      where: { email: 'manager@hotel.com' },
+      update: {},
+      create: {
+        email: 'manager@hotel.com',
+        password: await bcrypt.hash('Manager123!', 12),
+        name: 'Hotel Manager',
+        role: 'HOTEL_ADMIN',
+        hotelId: hotel.id,
+      },
+    }),
+    // Area Manager - Manages specific areas within hotel
+    prisma.user.upsert({
+      where: { email: 'area@hotel.com' },
+      update: {},
+      create: {
+        email: 'area@hotel.com',
+        password: await bcrypt.hash('Area123!', 12),
+        name: 'Area Manager',
+        role: 'AREA_MANAGER',
+        hotelId: hotel.id,
+      },
+    }),
+  ]);
+
+  console.log(`✓ Created ${users.length} users`);
 
   // Create test displays
   const displays = await Promise.all([
@@ -110,6 +153,10 @@ async function main() {
   console.log('\n✅ Seeding completed successfully!');
   console.log('\nTest Data Summary:');
   console.log(`  - Hotel: ${hotel.name}`);
+  console.log(`  - Users: ${users.length}`);
+  console.log(`    - Super Admin: admin@hotel.com / Admin123!`);
+  console.log(`    - Hotel Manager: manager@hotel.com / Manager123!`);
+  console.log(`    - Area Manager: area@hotel.com / Area123!`);
   console.log(`  - Displays: ${displays.length}`);
   console.log(`    - Online: ${displays.filter((d) => d.status === DisplayStatus.ONLINE).length}`);
   console.log(`    - Offline: ${displays.filter((d) => d.status === DisplayStatus.OFFLINE).length}`);
