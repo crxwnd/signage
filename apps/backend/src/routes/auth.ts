@@ -26,10 +26,11 @@ const authRateLimiter = rateLimit({
 
 /**
  * POST /api/auth/register
- * Register a new user
- * Public route - rate limited (5 req/15min)
+ * DISABLED: Public registration disabled for security
+ * Users must be created by administrators through admin panel
+ * For development/testing, use seed script: pnpm db:seed
  */
-router.post('/register', authRateLimiter, authController.register);
+// router.post('/register', authRateLimiter, authController.register);
 
 /**
  * POST /api/auth/login
