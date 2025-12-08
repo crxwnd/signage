@@ -47,6 +47,7 @@ export interface JWTPayload {
   email: string;
   role: UserRole;
   hotelId?: string;
+  areaId?: string; // For AREA_MANAGER role - restricts access to specific area
 }
 
 /**
