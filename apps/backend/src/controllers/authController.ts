@@ -117,6 +117,7 @@ export async function register(req: Request, res: Response): Promise<void> {
         name: true,
         role: true,
         hotelId: true,
+        areaId: true,
         twoFactorEnabled: true,
         createdAt: true,
       },
@@ -130,6 +131,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       email: user.email,
       role: user.role,
       hotelId: user.hotelId || undefined,
+      areaId: user.areaId || undefined,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -198,6 +200,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         name: true,
         role: true,
         hotelId: true,
+        areaId: true,
         twoFactorEnabled: true,
       },
     });
@@ -257,6 +260,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       email: user.email,
       role: user.role,
       hotelId: user.hotelId || undefined,
+      areaId: user.areaId || undefined,
     };
 
     const accessToken = generateAccessToken(payload);
@@ -356,6 +360,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
         name: true,
         role: true,
         hotelId: true,
+        areaId: true,
         twoFactorEnabled: true,
       },
     });
@@ -486,6 +491,7 @@ export async function me(req: Request, res: Response): Promise<void> {
         name: true,
         role: true,
         hotelId: true,
+        areaId: true,
         twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -964,6 +970,7 @@ export async function login2FA(req: Request, res: Response): Promise<void> {
         name: true,
         role: true,
         hotelId: true,
+        areaId: true,
         twoFactorEnabled: true,
         twoFactorSecret: true,
       },
@@ -1049,6 +1056,7 @@ export async function login2FA(req: Request, res: Response): Promise<void> {
       email: user.email,
       role: user.role,
       hotelId: user.hotelId || undefined,
+      areaId: user.areaId || undefined,
     };
 
     const accessToken = generateAccessToken(payload);

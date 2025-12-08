@@ -16,6 +16,7 @@ import displaysRouter from './routes/displays';
 import contentRouter from './routes/content';
 import authRouter from './routes/auth';
 import videoRouter from './routes/video';
+import areasRouter from './routes/areas';
 
 /**
  * Create and configure Express application
@@ -89,6 +90,7 @@ export function createApp(): Application {
 
   // API routes
   app.use('/api/auth', authRouter);
+  app.use('/api/areas', areasRouter);
   app.use('/api/displays', displaysRouter);
   app.use('/api/content', contentRouter);
   app.use('/api/video', videoRouter);
