@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createDisplay } from '@/lib/api/displays';
+import { useAreas } from '@/hooks/useAreas';
 
 /**
  * Validation schema for display creation form
@@ -29,6 +30,7 @@ import { createDisplay } from '@/lib/api/displays';
 const createDisplaySchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   location: z.string().min(1, 'Location is required'),
+  areaId: z.string().optional(), // Optional area assignment
   orientation: z.enum(['horizontal', 'vertical']),
   resolution: z.enum(['1920x1080', '3840x2160']),
 });
@@ -60,9 +62,12 @@ export function CreateDisplayModal({
   onSuccess,
 }: CreateDisplayModalProps) {
   const { toast } = useToast();
+  const { areas, isLoading: areasLoading } = useAreas({ enabled: isOpen });
+
   const [formData, setFormData] = React.useState<CreateDisplayFormData>({
     name: '',
     location: '',
+    areaId: undefined,
     orientation: 'horizontal',
     resolution: '1920x1080',
   });
@@ -80,6 +85,7 @@ export function CreateDisplayModal({
       setFormData({
         name: '',
         location: '',
+        areaId: undefined,
         orientation: 'horizontal',
         resolution: '1920x1080',
       });
@@ -90,11 +96,19 @@ export function CreateDisplayModal({
   }, [isOpen]);
 
   /**
+   * TODO: Pre-select area for AREA_MANAGER users
+   * When auth context is implemented, add logic here to:
+   * 1. Get current user from auth context
+   * 2. If user.role === 'AREA_MANAGER', set formData.areaId = user.areaId
+   * 3. Disable area select for AREA_MANAGER users
+   */
+
+  /**
    * Handle form field changes
    */
   const handleChange = (
     field: keyof CreateDisplayFormData,
-    value: string
+    value: string | undefined
   ) => {
     setFormData((prev: CreateDisplayFormData) => ({ ...prev, [field]: value }));
     // Clear error for this field when user types
@@ -138,6 +152,7 @@ export function CreateDisplayModal({
         name: result.data.name,
         location: result.data.location,
         hotelId: DEFAULT_HOTEL_ID,
+        areaId: result.data.areaId, // Include area assignment
       });
 
       // Success - log and show toast
@@ -218,6 +233,42 @@ export function CreateDisplayModal({
               {errors.location && (
                 <p className="text-sm text-destructive">{errors.location}</p>
               )}
+            </div>
+
+            {/* Area Field (NEW) */}
+            <div className="grid gap-2">
+              <Label htmlFor="area">Area</Label>
+              <Select
+                value={formData.areaId || 'none'}
+                onValueChange={(value) =>
+                  handleChange('areaId', value === 'none' ? undefined : value)
+                }
+                disabled={isLoading || areasLoading}
+              >
+                <SelectTrigger id="area">
+                  <SelectValue placeholder={areasLoading ? 'Loading areas...' : 'Select area (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No area assigned</SelectItem>
+                  {areas.map((area) => (
+                    <SelectItem key={area.id} value={area.id}>
+                      {area.name}
+                      {area.hotel && <span className="text-muted-foreground ml-2">({area.hotel.name})</span>}
+                    </SelectItem>
+                  ))}
+                  {areas.length === 0 && !areasLoading && (
+                    <SelectItem value="none" disabled>
+                      No areas available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.areaId && (
+                <p className="text-sm text-destructive">{errors.areaId}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Assign this display to a specific area for better organization
+              </p>
             </div>
 
             {/* Orientation Field */}

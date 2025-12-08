@@ -9,7 +9,7 @@ import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import type { Display } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
-import { Monitor, MapPin, Clock } from 'lucide-react';
+import { Monitor, MapPin, Clock, Building2 } from 'lucide-react';
 
 interface DisplayCardProps {
   display: Display;
@@ -67,6 +67,11 @@ function formatLastSeen(lastSeen: Date | null): string {
 }
 
 export function DisplayCard({ display }: DisplayCardProps) {
+  // Get area name from display.area relation if available
+  // Otherwise fall back to displaying just the areaId
+  const areaName = (display as any).area?.name || null;
+  const hasArea = display.areaId || areaName;
+
   return (
     <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
       <div className="p-6">
@@ -90,20 +95,24 @@ export function DisplayCard({ display }: DisplayCardProps) {
           <span>{display.location}</span>
         </div>
 
+        {/* Area Badge (if exists) - Positioned prominently */}
+        {hasArea && (
+          <div className="mb-3 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Badge
+              variant="outline"
+              className="bg-blue-500/10 text-blue-700 border-blue-200 hover:bg-blue-500/20"
+            >
+              {areaName || `Area: ${display.areaId?.slice(0, 8)}`}
+            </Badge>
+          </div>
+        )}
+
         {/* Last seen */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
           <span>Last seen: {formatLastSeen(display.lastSeen)}</span>
         </div>
-
-        {/* Area ID (if exists) */}
-        {display.areaId && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <span className="text-xs text-muted-foreground">
-              Area: <span className="font-medium">{display.areaId}</span>
-            </span>
-          </div>
-        )}
 
         {/* Hover effect overlay */}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />

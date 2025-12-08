@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui';
 import { DisplayStatus } from '@shared-types';
+import { useAreas } from '@/hooks/useAreas';
 
 interface DisplaysFiltersProps {
   totalDisplays: number;
@@ -27,10 +28,12 @@ interface DisplaysFiltersProps {
 export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { areas, isLoading: areasLoading } = useAreas();
 
   // Get initial values from URL
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [status, setStatus] = useState(searchParams.get('status') || 'all');
+  const [areaId, setAreaId] = useState(searchParams.get('areaId') || 'all');
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   // Debounce search input (500ms)
@@ -44,7 +47,7 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
 
   // Update URL when filters change
   const updateFilters = useCallback(
-    (newSearch: string, newStatus: string) => {
+    (newSearch: string, newStatus: string, newAreaId: string) => {
       const params = new URLSearchParams(searchParams.toString());
 
       if (newSearch) {
@@ -59,6 +62,12 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
         params.delete('status');
       }
 
+      if (newAreaId && newAreaId !== 'all') {
+        params.set('areaId', newAreaId);
+      } else {
+        params.delete('areaId');
+      }
+
       // Reset to page 1 when filters change
       params.delete('page');
 
@@ -67,20 +76,21 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
     [router, searchParams]
   );
 
-  // Update URL when debounced search changes
+  // Update URL when debounced search or filters change
   useEffect(() => {
-    updateFilters(debouncedSearch, status);
-  }, [debouncedSearch, status, updateFilters]);
+    updateFilters(debouncedSearch, status, areaId);
+  }, [debouncedSearch, status, areaId, updateFilters]);
 
   // Clear all filters
   const handleClearFilters = () => {
     setSearch('');
     setStatus('all');
+    setAreaId('all');
     router.push('/displays');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = debouncedSearch !== '' || status !== 'all';
+  const hasActiveFilters = debouncedSearch !== '' || status !== 'all' || areaId !== 'all';
 
   return (
     <div
@@ -143,6 +153,37 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
                   Error
                 </span>
               </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Area filter (NEW) */}
+          <Select value={areaId} onValueChange={setAreaId} disabled={areasLoading}>
+            <SelectTrigger
+              className="w-full md:w-[200px]"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                borderColor: 'rgba(37, 77, 110, 0.2)',
+              }}
+            >
+              <SelectValue placeholder={areasLoading ? 'Loading...' : 'All Areas'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Areas</SelectItem>
+              {areas.map((area) => (
+                <SelectItem key={area.id} value={area.id}>
+                  {area.name}
+                  {area._count && (
+                    <span className="ml-2 text-muted-foreground text-xs">
+                      ({area._count.displays})
+                    </span>
+                  )}
+                </SelectItem>
+              ))}
+              {areas.length === 0 && !areasLoading && (
+                <SelectItem value="all" disabled>
+                  No areas available
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
