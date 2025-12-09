@@ -20,10 +20,13 @@ import {
 // ==============================================
 
 const createDisplaySchema = z.object({
-  name: z.string().min(3).max(100),
-  location: z.string().min(3).max(200),
-  hotelId: z.string().cuid(),
-  areaId: z.string().cuid().optional().nullable(),
+  name: z.string().min(3),
+  location: z.string().min(1), // Asegúrate de que location esté si lo usas
+  // Cambiamos .cuid() por solo .string() para aceptar "seed-hotel-1"
+  hotelId: z.string(), 
+  areaId: z.string().optional(),
+  orientation: z.enum(['horizontal', 'vertical']).optional(),
+  resolution: z.string().optional(),
 });
 
 const updateDisplaySchema = z.object({
