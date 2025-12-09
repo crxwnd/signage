@@ -28,21 +28,19 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get initial values from URL
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [status, setStatus] = useState(searchParams.get('status') || 'all');
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  // Read values directly from URL (single source of truth)
+  const currentStatus = searchParams.get('status') || 'all';
+  const currentSearch = searchParams.get('search') || '';
 
-  // Debounce search input (500ms)
+  // Only local state for search input (for debouncing)
+  const [search, setSearch] = useState(currentSearch);
+
+  // Sync local search state when URL changes externally
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
+    setSearch(currentSearch);
+  }, [currentSearch]);
 
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Update URL when filters change
+  // Update URL helper
   const updateFilters = useCallback(
     (newSearch: string, newStatus: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -67,20 +65,30 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
     [router, searchParams]
   );
 
-  // Update URL when debounced search changes
+  // Debounce search: only update URL after 500ms of no typing
   useEffect(() => {
-    updateFilters(debouncedSearch, status);
-  }, [debouncedSearch, status, updateFilters]);
+    const timer = setTimeout(() => {
+      if (search !== currentSearch) {
+        updateFilters(search, currentStatus);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search, currentSearch, currentStatus, updateFilters]);
+
+  // Handle status change - direct call, no intermediate state
+  const handleStatusChange = (newStatus: string) => {
+    updateFilters(search, newStatus);
+  };
 
   // Clear all filters
   const handleClearFilters = () => {
     setSearch('');
-    setStatus('all');
     router.push('/displays');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = debouncedSearch !== '' || status !== 'all';
+  const hasActiveFilters = currentSearch !== '' || currentStatus !== 'all';
 
   return (
     <div
@@ -112,8 +120,8 @@ export function DisplaysFilters({ totalDisplays, filteredCount }: DisplaysFilter
             />
           </div>
 
-          {/* Status filter */}
-          <Select value={status} onValueChange={setStatus}>
+          {/* Status filter - read from URL, update directly */}
+          <Select value={currentStatus} onValueChange={handleStatusChange}>
             <SelectTrigger
               className="w-full md:w-[180px]"
               style={{
