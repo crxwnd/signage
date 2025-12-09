@@ -14,7 +14,7 @@ import {
   deleteAreaHandler,
 } from '../controllers/areaController';
 
-const router = Router();
+const router: Router = Router();
 
 // =============================================================================
 // ALL ROUTES REQUIRE AUTHENTICATION

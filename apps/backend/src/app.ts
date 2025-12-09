@@ -17,6 +17,7 @@ import contentRouter from './routes/content';
 import authRouter from './routes/auth';
 import videoRouter from './routes/video';
 import areasRouter from './routes/areas';
+import playlistRouter from './routes/playlist';
 
 /**
  * Create and configure Express application
@@ -94,6 +95,7 @@ export function createApp(): Application {
   app.use('/api/displays', displaysRouter);
   app.use('/api/content', contentRouter);
   app.use('/api/video', videoRouter);
+  app.use('/api/playlists', playlistRouter);
 
   // ==============================================
   // ERROR HANDLING
