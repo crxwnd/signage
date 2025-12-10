@@ -3,6 +3,7 @@
  * Configures middleware, routes, and error handling
  */
 
+import path from 'path';
 import express, { type Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,6 +19,18 @@ import authRouter from './routes/auth';
 import videoRouter from './routes/video';
 import areasRouter from './routes/areas';
 import playlistRouter from './routes/playlist';
+
+// ... otros imports ...
+
+// ==============================================
+// 🚑 BIGINT SERIALIZATION FIX
+// ==============================================
+// Esto soluciona el error "Do not know how to serialize a BigInt"
+// Convierte los BigInt de Prisma a string al enviar JSON
+// @ts-ignore
+BigInt.prototype.toJSON = function (): string {
+  return this.toString();
+};
 
 /**
  * Create and configure Express application
@@ -81,6 +94,14 @@ export function createApp(): Application {
 
   // Request logging
   app.use(logger);
+
+  // ==============================================
+  // 📂 STATIC FILES (AGREGAR ESTO)
+  // ==============================================
+  // Esto hace públicas las carpetas para que el frontend pueda ver las imágenes
+  app.use('/uploads', express.static(path.join(__dirname, '../../storage/uploads')));
+  app.use('/thumbnails', express.static(path.join(__dirname, '../../storage/thumbnails')));
+  app.use('/hls', express.static(path.join(__dirname, '../../storage/hls')));
 
   // ==============================================
   // ROUTES

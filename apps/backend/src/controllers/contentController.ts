@@ -546,6 +546,7 @@ export async function uploadContentFile(
     }
 
     // Create content in database
+    // Inicialmente se crea como PENDING
     const content = await contentService.createContent({
       name,
       type: contentType,
@@ -561,6 +562,21 @@ export async function uploadContentFile(
       name: content.name,
       type: content.type,
     });
+
+    // === INICIO DEL CAMBIO: APROBAR IMÁGENES AUTOMÁTICAMENTE ===
+    // Si NO es video (es imagen o HTML), marcar como READY inmediatamente
+    if (contentType !== 'VIDEO') {
+      await contentService.updateContent(content.id, { status: 'READY' });
+      // Actualizamos el objeto local para que la respuesta al cliente ya diga READY
+      content.status = 'READY';
+      // Para imágenes, podemos usar la URL original como thumbnail por defecto
+      if (contentType === 'IMAGE') {
+          await contentService.updateContent(content.id, { thumbnailUrl: originalUrl });
+          content.thumbnailUrl = originalUrl;
+      }
+      log.info('Non-video content auto-approved to READY', { contentId: content.id });
+    }
+    // === FIN DEL CAMBIO ===
 
     // If it's a video, add to transcoding queue
     if (contentType === 'VIDEO') {
