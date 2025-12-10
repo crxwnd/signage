@@ -5,11 +5,13 @@
 
 'use client';
 
-import { Card } from '@/components/ui';
+import { useState } from 'react';
+import { Card, Button } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import type { Display } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
-import { Monitor, MapPin, Clock } from 'lucide-react';
+import { Monitor, MapPin, Clock, ListVideo } from 'lucide-react';
+import { PlaylistManager } from './PlaylistManager';
 
 interface DisplayCardProps {
   display: Display;
@@ -67,47 +69,72 @@ function formatLastSeen(lastSeen: Date | null): string {
 }
 
 export function DisplayCard({ display }: DisplayCardProps) {
+  const [playlistOpen, setPlaylistOpen] = useState(false);
+
   return (
-    <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
-      <div className="p-6">
-        {/* Header with name and status */}
-        <div className="mb-4 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Monitor className="h-5 w-5 text-primary" />
+    <>
+      <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
+        <div className="p-6">
+          {/* Header with name and status */}
+          <div className="mb-4 flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Monitor className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{display.name}</h3>
+                <p className="text-sm text-muted-foreground">{display.id.slice(0, 8)}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">{display.name}</h3>
-              <p className="text-sm text-muted-foreground">{display.id.slice(0, 8)}</p>
+            {getStatusBadge(display.status)}
+          </div>
+
+          {/* Location */}
+          <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>{display.location}</span>
+          </div>
+
+          {/* Last seen */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>Last seen: {formatLastSeen(display.lastSeen)}</span>
+          </div>
+
+          {/* Area ID (if exists) */}
+          {display.areaId && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <span className="text-xs text-muted-foreground">
+                Area: <span className="font-medium">{display.areaId}</span>
+              </span>
             </div>
+          )}
+
+          {/* Actions */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setPlaylistOpen(true)}
+            >
+              <ListVideo className="h-4 w-4 mr-2" />
+              Manage Content
+            </Button>
           </div>
-          {getStatusBadge(display.status)}
+
+          {/* Hover effect overlay */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
+      </Card>
 
-        {/* Location */}
-        <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4" />
-          <span>{display.location}</span>
-        </div>
-
-        {/* Last seen */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>Last seen: {formatLastSeen(display.lastSeen)}</span>
-        </div>
-
-        {/* Area ID (if exists) */}
-        {display.areaId && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <span className="text-xs text-muted-foreground">
-              Area: <span className="font-medium">{display.areaId}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Hover effect overlay */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-    </Card>
+      {/* Playlist Manager Dialog */}
+      <PlaylistManager
+        displayId={display.id}
+        displayName={display.name}
+        open={playlistOpen}
+        onOpenChange={setPlaylistOpen}
+      />
+    </>
   );
 }
