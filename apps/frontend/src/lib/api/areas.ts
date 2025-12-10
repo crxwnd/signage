@@ -1,7 +1,7 @@
+import { authenticatedFetch } from './auth'; // <--- CAMBIO CLAVE
 import { type ApiSuccessResponse, type ApiErrorResponse } from '@shared-types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
+// Definición de tipos
 export interface Area {
   id: string;
   name: string;
@@ -18,6 +18,7 @@ export interface AreaFilter {
   id?: string;
 }
 
+// Clase de error personalizada
 export class ApiError extends Error {
   constructor(public message: string, public code: string, public details?: unknown) {
     super(message);
@@ -25,6 +26,7 @@ export class ApiError extends Error {
   }
 }
 
+// Helper para manejar respuestas
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
   
@@ -37,20 +39,22 @@ async function handleResponse<T>(response: Response): Promise<T> {
     );
   }
   
-  // Manejo robusto de la respuesta
+  // Manejo robusto: data.data.areas o data.data
   const successData = (data as ApiSuccessResponse<any>).data;
   return successData.areas || successData;
 }
 
+// Función principal para obtener áreas
 export async function getAreas(filter?: AreaFilter): Promise<Area[]> {
   const params = new URLSearchParams();
   if (filter?.hotelId) params.append('hotelId', filter.hotelId);
   if (filter?.id) params.append('id', filter.id);
 
-  const response = await fetch(`${API_URL}/api/areas?${params.toString()}`, {
+  // USAMOS authenticatedFetch
+  // Esto inyecta automáticamente: Authorization: Bearer <token>
+  const response = await authenticatedFetch(`/api/areas?${params.toString()}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
   });
 
   return handleResponse<Area[]>(response);

@@ -20,6 +20,20 @@ const nextConfig = {
   swcMinify: true,
   poweredByHeader: false,
 
+  // === 🔑 AQUÍ ESTÁ EL ARREGLO ===
+  // Autorizamos a Next.js para cargar imágenes desde nuestro backend
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+        pathname: '/**', // Permitir cualquier ruta de imagen
+      },
+    ],
+  },
+  // ===============================
+
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',

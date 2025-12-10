@@ -23,16 +23,33 @@ export class ApiError extends Error {
 
 /**
  * Helper function to handle API responses
+ * ROBUST VERSION: Handles non-JSON responses (like 429 or 500) without crashing
  */
 async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await response.json();
+  const contentType = response.headers.get('content-type');
+  let data;
+
+  // Intentar parsear como JSON solo si el header lo indica
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    // Si no es JSON (ej: Rate Limit 429, Error 500 HTML), leemos como texto
+    const text = await response.text();
+    data = {
+      success: false,
+      error: {
+        code: `HTTP_${response.status}`,
+        message: text || response.statusText || 'Unknown Error',
+      },
+    };
+  }
 
   if (!response.ok) {
     const errorResponse = data as ApiErrorResponse;
     throw new ApiError(
-      errorResponse.error.message,
-      errorResponse.error.code,
-      errorResponse.error.details
+      errorResponse.error?.message || 'API Error',
+      errorResponse.error?.code || 'UNKNOWN',
+      errorResponse.error?.details
     );
   }
 
@@ -54,25 +71,16 @@ export interface User {
   updatedAt: string;
 }
 
-/**
- * Login request payload
- */
 export interface LoginPayload {
   email: string;
   password: string;
 }
 
-/**
- * Login response
- */
 export interface LoginResponse {
   user: User;
   accessToken: string;
 }
 
-/**
- * Register request payload
- */
 export interface RegisterPayload {
   email: string;
   password: string;
@@ -80,9 +88,6 @@ export interface RegisterPayload {
   hotelId?: string;
 }
 
-/**
- * Register response
- */
 export interface RegisterResponse {
   user: User;
   accessToken: string;
@@ -90,48 +95,34 @@ export interface RegisterResponse {
 
 /**
  * In-memory access token storage
- * NOTE: This is intentionally not in localStorage for security
  */
 let accessToken: string | null = null;
 
-/**
- * Get current access token from memory
- */
 export function getAccessToken(): string | null {
   return accessToken;
 }
 
-/**
- * Set access token in memory
- */
 export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
-/**
- * Clear access token from memory
- */
 export function clearAccessToken(): void {
   accessToken = null;
 }
 
 /**
  * Login user
- * POST /api/auth/login
  */
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include cookies (refresh token)
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(payload),
   });
 
   const data = await handleResponse<LoginResponse>(response);
 
-  // Store access token in memory
   if (data.accessToken) {
     setAccessToken(data.accessToken);
   }
@@ -141,23 +132,17 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
 /**
  * Register new user
- * POST /api/auth/register
  */
-export async function register(
-  payload: RegisterPayload
-): Promise<RegisterResponse> {
+export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
   const response = await fetch(`${API_URL}/api/auth/register`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include cookies (refresh token)
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(payload),
   });
 
   const data = await handleResponse<RegisterResponse>(response);
 
-  // Store access token in memory
   if (data.accessToken) {
     setAccessToken(data.accessToken);
   }
@@ -167,65 +152,77 @@ export async function register(
 
 /**
  * Logout user
- * POST /api/auth/logout
  */
 export async function logout(): Promise<void> {
   try {
     await fetch(`${API_URL}/api/auth/logout`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include cookies
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
   } finally {
-    // Always clear token even if request fails
     clearAccessToken();
+    // Forzar recarga o redirección podría hacerse aquí o en el componente
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   }
 }
 
+// ==========================================
+// 🚦 SEMÁFORO DE REFRESCO (Singleton)
+// ==========================================
+let isRefreshing = false;
+let refreshPromise: Promise<string> | null = null;
+
 /**
- * Refresh access token using refresh token from cookie
- * POST /api/auth/refresh
+ * Refresh access token
+ * Implementa patrón Singleton para evitar condiciones de carrera (Race Conditions)
  */
 export async function refreshToken(): Promise<string> {
-  const response = await fetch(`${API_URL}/api/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include cookies (refresh token)
-  });
-
-  const data = await handleResponse<{ accessToken: string }>(response);
-
-  // Update access token in memory
-  if (data.accessToken) {
-    setAccessToken(data.accessToken);
+  // Si ya hay un refresco en proceso, devolvemos esa misma promesa
+  // Esto evita que 5 componentes disparen 5 peticiones simultáneas
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
   }
 
-  return data.accessToken;
+  isRefreshing = true;
+
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      const data = await handleResponse<{ accessToken: string }>(response);
+      
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+        return data.accessToken;
+      }
+      
+      throw new Error('No access token returned');
+    } catch (error) {
+      clearAccessToken();
+      throw error;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 /**
- * Get current user information
- * GET /api/auth/me
- * Requires authentication
+ * Get current user
  */
 export async function getMe(): Promise<User> {
-  const token = getAccessToken();
-
-  if (!token) {
-    throw new ApiError('No access token available', 'UNAUTHORIZED');
-  }
-
-  const response = await fetch(`${API_URL}/api/auth/me`, {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/me`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
   });
 
   const data = await handleResponse<{ user: User }>(response);
@@ -234,13 +231,28 @@ export async function getMe(): Promise<User> {
 
 /**
  * Helper to make authenticated API requests
- * Automatically includes Authorization header with access token
  */
 export async function authenticatedFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getAccessToken();
+  let token = getAccessToken();
+
+  // 1. AUTO-RECUPERACIÓN SEGURA
+  if (!token) {
+    try {
+      // Esta llamada ahora es segura y reutiliza la misma promesa si hay varias concurrentes
+      token = await refreshToken(); 
+    } catch (error) {
+      console.warn('[Auth] Session expired or invalid, redirecting to login...');
+      // Si falla el refresco, es crítico detener el ciclo.
+      // Redirigir a login para romper el bucle infinito de reintentos
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+         // Opcional: window.location.href = '/login';
+      }
+      throw new ApiError('Session expired', 'UNAUTHORIZED');
+    }
+  }
 
   if (!token) {
     throw new ApiError('No access token available', 'UNAUTHORIZED');
