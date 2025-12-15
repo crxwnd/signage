@@ -35,6 +35,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   } else {
     // Si no es JSON (ej: Rate Limit 429, Error 500 HTML), leemos como texto
     const text = await response.text();
+    // Simulamos estructura de error para que el resto del código lo entienda
     data = {
       success: false,
       error: {
@@ -162,7 +163,6 @@ export async function logout(): Promise<void> {
     });
   } finally {
     clearAccessToken();
-    // Forzar recarga o redirección podría hacerse aquí o en el componente
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
@@ -177,7 +177,7 @@ let refreshPromise: Promise<string> | null = null;
 
 /**
  * Refresh access token
- * Implementa patrón Singleton para evitar condiciones de carrera (Race Conditions)
+ * Implementa patrón Singleton para evitar condiciones de carrera
  */
 export async function refreshToken(): Promise<string> {
   // Si ya hay un refresco en proceso, devolvemos esa misma promesa
@@ -225,12 +225,18 @@ export async function getMe(): Promise<User> {
     headers: { 'Content-Type': 'application/json' },
   });
 
+  // Nota: authenticatedFetch devuelve Response, handleResponse ya se usó internamente 
+  // si usáramos la lógica dentro de authenticatedFetch, pero aquí necesitamos parsear 
+  // el resultado final de getMe.
+  // Sin embargo, authenticatedFetch retorna el objeto Response "crudo" del fetch final.
+  
   const data = await handleResponse<{ user: User }>(response);
   return data.user;
 }
 
 /**
  * Helper to make authenticated API requests
+ * Automatically includes Authorization header AND tries to refresh if token is missing
  */
 export async function authenticatedFetch(
   url: string,
@@ -241,16 +247,12 @@ export async function authenticatedFetch(
   // 1. AUTO-RECUPERACIÓN SEGURA
   if (!token) {
     try {
-      // Esta llamada ahora es segura y reutiliza la misma promesa si hay varias concurrentes
+      console.log('[Auth] Token missing, attempting refresh...');
+      // Esta llamada ahora es segura y reutiliza la misma promesa
       token = await refreshToken(); 
     } catch (error) {
-      console.warn('[Auth] Session expired or invalid, redirecting to login...');
-      // Si falla el refresco, es crítico detener el ciclo.
-      // Redirigir a login para romper el bucle infinito de reintentos
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-         // Opcional: window.location.href = '/login';
-      }
-      throw new ApiError('Session expired', 'UNAUTHORIZED');
+      console.warn('[Auth] Session expired or invalid', error);
+      // Dejamos pasar para que falle abajo y el error sea capturado por quien llama
     }
   }
 
