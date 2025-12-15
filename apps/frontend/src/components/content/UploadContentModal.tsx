@@ -31,7 +31,8 @@ import type { ContentType } from '@/lib/api/content';
  * Temporary default hotel ID for development
  * TODO: Replace with actual hotel selection from user context
  */
-const DEFAULT_HOTEL_ID = 'cm3yq5k7z0000l308wvqw7h8g';
+// CORRECCIÓN: Usar 'seed-hotel-1' para coincidir con la base de datos (Seed)
+const DEFAULT_HOTEL_ID = 'seed-hotel-1';
 
 /**
  * Accepted file types
