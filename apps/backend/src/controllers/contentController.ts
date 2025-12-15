@@ -48,7 +48,8 @@ const createContentSchema = z.object({
   name: z.string().min(3).max(200),
   type: ContentTypeEnum,
   originalUrl: z.string().url(),
-  hotelId: z.string().cuid(),
+  // CORRECCIÓN: Se eliminó .cuid() para permitir IDs como 'seed-hotel-1'
+  hotelId: z.string(), 
   duration: z.number().int().positive().optional(),
   resolution: z.string().regex(/^\d+x\d+$/).optional(),
   fileSize: z.bigint().positive().optional(),
@@ -64,7 +65,8 @@ const updateContentSchema = z.object({
 });
 
 const getContentsQuerySchema = z.object({
-  hotelId: z.string().cuid().optional(),
+  // CORRECCIÓN: Se eliminó .cuid()
+  hotelId: z.string().optional(),
   type: ContentTypeEnum.optional(),
   status: ContentStatusEnum.optional(),
   search: z.string().optional(),
@@ -76,7 +78,8 @@ const getContentsQuerySchema = z.object({
 
 const uploadContentSchema = z.object({
   name: z.string().min(3).max(200),
-  hotelId: z.string().cuid(),
+  // CORRECCIÓN CRÍTICA: Se eliminó .cuid() para el upload
+  hotelId: z.string(),
 });
 
 // ============================================================================
@@ -563,7 +566,7 @@ export async function uploadContentFile(
       type: content.type,
     });
 
-    // === INICIO DEL CAMBIO: APROBAR IMÁGENES AUTOMÁTICAMENTE ===
+    // === AUTO-APPROVE IMAGES ===
     // Si NO es video (es imagen o HTML), marcar como READY inmediatamente
     if (contentType !== 'VIDEO') {
       await contentService.updateContent(content.id, { status: 'READY' });
@@ -576,7 +579,6 @@ export async function uploadContentFile(
       }
       log.info('Non-video content auto-approved to READY', { contentId: content.id });
     }
-    // === FIN DEL CAMBIO ===
 
     // If it's a video, add to transcoding queue
     if (contentType === 'VIDEO') {

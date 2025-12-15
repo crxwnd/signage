@@ -22,16 +22,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { uploadContent } from '@/lib/api/content';
 import { Upload, X, FileVideo, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import type { ContentType } from '@/lib/api/content';
-
-/**
- * Temporary default hotel ID for development
- * TODO: Replace with actual hotel selection from user context
- */
-const DEFAULT_HOTEL_ID = 'cm3yq5k7z0000l308wvqw7h8g';
 
 /**
  * Accepted file types
@@ -122,6 +117,7 @@ export function UploadContentModal({
   onSuccess,
 }: UploadContentModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Form state
   const [name, setName] = React.useState('');
@@ -256,6 +252,17 @@ export function UploadContentModal({
       return;
     }
 
+    // Validate hotelId from auth context
+    if (!user?.hotelId) {
+      setErrorMessage('No hotel assigned to your account. Please contact an administrator.');
+      toast({
+        title: 'Upload failed',
+        description: 'No hotel assigned to your account',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Start upload
     setUploadState('uploading');
     setUploadProgress(10);
@@ -272,11 +279,11 @@ export function UploadContentModal({
         });
       }, 200);
 
-      // Upload file
+      // Upload file using hotelId from authenticated user
       const content = await uploadContent(
         selectedFile,
         name,
-        DEFAULT_HOTEL_ID
+        user.hotelId
       );
 
       clearInterval(progressInterval);

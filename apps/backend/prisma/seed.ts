@@ -1,6 +1,7 @@
 /**
  * Database Seed Script
  * Populates database with test data for development
+ * Uses auto-generated CUIDs for all entities
  */
 
 import { PrismaClient, DisplayStatus, UserRole } from '@prisma/client';
@@ -12,65 +13,53 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // ============================================
-  // 1. CREATE HOTEL
+  // 1. CREATE HOTEL (auto-generated CUID)
   // ============================================
-  const hotel = await prisma.hotel.upsert({
-    where: { id: 'seed-hotel-1' },
-    update: {},
-    create: {
-      id: 'seed-hotel-1',
+  const hotel = await prisma.hotel.create({
+    data: {
       name: 'Grand Hotel Plaza',
       address: '123 Main Street, Downtown, NY 10001',
     },
   });
 
-  console.log('✓ Created hotel:', hotel.name);
+  console.log('✓ Created hotel:', hotel.name, `(ID: ${hotel.id})`);
 
   // ============================================
-  // 2. CREATE AREAS (NEW)
+  // 2. CREATE AREAS (auto-generated CUIDs)
   // ============================================
-  const areas = await Promise.all([
-    prisma.area.upsert({
-      where: { id: 'seed-area-lobby' },
-      update: {},
-      create: {
-        id: 'seed-area-lobby',
-        name: 'Lobby Principal',
-        description: 'Área de recepción y lobby principal del hotel',
-        hotelId: hotel.id,
-      },
-    }),
-    prisma.area.upsert({
-      where: { id: 'seed-area-restaurant' },
-      update: {},
-      create: {
-        id: 'seed-area-restaurant',
-        name: 'Restaurante Buffet',
-        description: 'Área de restaurante principal con buffet',
-        hotelId: hotel.id,
-      },
-    }),
-    prisma.area.upsert({
-      where: { id: 'seed-area-pool' },
-      update: {},
-      create: {
-        id: 'seed-area-pool',
-        name: 'Zona Piscina',
-        description: 'Área de piscina y recreación',
-        hotelId: hotel.id,
-      },
-    }),
-  ]);
+  const areaLobby = await prisma.area.create({
+    data: {
+      name: 'Lobby Principal',
+      description: 'Área de recepción y lobby principal del hotel',
+      hotelId: hotel.id,
+    },
+  });
 
-  const [areaLobby, areaRestaurant, areaPool] = areas;
+  const areaRestaurant = await prisma.area.create({
+    data: {
+      name: 'Restaurante Buffet',
+      description: 'Área de restaurante principal con buffet',
+      hotelId: hotel.id,
+    },
+  });
+
+  const areaPool = await prisma.area.create({
+    data: {
+      name: 'Zona Piscina',
+      description: 'Área de piscina y recreación',
+      hotelId: hotel.id,
+    },
+  });
+
+  const areas = [areaLobby, areaRestaurant, areaPool];
 
   console.log(`✓ Created ${areas.length} areas`);
-  console.log(`    - ${areaLobby.name}`);
-  console.log(`    - ${areaRestaurant.name}`);
-  console.log(`    - ${areaPool.name}`);
+  console.log(`    - ${areaLobby.name} (ID: ${areaLobby.id})`);
+  console.log(`    - ${areaRestaurant.name} (ID: ${areaRestaurant.id})`);
+  console.log(`    - ${areaPool.name} (ID: ${areaPool.id})`);
 
   // ============================================
-  // 3. CREATE USERS (Optimized: Single password hash)
+  // 3. CREATE USERS (upsert by email - unique constraint)
   // ============================================
   const passwordHash = await bcrypt.hash('Admin123!', 12);
 
@@ -80,21 +69,21 @@ async function main() {
       name: 'Super Admin',
       role: 'SUPER_ADMIN' as UserRole,
       hotelId: null,
-      areaId: null, // Super admin not tied to specific area
+      areaId: null,
     },
     {
       email: 'manager@hotel.com',
       name: 'Hotel Manager',
       role: 'HOTEL_ADMIN' as UserRole,
       hotelId: hotel.id,
-      areaId: null, // Hotel admin manages all areas
+      areaId: null,
     },
     {
       email: 'area@hotel.com',
       name: 'Area Manager - Restaurant',
       role: 'AREA_MANAGER' as UserRole,
       hotelId: hotel.id,
-      areaId: areaRestaurant.id, // 🔑 VINCULADO AL RESTAURANTE
+      areaId: areaRestaurant.id,
     },
   ];
 
@@ -102,9 +91,10 @@ async function main() {
     await prisma.user.upsert({
       where: { email: userData.email },
       update: {
-        password: passwordHash, // IMPORTANTE: Resetea el password si ya existía
+        password: passwordHash,
         role: userData.role,
         areaId: userData.areaId,
+        hotelId: userData.hotelId,
       },
       create: {
         email: userData.email,
@@ -124,88 +114,70 @@ async function main() {
   console.log(`    - Area Manager: area@hotel.com (area: ${areaRestaurant.name} ONLY)`);
 
   // ============================================
-  // 4. CREATE DISPLAYS (with area relationships)
+  // 4. CREATE DISPLAYS (auto-generated CUIDs)
   // ============================================
   const displays = await Promise.all([
     // LOBBY AREA
-    prisma.display.upsert({
-      where: { id: 'seed-display-1' },
-      update: {}, // Los displays no necesitamos forzar update
-      create: {
-        id: 'seed-display-1',
+    prisma.display.create({
+      data: {
         name: 'Lobby Main Display',
         location: 'Main Lobby - Entrance',
         hotelId: hotel.id,
-        areaId: areaLobby.id, // FK relationship
+        areaId: areaLobby.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
       },
     }),
-    prisma.display.upsert({
-      where: { id: 'seed-display-2' },
-      update: {},
-      create: {
-        id: 'seed-display-2',
+    prisma.display.create({
+      data: {
         name: 'Reception Display',
         location: 'Reception Desk',
         hotelId: hotel.id,
-        areaId: areaLobby.id, // FK relationship
+        areaId: areaLobby.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
       },
     }),
 
     // RESTAURANT AREA
-    prisma.display.upsert({
-      where: { id: 'seed-display-3' },
-      update: {},
-      create: {
-        id: 'seed-display-3',
+    prisma.display.create({
+      data: {
         name: 'Restaurant Menu Board',
         location: 'Main Restaurant - Entrance',
         hotelId: hotel.id,
-        areaId: areaRestaurant.id, // FK relationship
+        areaId: areaRestaurant.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
       },
     }),
-    prisma.display.upsert({
-      where: { id: 'seed-display-4' },
-      update: {},
-      create: {
-        id: 'seed-display-4',
+    prisma.display.create({
+      data: {
         name: 'Restaurant Buffet Display',
         location: 'Restaurant - Buffet Area',
         hotelId: hotel.id,
-        areaId: areaRestaurant.id, // FK relationship
+        areaId: areaRestaurant.id,
         status: DisplayStatus.OFFLINE,
         lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       },
     }),
 
     // POOL AREA
-    prisma.display.upsert({
-      where: { id: 'seed-display-5' },
-      update: {},
-      create: {
-        id: 'seed-display-5',
+    prisma.display.create({
+      data: {
         name: 'Pool Area Display',
         location: 'Swimming Pool - Bar Area',
         hotelId: hotel.id,
-        areaId: areaPool.id, // FK relationship
+        areaId: areaPool.id,
         status: DisplayStatus.ONLINE,
         lastSeen: new Date(),
       },
     }),
-    prisma.display.upsert({
-      where: { id: 'seed-display-6' },
-      update: {},
-      create: {
-        id: 'seed-display-6',
+    prisma.display.create({
+      data: {
         name: 'Pool Lounge Display',
         location: 'Pool Lounge Area',
         hotelId: hotel.id,
-        areaId: areaPool.id, // FK relationship
+        areaId: areaPool.id,
         status: DisplayStatus.ERROR,
         lastSeen: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
       },
@@ -222,14 +194,14 @@ async function main() {
   // ============================================
   console.log('\n✅ Seeding completed successfully!');
   console.log('\n📊 Test Data Summary:');
-  console.log(`  - Hotel: ${hotel.name}`);
+  console.log(`  - Hotel: ${hotel.name} (ID: ${hotel.id})`);
   console.log(`  - Areas: ${areas.length}`);
   areas.forEach((area) => {
-    console.log(`      • ${area.name}`);
+    console.log(`      • ${area.name} (ID: ${area.id})`);
   });
   console.log(`  - Users: ${usersData.length}`);
   console.log(`      • Super Admin: admin@hotel.com / Admin123!`);
-  console.log(`      • Hotel Manager: manager@hotel.com / Manager123!`);
+  console.log(`      • Hotel Manager: manager@hotel.com / Admin123!`);
   console.log(`      • Area Manager: area@hotel.com / Admin123! (${areaRestaurant.name})`);
   console.log(`  - Displays: ${displays.length}`);
   console.log(`      • Online: ${displays.filter((d) => d.status === DisplayStatus.ONLINE).length}`);
@@ -239,6 +211,12 @@ async function main() {
   console.log('  - Super Admin can see ALL areas and displays');
   console.log('  - Hotel Manager can see ALL areas in their hotel');
   console.log(`  - Area Manager can ONLY see "${areaRestaurant.name}" and its 2 displays`);
+  console.log('\n🔑 Generated IDs (use these in frontend if needed):');
+  console.log(`  - Hotel ID: ${hotel.id}`);
+  console.log(`  - Area IDs:`);
+  areas.forEach((area) => {
+    console.log(`      • ${area.name}: ${area.id}`);
+  });
 }
 
 main()
