@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { createDisplay } from '@/lib/api/displays';
-import { useAreas } from '@/hooks/useAreas'; // IMPORTANTE
+import { useAreas } from '@/hooks/useAreas';
 
 // Schema actualizado con areaId
 const createDisplaySchema = z.object({
@@ -47,8 +48,9 @@ export function CreateDisplayModal({
   onSuccess,
 }: CreateDisplayModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
-  const { areas, isLoading: areasLoading } = useAreas({ enabled: isOpen }); // Cargar áreas al abrir
+  const { areas, isLoading: areasLoading } = useAreas({ enabled: isOpen });
 
   const [formData, setFormData] = React.useState<CreateDisplayFormData>({
     name: '',
@@ -92,13 +94,22 @@ export function CreateDisplayModal({
         return;
       }
 
-      // 2. Enviar a la API
-      // Nota: hotelId debería venir del contexto de auth, por ahora usamos default
-      // Enviamos undefined si areaId es string vacío para que el backend lo ignore
+      // 2. Validate hotelId from auth context
+      if (!user?.hotelId) {
+        toast({
+          title: 'Error',
+          description: 'No hotel assigned to your account. Please contact an administrator.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Enviar a la API con hotelId del usuario autenticado
       await createDisplay({
         name: result.data.name,
         location: result.data.location,
-        hotelId: 'seed-hotel-1', // Temporal, idealmente dinámico
+        hotelId: user.hotelId,
         areaId: result.data.areaId || undefined,
       });
 
