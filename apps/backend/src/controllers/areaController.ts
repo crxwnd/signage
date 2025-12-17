@@ -25,11 +25,12 @@ import type { JWTPayload } from '../services/authService';
 
 /**
  * Create area schema
+ * Note: hotelId is optional in schema, validated per role in controller
  */
 const createAreaSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(100),
   description: z.string().max(500).optional(),
-  hotelId: z.string().cuid('Invalid hotel ID'), // For SUPER_ADMIN
+  hotelId: z.string().min(1, 'Invalid hotel ID').optional(), // Optional here, validated per role
 });
 
 /**
@@ -307,11 +308,23 @@ export async function createAreaHandler(req: Request, res: Response): Promise<vo
     // Validate request body
     const data = createAreaSchema.parse(req.body);
 
-    // RBAC: HOTEL_ADMIN can only create areas for their hotel
+    // RBAC: Determine hotelId based on role
     let hotelId: string;
 
     if (user.role === 'SUPER_ADMIN') {
-      // Super admin can specify any hotelId
+      // Super admin MUST provide hotelId
+      if (!data.hotelId) {
+        const errorResponse: ApiErrorResponse = {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Super Admin must specify hotelId when creating an area',
+          },
+          timestamp: new Date().toISOString(),
+        };
+        res.status(400).json(errorResponse);
+        return;
+      }
       hotelId = data.hotelId;
     } else if (user.role === 'HOTEL_ADMIN') {
       // Hotel admin: force hotelId to their hotel (ignore body hotelId)

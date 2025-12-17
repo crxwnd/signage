@@ -1,5 +1,8 @@
-import { authenticatedFetch } from './auth'; // <--- CAMBIO CLAVE
+import { authenticatedFetch } from './auth';
 import { type ApiSuccessResponse, type ApiErrorResponse } from '@shared-types';
+
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Definición de tipos
 export interface Area {
@@ -71,7 +74,7 @@ export async function getAreas(filter?: AreaFilter): Promise<Area[]> {
   if (filter?.hotelId) params.append('hotelId', filter.hotelId);
   if (filter?.id) params.append('id', filter.id);
 
-  const response = await authenticatedFetch(`/api/areas?${params.toString()}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/areas?${params.toString()}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -83,7 +86,7 @@ export async function getAreas(filter?: AreaFilter): Promise<Area[]> {
  * Get a single area by ID
  */
 export async function getAreaById(id: string): Promise<Area> {
-  const response = await authenticatedFetch(`/api/areas/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/areas/${id}`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -102,7 +105,7 @@ export async function getAreaById(id: string): Promise<Area> {
  * - AREA_MANAGER: forbidden
  */
 export async function createArea(data: CreateAreaInput): Promise<Area> {
-  const response = await authenticatedFetch('/api/areas', {
+  const response = await authenticatedFetch(`${API_URL}/api/areas`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -118,7 +121,7 @@ export async function createArea(data: CreateAreaInput): Promise<Area> {
  * - AREA_MANAGER: forbidden
  */
 export async function updateArea(id: string, data: UpdateAreaInput): Promise<Area> {
-  const response = await authenticatedFetch(`/api/areas/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/areas/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -134,7 +137,7 @@ export async function updateArea(id: string, data: UpdateAreaInput): Promise<Are
  * - AREA_MANAGER: forbidden
  */
 export async function deleteArea(id: string): Promise<void> {
-  const response = await authenticatedFetch(`/api/areas/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/areas/${id}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
   });
