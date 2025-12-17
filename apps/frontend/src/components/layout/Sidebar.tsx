@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import {
   Home,
   Monitor,
+  Layers,
   FileVideo,
   Users,
   Settings,
@@ -38,6 +39,11 @@ const navigation = [
     name: 'Displays',
     href: '/displays',
     icon: Monitor,
+  },
+  {
+    name: 'Áreas',
+    href: '/areas',
+    icon: Layers,
   },
   {
     name: 'Content',
