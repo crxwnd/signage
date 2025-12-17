@@ -1,6 +1,7 @@
 /**
  * Content Controller
  * HTTP request handlers for content endpoints
+ * Implements RBAC (Role-Based Access Control)
  */
 
 import type { Request, Response } from 'express';
@@ -15,6 +16,10 @@ import {
 } from '../middleware/upload';
 import { addVideoTranscodeJob } from '../queue/videoQueue';
 import { getVideoInfo } from '../services/ffmpegService';
+import {
+  getHotelFilter,
+  type RBACUser,
+} from '../middleware/permissions';
 
 // ============================================================================
 // TYPES
@@ -49,7 +54,7 @@ const createContentSchema = z.object({
   type: ContentTypeEnum,
   originalUrl: z.string().url(),
   // CORRECCIÓN: Se eliminó .cuid() para permitir IDs como 'seed-hotel-1'
-  hotelId: z.string(), 
+  hotelId: z.string(),
   duration: z.number().int().positive().optional(),
   resolution: z.string().regex(/^\d+x\d+$/).optional(),
   fileSize: z.bigint().positive().optional(),
@@ -89,23 +94,42 @@ const uploadContentSchema = z.object({
 /**
  * GET /api/content
  * Get all content with optional filtering and pagination
+ * RBAC: Filters by user's hotel
  */
 export async function getContents(
   req: Request,
   res: Response
 ): Promise<void> {
   try {
+    const user = req.user as RBACUser | undefined;
+    if (!user) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'User not authenticated' },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(401).json(errorResponse);
+      return;
+    }
+
     // Validate query parameters
     const query = getContentsQuerySchema.parse(req.query);
+    const { type, status, search, page, limit, sortBy, sortOrder } = query;
 
-    const { hotelId, type, status, search, page, limit, sortBy, sortOrder } =
-      query;
+    // Apply RBAC filter based on user role
+    const rbacFilter = getHotelFilter(user);
 
-    // Get content from service
+    // Get content from service with RBAC filter
     const result = await contentService.getContents(
-      { hotelId, type, status, search },
+      { ...rbacFilter, type, status, search },
       { page, limit, sortBy, sortOrder }
     );
+
+    log.info('Content fetched with RBAC', {
+      userId: user.userId,
+      role: user.role,
+      count: result.items?.length || 0,
+    });
 
     const response: ApiSuccessResponse = {
       success: true,
@@ -133,10 +157,7 @@ export async function getContents(
 
     const errorResponse: ApiErrorResponse = {
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch contents',
-      },
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch contents' },
       timestamp: new Date().toISOString(),
     };
     res.status(500).json(errorResponse);
@@ -574,8 +595,8 @@ export async function uploadContentFile(
       content.status = 'READY';
       // Para imágenes, podemos usar la URL original como thumbnail por defecto
       if (contentType === 'IMAGE') {
-          await contentService.updateContent(content.id, { thumbnailUrl: originalUrl });
-          content.thumbnailUrl = originalUrl;
+        await contentService.updateContent(content.id, { thumbnailUrl: originalUrl });
+        content.thumbnailUrl = originalUrl;
       }
       log.info('Non-video content auto-approved to READY', { contentId: content.id });
     }
@@ -617,11 +638,10 @@ export async function uploadContentFile(
     const response: ApiSuccessResponse = {
       success: true,
       data: content,
-      message: `Content uploaded successfully. ${
-        contentType === 'VIDEO'
-          ? 'Video transcoding has been queued.'
-          : ''
-      }`,
+      message: `Content uploaded successfully. ${contentType === 'VIDEO'
+        ? 'Video transcoding has been queued.'
+        : ''
+        }`,
       timestamp: new Date().toISOString(),
     };
 
