@@ -75,20 +75,21 @@
   - [x] Agregar link "Áreas" en navegación
   - [x] Icono apropiado (Layers)
 
-#### 3.1 Backend - Proteger APIs (2-3 días)
-- [ ] **3.1.1** Proteger rutas de Displays
-  - [ ] Agregar `authenticate` middleware a todas las rutas
-  - [ ] Filtrar displays por `hotelId` del usuario
-  - [ ] `AREA_MANAGER`: solo displays de su área
-  - [ ] `HOTEL_ADMIN`: todos los displays de su hotel
-  - [ ] `SUPER_ADMIN`: acceso total
+#### 3.1 Backend - Proteger APIs (2-3 días) ✅ COMPLETADO
+- [x] **3.1.1** Proteger rutas de Displays
+  - [x] `router.use(authenticate)` en displays.ts
+  - [x] Filtrado por hotelId/areaId según rol en controller
   
-- [ ] **3.1.2** Proteger rutas de Content
-  - [ ] Agregar `authenticate` middleware
+- [x] **3.1.2** Proteger rutas de Content
+  - [x] `router.use(authenticate)` en content.ts
+  - [x] Filtrado por hotelId en controller
+
+- [x] **3.1.3** Helpers RBAC (nuevo)
+  - [x] `middleware/permissions.ts` con getHotelFilter, getDisplayFilter, canAccessDisplaye
   - [ ] Filtrar contenido por `hotelId`
   - [ ] Mismo patrón RBAC que displays
 
-- [ ] **3.1.3** Proteger rutas de DisplayContent (Playlists)
+- [ ] **3.1.4** Proteger rutas de DisplayContent (Playlists)
   - [ ] Validar permisos sobre display destino
   - [ ] Validar permisos sobre contenido asignado
 
