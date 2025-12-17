@@ -1,13 +1,21 @@
 /**
  * Content Routes
  * HTTP routes for content management
+ *
+ * SECURITY: All routes are protected by authentication middleware
  */
 
 import { Router, type Router as ExpressRouter } from 'express';
+import { authenticate } from '../middleware/auth';
 import * as contentController from '../controllers/contentController';
 import { uploadContent } from '../middleware/upload';
 
 const router: ExpressRouter = Router();
+
+// ==============================================
+// SECURITY: Apply authentication to ALL routes
+// ==============================================
+router.use(authenticate);
 
 /**
  * POST /api/content/upload

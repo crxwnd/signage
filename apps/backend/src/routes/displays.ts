@@ -1,12 +1,20 @@
 /**
  * Display Routes
  * HTTP routes for display management
+ *
+ * SECURITY: All routes are protected by authentication middleware
  */
 
 import { Router, type Router as ExpressRouter } from 'express';
+import { authenticate } from '../middleware/auth';
 import * as displaysController from '../controllers/displaysController';
 
 const router: ExpressRouter = Router();
+
+// ==============================================
+// SECURITY: Apply authentication to ALL routes
+// ==============================================
+router.use(authenticate);
 
 /**
  * GET /api/displays/stats
