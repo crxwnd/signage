@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAreaMutations } from '@/hooks/useAreaMutations';
+import { useAuth } from '@/contexts/AuthContext';
 
 const createAreaSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -36,6 +37,7 @@ interface CreateAreaModalProps {
 
 export function CreateAreaModal({ isOpen, onClose, onSuccess }: CreateAreaModalProps) {
     const { createArea, isCreating } = useAreaMutations();
+    const { user } = useAuth();
 
     const [formData, setFormData] = React.useState<CreateAreaFormData>({
         name: '',
@@ -67,20 +69,29 @@ export function CreateAreaModal({ isOpen, onClose, onSuccess }: CreateAreaModalP
             return;
         }
 
+        // Prepare data based on role
+        // SUPER_ADMIN needs to specify hotelId
+        // HOTEL_ADMIN's hotelId is auto-set by backend from token
+        const payload: { name: string; description?: string; hotelId?: string } = {
+            name: result.data.name,
+            description: result.data.description || undefined,
+        };
+
+        // For SUPER_ADMIN, include hotelId
+        // TODO: Add hotel selector for SUPER_ADMIN in future
+        if (user?.role === 'SUPER_ADMIN') {
+            // For now, use a default hotel - in production, this should be a selector
+            payload.hotelId = 'seed-hotel-1';
+        }
+
         // Submit
-        createArea(
-            {
-                name: result.data.name,
-                description: result.data.description || undefined,
+        createArea(payload, {
+            onSuccess: () => {
+                setFormData({ name: '', description: '' });
+                onSuccess?.();
+                onClose();
             },
-            {
-                onSuccess: () => {
-                    setFormData({ name: '', description: '' });
-                    onSuccess?.();
-                    onClose();
-                },
-            }
-        );
+        });
     };
 
     const handleOpenChange = (open: boolean) => {
@@ -130,6 +141,13 @@ export function CreateAreaModal({ isOpen, onClose, onSuccess }: CreateAreaModalP
                             <p className="text-sm text-destructive">{errors.description}</p>
                         )}
                     </div>
+
+                    {/* Note for SUPER_ADMIN */}
+                    {user?.role === 'SUPER_ADMIN' && (
+                        <p className="text-xs text-muted-foreground">
+                            Nota: El área se creará en el hotel predeterminado (seed-hotel-1)
+                        </p>
+                    )}
                 </form>
 
                 <DialogFooter>
@@ -144,3 +162,4 @@ export function CreateAreaModal({ isOpen, onClose, onSuccess }: CreateAreaModalP
         </Dialog>
     );
 }
+
