@@ -41,9 +41,13 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
 
 /**
  * Rate Limiting Configuration for Auth Endpoints
+ * More lenient in development mode
  */
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 export const AUTH_RATE_LIMIT = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  windowMs: isDevelopment ? 60 * 1000 : 15 * 60 * 1000, // 1 min dev, 15 min prod
+  max: isDevelopment ? 1000 : 5, // 1000 req/min dev, 5 req/15min prod
   message: 'Too many authentication attempts, please try again later',
 };
+
