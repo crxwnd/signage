@@ -12,6 +12,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -62,26 +63,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Prevent multiple initialization attempts
+  const hasInitialized = useRef(false);
+  const isCheckingAuth = useRef(false);
+
   /**
    * Check authentication status
    * Attempts to refresh token and fetch user data
    */
   const checkAuth = useCallback(async () => {
+    // Prevent concurrent checks
+    if (isCheckingAuth.current) {
+      console.log('[Auth] Already checking auth, skipping...');
+      return;
+    }
+
+    isCheckingAuth.current = true;
+
     try {
       setIsLoading(true);
 
       // Try to refresh token from cookie
-      await refreshToken();
+      const token = await refreshToken();
+
+      // If refresh failed, user is not authenticated
+      if (!token) {
+        console.log('[Auth] No valid token, user not authenticated');
+        setUser(null);
+        return;
+      }
 
       // Fetch current user data
       const userData = await getMe();
       setUser(userData);
     } catch (error) {
       // Not authenticated or token expired
+      console.warn('[Auth] Check auth failed:', error);
       setUser(null);
       clearAccessToken();
     } finally {
       setIsLoading(false);
+      isCheckingAuth.current = false;
     }
   }, []);
 
@@ -161,9 +183,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [router]);
 
   /**
-   * Check auth on mount
+   * Check auth ONCE on mount
    */
   useEffect(() => {
+    // Only initialize once
+    if (hasInitialized.current) {
+      return;
+    }
+    hasInitialized.current = true;
+
     checkAuth();
   }, [checkAuth]);
 
@@ -177,9 +205,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const interval = setInterval(
       async () => {
         try {
-          await refreshToken();
+          const token = await refreshToken();
+          if (!token) {
+            // Token refresh failed silently, log out user
+            console.warn('[Auth] Auto-refresh failed, logging out...');
+            setUser(null);
+            clearAccessToken();
+            router.push('/login');
+          }
         } catch (error) {
           // Token refresh failed, log out user
+          console.error('[Auth] Auto-refresh error:', error);
           setUser(null);
           clearAccessToken();
           router.push('/login');
@@ -217,3 +253,4 @@ export function useAuth(): AuthContextState {
 
   return context;
 }
+

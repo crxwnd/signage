@@ -3,14 +3,18 @@
 /**
  * Areas Page
  * List and manage hotel areas
+ * Protected: Only HOTEL_ADMIN+ can access
  */
 
-import { useState } from 'react';
-import { Layers, Plus, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Layers, Plus, AlertCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/useAreas';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCanManage } from '@/components/auth/RoleGate';
 import {
     AreaCard,
     CreateAreaModal,
@@ -20,6 +24,9 @@ import {
 import type { Area } from '@/lib/api/areas';
 
 export default function AreasPage() {
+    const router = useRouter();
+    const { user, isLoading: authLoading } = useAuth();
+    const canManage = useCanManage();
     const { areas, isLoading, error, refetch } = useAreas();
 
     // Modal states
@@ -27,6 +34,13 @@ export default function AreasPage() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedArea, setSelectedArea] = useState<Area | null>(null);
+
+    // Role protection: Redirect AREA_MANAGER to displays
+    useEffect(() => {
+        if (!authLoading && user && user.role === 'AREA_MANAGER') {
+            router.replace('/displays');
+        }
+    }, [user, authLoading, router]);
 
     // Handlers
     const handleEdit = (area: Area) => {
@@ -43,6 +57,27 @@ export default function AreasPage() {
         refetch();
     };
 
+    // Show nothing while checking auth or redirecting
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Skeleton className="h-8 w-32" />
+            </div>
+        );
+    }
+
+    // Block AREA_MANAGER (will redirect, but show nothing while redirecting)
+    if (user?.role === 'AREA_MANAGER') {
+        return (
+            <Card className="mx-auto max-w-md">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Shield className="mb-4 h-12 w-12 text-muted-foreground" />
+                    <p className="text-muted-foreground">Acceso no autorizado</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
     const hasAreas = areas.length > 0;
 
     return (
@@ -55,10 +90,12 @@ export default function AreasPage() {
                         Organiza tus pantallas por zonas del hotel
                     </p>
                 </div>
-                <Button onClick={() => setCreateModalOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nueva Área
-                </Button>
+                {canManage && (
+                    <Button onClick={() => setCreateModalOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nueva Área
+                    </Button>
+                )}
             </div>
 
             {/* Error State */}
@@ -116,10 +153,12 @@ export default function AreasPage() {
                             <p className="mb-4 text-sm text-muted-foreground">
                                 Crea tu primera área para organizar las pantallas del hotel
                             </p>
-                            <Button onClick={() => setCreateModalOpen(true)}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Crear Primera Área
-                            </Button>
+                            {canManage && (
+                                <Button onClick={() => setCreateModalOpen(true)}>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Crear Primera Área
+                                </Button>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -134,38 +173,43 @@ export default function AreasPage() {
                             area={area}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
-                            canManage={true} // TODO: check user role
+                            canManage={canManage}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Modals */}
-            <CreateAreaModal
-                isOpen={createModalOpen}
-                onClose={() => setCreateModalOpen(false)}
-                onSuccess={handleSuccess}
-            />
+            {/* Modals - Only render if user can manage */}
+            {canManage && (
+                <>
+                    <CreateAreaModal
+                        isOpen={createModalOpen}
+                        onClose={() => setCreateModalOpen(false)}
+                        onSuccess={handleSuccess}
+                    />
 
-            <EditAreaModal
-                area={selectedArea}
-                isOpen={editModalOpen}
-                onClose={() => {
-                    setEditModalOpen(false);
-                    setSelectedArea(null);
-                }}
-                onSuccess={handleSuccess}
-            />
+                    <EditAreaModal
+                        area={selectedArea}
+                        isOpen={editModalOpen}
+                        onClose={() => {
+                            setEditModalOpen(false);
+                            setSelectedArea(null);
+                        }}
+                        onSuccess={handleSuccess}
+                    />
 
-            <DeleteAreaDialog
-                area={selectedArea}
-                isOpen={deleteDialogOpen}
-                onClose={() => {
-                    setDeleteDialogOpen(false);
-                    setSelectedArea(null);
-                }}
-                onSuccess={handleSuccess}
-            />
+                    <DeleteAreaDialog
+                        area={selectedArea}
+                        isOpen={deleteDialogOpen}
+                        onClose={() => {
+                            setDeleteDialogOpen(false);
+                            setSelectedArea(null);
+                        }}
+                        onSuccess={handleSuccess}
+                    />
+                </>
+            )}
         </div>
     );
 }
+

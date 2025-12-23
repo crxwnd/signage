@@ -85,33 +85,35 @@
   - [x] Filtrado por hotelId en controller
 
 - [x] **3.1.3** Helpers RBAC (nuevo)
-  - [x] `middleware/permissions.ts` con getHotelFilter, getDisplayFilter, canAccessDisplaye
-  - [ ] Filtrar contenido por `hotelId`
-  - [ ] Mismo patrón RBAC que displays
+  - [x] `middleware/permissions.ts` con getHotelFilter, getDisplayFilter, canAccessDisplay
+  - [x] Filtrar contenido por `hotelId`
+  - [x] Mismo patrón RBAC que displays
 
-- [ ] **3.1.4** Proteger rutas de DisplayContent (Playlists)
-  - [ ] Validar permisos sobre display destino
-  - [ ] Validar permisos sobre contenido asignado
+- [x] **3.1.4** Proteger rutas de DisplayContent (Playlists)
+  - [x] Validar permisos sobre display destino
+  - [x] Validar permisos sobre contenido asignado
+  - [x] AREA_MANAGER no puede modificar (solo ver)
 
-#### 3.2 Frontend - Diferenciación por Rol (2-3 días)
-- [ ] **3.2.1** Sidebar condicional
-  - [ ] Ocultar "Gestión de Hoteles" para non-SUPER_ADMIN
-  - [ ] Ocultar "Gestión de Usuarios" para AREA_MANAGER
-  - [ ] Mostrar solo secciones permitidas por rol
+#### 3.2 Frontend - Diferenciación por Rol (2-3 días) ✅ COMPLETADO
+- [x] **3.2.1** Sidebar condicional
+  - [x] Ocultar "Hotels" para non-SUPER_ADMIN
+  - [x] Ocultar "Areas"/"Users" para AREA_MANAGER
+  - [x] Badge con rol de usuario
+  - [x] Navegación filtrada por `requiredRoles`
 
-- [ ] **3.2.2** Filtrado en vistas
-  - [ ] `/displays` - mostrar solo displays permitidos
-  - [ ] `/content` - mostrar solo contenido del hotel
-  - [ ] `/areas` - filtrar según permisos
+- [x] **3.2.2** RoleGate component
+  - [x] `RoleGate` para renderizado condicional
+  - [x] `useCanManage()` hook
+  - [x] `useIsSuperAdmin()` hook
 
-- [ ] **3.2.3** Protección de rutas frontend
-  - [ ] Redirect si accede a ruta no permitida
-  - [ ] Componente `<RoleGate>` para renderizado condicional
+- [x] **3.2.3** Protección de rutas frontend
+  - [x] `/areas` → redirect si AREA_MANAGER
+  - [x] Botones CRUD ocultos si no tiene permiso
 
 #### 3.3 Testing RBAC (1 día)
-- [ ] Tests de integración por cada rol
-- [ ] Verificar que AREA_MANAGER no puede acceder a otro hotel
-- [ ] Verificar bypass de SUPER_ADMIN
+- [x] Tests de integración por cada rol
+- [x] Verificar que AREA_MANAGER no puede acceder a otro hotel
+- [x] Verificar bypass de SUPER_ADMIN
 
 #### 3.4 Frontend - Gestión de Usuarios (2 días)
 - [ ] **3.4.1** Página `/users`

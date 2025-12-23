@@ -1,7 +1,10 @@
 /**
  * Content API Client
  * HTTP client functions for content management
+ * Uses authenticatedFetch to include Authorization header
  */
+
+import { authenticatedFetch, getAccessToken } from './auth';
 
 // ============================================================================
 // TYPES
@@ -169,12 +172,11 @@ export async function getContents(
   if (pagination?.sortBy) params.append('sortBy', pagination.sortBy);
   if (pagination?.sortOrder) params.append('sortOrder', pagination.sortOrder);
 
-  const response = await fetch(`${API_URL}/api/content?${params.toString()}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/content?${params.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
 
   return handleResponse<PaginatedResponse<Content>>(response);
@@ -184,12 +186,11 @@ export async function getContents(
  * Get content by ID
  */
 export async function getContentById(id: string): Promise<Content> {
-  const response = await fetch(`${API_URL}/api/content/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/content/${id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
 
   return handleResponse<Content>(response);
@@ -201,13 +202,12 @@ export async function getContentById(id: string): Promise<Content> {
 export async function createContent(
   payload: CreateContentPayload
 ): Promise<Content> {
-  const response = await fetch(`${API_URL}/api/content`, {
+  const response = await authenticatedFetch(`${API_URL}/api/content`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-    cache: 'no-store',
   });
 
   return handleResponse<Content>(response);
@@ -226,10 +226,14 @@ export async function uploadContent(
   formData.append('name', name);
   formData.append('hotelId', hotelId);
 
+  // For file uploads, we manually add the token since we can't use
+  // Content-Type header (FormData sets it automatically with boundary)
+  const token = getAccessToken();
   const response = await fetch(`${API_URL}/api/content/upload`, {
     method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
-    cache: 'no-store',
+    credentials: 'include',
   });
 
   return handleResponse<Content>(response);
@@ -242,13 +246,12 @@ export async function updateContent(
   id: string,
   payload: UpdateContentPayload
 ): Promise<Content> {
-  const response = await fetch(`${API_URL}/api/content/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/content/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-    cache: 'no-store',
   });
 
   return handleResponse<Content>(response);
@@ -258,12 +261,11 @@ export async function updateContent(
  * Delete content
  */
 export async function deleteContent(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/content/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/content/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
 
   return handleResponse<void>(response);
@@ -276,14 +278,13 @@ export async function getContentStats(hotelId?: string): Promise<ContentStats> {
   const params = new URLSearchParams();
   if (hotelId) params.append('hotelId', hotelId);
 
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${API_URL}/api/content/stats?${params.toString()}`,
     {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store',
     }
   );
 

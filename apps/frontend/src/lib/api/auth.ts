@@ -173,22 +173,32 @@ export async function logout(): Promise<void> {
 // 🚦 SEMÁFORO DE REFRESCO (Singleton)
 // ==========================================
 let isRefreshing = false;
-let refreshPromise: Promise<string> | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+let lastRefreshAttempt = 0;
+const REFRESH_COOLDOWN = 5000; // 5 seconds between refresh attempts
 
 /**
  * Refresh access token
- * Implementa patrón Singleton para evitar condiciones de carrera
+ * Returns null if refresh fails (instead of throwing)
+ * Implements singleton pattern to avoid race conditions
  */
-export async function refreshToken(): Promise<string> {
-  // Si ya hay un refresco en proceso, devolvemos esa misma promesa
-  // Esto evita que 5 componentes disparen 5 peticiones simultáneas
+export async function refreshToken(): Promise<string | null> {
+  // Cooldown: prevent rapid-fire refresh attempts
+  const now = Date.now();
+  if (now - lastRefreshAttempt < REFRESH_COOLDOWN) {
+    console.log('[Auth] Refresh cooldown active, skipping...');
+    return null;
+  }
+  lastRefreshAttempt = now;
+
+  // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
   }
 
   isRefreshing = true;
 
-  refreshPromise = (async () => {
+  refreshPromise = (async (): Promise<string | null> => {
     try {
       const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
@@ -196,17 +206,33 @@ export async function refreshToken(): Promise<string> {
         credentials: 'include',
       });
 
-      const data = await handleResponse<{ accessToken: string }>(response);
-      
-      if (data.accessToken) {
-        setAccessToken(data.accessToken);
-        return data.accessToken;
+      // Handle rate limiting gracefully
+      if (response.status === 429) {
+        console.warn('[Auth] Rate limited on refresh, please wait...');
+        return null;
       }
-      
-      throw new Error('No access token returned');
+
+      // Handle other errors
+      if (!response.ok) {
+        console.warn('[Auth] Refresh failed with status:', response.status);
+        clearAccessToken();
+        return null;
+      }
+
+      const data = await response.json();
+      const token = data?.data?.accessToken;
+
+      if (token) {
+        setAccessToken(token);
+        return token;
+      }
+
+      console.warn('[Auth] No access token in refresh response');
+      return null;
     } catch (error) {
+      console.warn('[Auth] Refresh token error:', error);
       clearAccessToken();
-      throw error;
+      return null;
     } finally {
       isRefreshing = false;
       refreshPromise = null;
@@ -225,18 +251,14 @@ export async function getMe(): Promise<User> {
     headers: { 'Content-Type': 'application/json' },
   });
 
-  // Nota: authenticatedFetch devuelve Response, handleResponse ya se usó internamente 
-  // si usáramos la lógica dentro de authenticatedFetch, pero aquí necesitamos parsear 
-  // el resultado final de getMe.
-  // Sin embargo, authenticatedFetch retorna el objeto Response "crudo" del fetch final.
-  
   const data = await handleResponse<{ user: User }>(response);
   return data.user;
 }
 
 /**
  * Helper to make authenticated API requests
- * Automatically includes Authorization header AND tries to refresh if token is missing
+ * Automatically includes Authorization header
+ * Redirects to login if no valid token is available
  */
 export async function authenticatedFetch(
   url: string,
@@ -244,20 +266,20 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   let token = getAccessToken();
 
-  // 1. AUTO-RECUPERACIÓN SEGURA
+  // If no token, try to refresh ONCE
   if (!token) {
-    try {
-      console.log('[Auth] Token missing, attempting refresh...');
-      // Esta llamada ahora es segura y reutiliza la misma promesa
-      token = await refreshToken(); 
-    } catch (error) {
-      console.warn('[Auth] Session expired or invalid', error);
-      // Dejamos pasar para que falle abajo y el error sea capturado por quien llama
-    }
+    console.log('[Auth] Token missing, attempting refresh...');
+    token = await refreshToken();
   }
 
+  // If still no token after refresh attempt, redirect to login
   if (!token) {
-    throw new ApiError('No access token available', 'UNAUTHORIZED');
+    console.warn('[Auth] No valid session, redirecting to login...');
+    // Only redirect if in browser and not already on login page
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+    throw new ApiError('Session expired, please login again', 'SESSION_EXPIRED');
   }
 
   return fetch(url, {
