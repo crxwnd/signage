@@ -42,7 +42,18 @@ export function createApp(): Application {
   // MIDDLEWARE
   // ==============================================
 
-  // Security headers with Helmet.js
+  // CORS MUST BE FIRST - before any other middleware
+  // This ensures preflight OPTIONS requests are handled correctly
+  app.use(
+    cors({
+      origin: config.corsOrigins,
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    })
+  );
+
+  // Security headers with Helmet.js (AFTER CORS)
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -54,6 +65,7 @@ export function createApp(): Application {
         },
       },
       crossOriginEmbedderPolicy: false, // Allow embedding for signage displays
+      crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resource sharing
     })
   );
 
@@ -81,16 +93,6 @@ export function createApp(): Application {
 
   // Cookie parsing
   app.use(cookieParser());
-
-  // CORS
-  app.use(
-    cors({
-      origin: config.corsOrigins,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
 
   // Request logging
   app.use(logger);

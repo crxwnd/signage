@@ -1,6 +1,7 @@
 /**
  * Sidebar Component
  * Navigation sidebar for dashboard layout
+ * Implements role-based navigation filtering
  */
 
 'use client';
@@ -17,6 +18,8 @@ import {
   Video,
   LogOut,
   User,
+  Building2,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,43 +30,70 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Badge,
 } from '@/components/ui';
 
-const navigation = [
+type UserRole = 'SUPER_ADMIN' | 'HOTEL_ADMIN' | 'AREA_MANAGER';
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  /** Roles that can see this item. If undefined, all roles can see it */
+  requiredRoles?: UserRole[];
+}
+
+/**
+ * Navigation items with role requirements
+ */
+const navigation: NavItem[] = [
   {
     name: 'Home',
     href: '/',
     icon: Home,
+    // All roles
   },
   {
     name: 'Displays',
     href: '/displays',
     icon: Monitor,
+    // All roles
   },
   {
     name: 'Áreas',
     href: '/areas',
     icon: Layers,
+    requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'], // AREA_MANAGER cannot manage areas
   },
   {
     name: 'Content',
     href: '/content',
     icon: FileVideo,
+    // All roles can view content
   },
   {
     name: 'Video Demo',
     href: '/video-demo',
     icon: Video,
+    // All roles
   },
   {
     name: 'Users',
     href: '/users',
     icon: Users,
+    requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'], // Only admins can manage users
+  },
+  {
+    name: 'Hotels',
+    href: '/hotels',
+    icon: Building2,
+    requiredRoles: ['SUPER_ADMIN'], // Only super admin can manage hotels
   },
   {
     name: 'Settings',
     href: '/settings',
     icon: Settings,
+    // All roles
   },
 ];
 
@@ -78,9 +108,56 @@ function getUserInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+/**
+ * Format role for display
+ */
+function formatRole(role: string): string {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'Super Admin';
+    case 'HOTEL_ADMIN':
+      return 'Hotel Admin';
+    case 'AREA_MANAGER':
+      return 'Area Manager';
+    default:
+      return role;
+  }
+}
+
+/**
+ * Get badge variant for role
+ */
+function getRoleBadgeVariant(role: string): 'destructive' | 'default' | 'secondary' {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'destructive'; // Red
+    case 'HOTEL_ADMIN':
+      return 'default'; // Blue
+    case 'AREA_MANAGER':
+      return 'secondary'; // Gray
+    default:
+      return 'secondary';
+  }
+}
+
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+
+  // Filter navigation items based on user role
+  // When user is null or loading, show only items without role requirements (base items)
+  const filteredNavigation = navigation.filter((item) => {
+    // If no role requirement, show to everyone (including when not logged in)
+    if (!item.requiredRoles) {
+      return true;
+    }
+    // If user is loading or not logged in, hide role-restricted items but keep base items
+    if (isLoading || !user) {
+      return false;
+    }
+    // Check if user's role is in the required roles
+    return item.requiredRoles.includes(user.role as UserRole);
+  });
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
@@ -91,7 +168,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
+        {filteredNavigation.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
@@ -126,14 +203,22 @@ export function Sidebar() {
                 </div>
                 <div className="flex-1 overflow-hidden text-left">
                   <p className="truncate text-sm font-medium">{user.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {user.email}
-                  </p>
+                  <Badge
+                    variant={getRoleBadgeVariant(user.role)}
+                    className="mt-0.5 text-[10px] px-1.5 py-0"
+                  >
+                    {formatRole(user.role)}
+                  </Badge>
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="flex items-center">
@@ -173,3 +258,4 @@ export function Sidebar() {
     </aside>
   );
 }
+
