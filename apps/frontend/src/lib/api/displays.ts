@@ -1,6 +1,7 @@
 /**
  * Displays API Client
  * Functions to interact with displays endpoints
+ * Uses authenticatedFetch to include Authorization header
  */
 
 import type {
@@ -13,6 +14,7 @@ import type {
   ApiSuccessResponse,
   ApiErrorResponse,
 } from '@shared-types';
+import { authenticatedFetch } from './auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -72,12 +74,11 @@ export async function getDisplays(
 
   const url = `${API_URL}/api/displays${params.toString() ? `?${params.toString()}` : ''}`;
 
-  const response = await fetch(url, {
+  const response = await authenticatedFetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store', // Disable caching for real-time data
   });
 
   return handleResponse<PaginatedResponse<Display>>(response);
@@ -87,12 +88,11 @@ export async function getDisplays(
  * Get display by ID
  */
 export async function getDisplayById(id: string): Promise<Display> {
-  const response = await fetch(`${API_URL}/api/displays/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/displays/${id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
 
   return handleResponse<Display>(response);
@@ -104,7 +104,7 @@ export async function getDisplayById(id: string): Promise<Display> {
 export async function createDisplay(
   payload: CreateDisplayPayload
 ): Promise<Display> {
-  const response = await fetch(`${API_URL}/api/displays`, {
+  const response = await authenticatedFetch(`${API_URL}/api/displays`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ export async function updateDisplay(
   id: string,
   payload: UpdateDisplayPayload
 ): Promise<Display> {
-  const response = await fetch(`${API_URL}/api/displays/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/displays/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export async function updateDisplay(
  * Delete display
  */
 export async function deleteDisplay(id: string): Promise<{ id: string }> {
-  const response = await fetch(`${API_URL}/api/displays/${id}`, {
+  const response = await authenticatedFetch(`${API_URL}/api/displays/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -156,12 +156,11 @@ export async function getDisplayStats(): Promise<{
   offline: number;
   error: number;
 }> {
-  const response = await fetch(`${API_URL}/api/displays/stats`, {
+  const response = await authenticatedFetch(`${API_URL}/api/displays/stats`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'no-store',
   });
 
   return handleResponse<{
@@ -171,3 +170,4 @@ export async function getDisplayStats(): Promise<{
     error: number;
   }>(response);
 }
+

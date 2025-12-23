@@ -229,7 +229,7 @@ async function main() {
   });
   console.log(`  - Users: ${usersData.length}`);
   console.log(`      • Super Admin: admin@hotel.com / Admin123!`);
-  console.log(`      • Hotel Manager: manager@hotel.com / Manager123!`);
+  console.log(`      • Hotel Manager: manager@hotel.com / Admin123!`);
   console.log(`      • Area Manager: area@hotel.com / Admin123! (${areaRestaurant.name})`);
   console.log(`  - Displays: ${displays.length}`);
   console.log(`      • Online: ${displays.filter((d) => d.status === DisplayStatus.ONLINE).length}`);
