@@ -19,6 +19,8 @@ import authRouter from './routes/auth';
 import videoRouter from './routes/video';
 import areasRouter from './routes/areas';
 import playlistRouter from './routes/playlist';
+import usersRouter from './routes/users';
+import hotelsRouter from './routes/hotels';
 
 // ... otros imports ...
 
@@ -119,6 +121,8 @@ export function createApp(): Application {
   app.use('/api/content', contentRouter);
   app.use('/api/video', videoRouter);
   app.use('/api/playlists', playlistRouter);
+  app.use('/api/users', usersRouter);
+  app.use('/api/hotels', hotelsRouter);
 
   // ==============================================
   // ERROR HANDLING

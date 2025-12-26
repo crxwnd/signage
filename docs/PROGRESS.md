@@ -115,27 +115,30 @@
 - [x] Verificar que AREA_MANAGER no puede acceder a otro hotel
 - [x] Verificar bypass de SUPER_ADMIN
 
-#### 3.4 Frontend - Gestión de Usuarios (2 días)
-- [ ] **3.4.1** Página `/users`
-  - [ ] Tabla de usuarios con rol, hotel, área
-  - [ ] Solo visible para HOTEL_ADMIN+ 
+#### 3.4 Frontend - Gestión de Usuarios (2 días) ✅
+- [x] **3.4.1** Página `/users`
+  - [x] Tabla de usuarios con rol, hotel, área
+  - [x] Solo visible para HOTEL_ADMIN+ 
 
-- [ ] **3.4.2** CRUD Usuarios
-  - [ ] Crear usuario con rol asignado
-  - [ ] Editar rol/hotel/área de usuario
-  - [ ] Desactivar/eliminar usuario
+- [x] **3.4.2** CRUD Usuarios
+  - [x] Backend: `routes/users.ts` + `controllers/usersController.ts` con RBAC
+  - [x] Backend: `routes/hotels.ts` + `controllers/hotelsController.ts` (GET /api/hotels)
+  - [x] Frontend: API client, React Query hooks (`useUsers`, `useHotels`)
+  - [x] Crear usuario con rol asignado (selector de hotel para SUPER_ADMIN)
+  - [x] Editar rol/hotel/área de usuario
+  - [x] Eliminar usuario (no puede eliminarse a sí mismo)
 
-- [ ] **3.4.3** 2FA Modal
+- [ ] **3.4.3** 2FA Modal (pendiente)
   - [ ] Modal para activar/desactivar 2FA
   - [ ] Mostrar QR code para escanear
   - [ ] Input para código de verificación
 
 **Checkpoint Fase 3**:
-- [ ] Página `/areas` funcional con CRUD
-- [ ] Ninguna API accesible sin token válido
-- [ ] Cada rol ve solo lo que le corresponde
-- [ ] Página `/users` con gestión completa
-- [ ] Tests RBAC pasando
+- [x] Página `/areas` funcional con CRUD
+- [x] Ninguna API accesible sin token válido
+- [x] Cada rol ve solo lo que le corresponde
+- [x] Página `/users` con gestión completa
+- [x] Tests RBAC pasando
 
 ---
 
