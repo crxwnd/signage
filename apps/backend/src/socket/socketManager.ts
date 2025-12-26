@@ -260,63 +260,140 @@ function setupTestHandlers(socket: TypedSocket): void {
 }
 
 /**
+ * Pairing codes storage (in production, use Redis)
+ */
+const pairingCodes = new Map<string, { socketId: string; createdAt: number }>();
+
+/**
+ * Socket to Display mapping for tracking connected displays
+ */
+const socketToDisplay = new Map<string, string>();
+
+/**
  * Setup display event handlers
- * Handlers for display device registration and heartbeat
+ * Handlers for display device registration, heartbeat, and pairing
  */
 function setupDisplayHandlers(socket: TypedSocket): void {
-  // Display registration handler
+  // Display registration handler (supports both formats)
   socket.on('display:register', async (data) => {
+    // Support both { deviceId } and { displayId } formats
+    const displayId = (data as any).displayId || (data as any).deviceId;
+
+    if (!displayId) {
+      log.warn('Display registration without ID', { socketId: socket.id });
+      return;
+    }
+
     log.info(`Display registration from ${socket.id}`, {
-      deviceId: data.deviceId,
-      platform: data.deviceInfo.platform,
+      displayId,
+      deviceInfo: (data as any).deviceInfo,
     });
 
     // Store display ID in socket data
-    socket.data.displayId = data.deviceId;
+    socket.data.displayId = displayId;
     socket.data.role = 'display';
+
+    // Track socket to display mapping
+    socketToDisplay.set(socket.id, displayId);
+
+    // Join display-specific room
+    socket.join(`display:${displayId}`);
 
     // Update display status to ONLINE in database
     try {
       await prisma.display.update({
-        where: { id: data.deviceId },
+        where: { id: displayId },
         data: {
           status: 'ONLINE',
           lastSeen: new Date(),
         },
       });
-      log.info(`Display ${data.deviceId} marked as ONLINE`);
+      log.info(`Display ${displayId} marked as ONLINE`);
     } catch (error) {
       log.error(`Failed to update display status on register`, error);
     }
 
-    // Register with conductor manager for role assignment
-    conductorManager.registerDisplay(socket.id, data);
+    // Register with conductor manager for role assignment (if has full deviceInfo)
+    if ((data as any).deviceInfo) {
+      conductorManager.registerDisplay(socket.id, data);
+    }
   });
 
-  // Display heartbeat handler
+  // Display heartbeat handler (supports both formats)
   socket.on('display:heartbeat', async (data) => {
-    log.debug(`Heartbeat from display ${data.displayId}`, {
+    const displayId = (data as any).displayId;
+
+    if (!displayId) {
+      log.warn('Heartbeat without displayId', { socketId: socket.id });
+      return;
+    }
+
+    log.debug(`Heartbeat from display ${displayId}`, {
       socketId: socket.id,
-      currentContentId: data.currentContentId,
-      playbackPosition: data.playbackPosition,
+      currentContentId: (data as any).currentContentId,
+      playbackPosition: (data as any).playbackPosition,
     });
 
     // Update last seen time in socket data
-    socket.data.displayId = data.displayId;
+    socket.data.displayId = displayId;
 
     // Update display lastSeen timestamp in database
     try {
       await prisma.display.update({
-        where: { id: data.displayId },
+        where: { id: displayId },
         data: {
           lastSeen: new Date(),
-          status: 'ONLINE', // Ensure status is ONLINE on heartbeat
+          status: 'ONLINE',
         },
       });
     } catch (error) {
       log.error(`Failed to update display lastSeen on heartbeat`, error);
     }
   });
+
+  // Request pairing code (for unconfigured displays)
+  (socket as any).on('display:request-pairing', () => {
+    // Generate 6-character alphanumeric code
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // Store with socket ID
+    pairingCodes.set(code, {
+      socketId: socket.id,
+      createdAt: Date.now()
+    });
+
+    socket.emit('pairing:code' as any, { code });
+    log.info(`Pairing code generated: ${code} for socket ${socket.id}`);
+
+    // Expire after 5 minutes
+    setTimeout(() => {
+      pairingCodes.delete(code);
+      log.debug(`Pairing code ${code} expired`);
+    }, 5 * 60 * 1000);
+  });
+}
+
+/**
+ * Get pairing data by code
+ */
+export function getPairingData(code: string): { socketId: string; createdAt: number } | undefined {
+  return pairingCodes.get(code.toUpperCase());
+}
+
+/**
+ * Delete pairing code
+ */
+export function deletePairingCode(code: string): void {
+  pairingCodes.delete(code.toUpperCase());
+}
+
+/**
+ * Get socket by ID
+ */
+export async function getSocketById(socketId: string): Promise<any> {
+  if (!io) return null;
+  const sockets = await io.fetchSockets();
+  return sockets.find(s => s.id === socketId);
 }
 
 /**
@@ -325,11 +402,11 @@ function setupDisplayHandlers(socket: TypedSocket): void {
  */
 export function getIO():
   | SocketIOServer<
-      ClientToServerEvents,
-      ServerToClientEvents,
-      InterServerEvents,
-      SocketData
-    >
+    ClientToServerEvents,
+    ServerToClientEvents,
+    InterServerEvents,
+    SocketData
+  >
   | null {
   return io;
 }

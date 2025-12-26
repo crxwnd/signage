@@ -162,16 +162,17 @@
   - [x] Componente `<ImageDisplay>` con duración configurable
   - [x] Placeholder para contenido HTML
 
-#### 4.2 Conexión Tiempo Real (2 días)
-- [ ] **4.2.1** Socket.io client en player
-  - [ ] Conectar al backend con deviceId
-  - [ ] Registrar display al conectar
-  - [ ] Heartbeat cada 30s para lastSeen
+#### 4.2 Conexión Tiempo Real (2 días) ✅
+- [x] **4.2.1** Socket.io client en player
+  - [x] Hook `usePlayerSocket` con socket.io-client
+  - [x] Registrar display al conectar (`display:register`)
+  - [x] Heartbeat cada 30s (`display:heartbeat`)
 
-- [ ] **4.2.2** Comandos remotos
-  - [ ] Recibir `content-update` → recargar playlist
-  - [ ] Recibir `display-command` (play/pause/restart)
-  - [ ] Actualizar status en tiempo real
+- [x] **4.2.2** Comandos remotos
+  - [x] Recibir `playlist:updated` → recargar playlist
+  - [x] Recibir `display:command` (play/pause/restart/refresh-playlist)
+  - [x] Pantalla de pairing para displays sin configurar
+  - [x] Endpoint `POST /api/displays/confirm-pairing`
 
 #### 4.3 Caché Local con IndexedDB (3 días)
 - [ ] **4.3.1** Setup Dexie.js
