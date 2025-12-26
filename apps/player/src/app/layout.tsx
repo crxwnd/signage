@@ -4,6 +4,7 @@
  */
 
 import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Signage Player',
@@ -17,7 +18,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body className="bg-black">{children}</body>
     </html>
   );
 }
+
