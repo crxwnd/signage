@@ -115,30 +115,30 @@
 - [x] Verificar que AREA_MANAGER no puede acceder a otro hotel
 - [x] Verificar bypass de SUPER_ADMIN
 
-#### 3.4 Frontend - Gestión de Usuarios (2 días) ✅
-- [x] **3.4.1** Página `/users`
-  - [x] Tabla de usuarios con rol, hotel, área
-  - [x] Solo visible para HOTEL_ADMIN+ 
+  #### 3.4 Frontend - Gestión de Usuarios (2 días) ✅
+  - [x] **3.4.1** Página `/users`
+    - [x] Tabla de usuarios con rol, hotel, área
+    - [x] Solo visible para HOTEL_ADMIN+ 
 
-- [x] **3.4.2** CRUD Usuarios
-  - [x] Backend: `routes/users.ts` + `controllers/usersController.ts` con RBAC
-  - [x] Backend: `routes/hotels.ts` + `controllers/hotelsController.ts` (GET /api/hotels)
-  - [x] Frontend: API client, React Query hooks (`useUsers`, `useHotels`)
-  - [x] Crear usuario con rol asignado (selector de hotel para SUPER_ADMIN)
-  - [x] Editar rol/hotel/área de usuario
-  - [x] Eliminar usuario (no puede eliminarse a sí mismo)
+  - [x] **3.4.2** CRUD Usuarios
+    - [x] Backend: `routes/users.ts` + `controllers/usersController.ts` con RBAC
+    - [x] Backend: `routes/hotels.ts` + `controllers/hotelsController.ts` (GET /api/hotels)
+    - [x] Frontend: API client, React Query hooks (`useUsers`, `useHotels`)
+    - [x] Crear usuario con rol asignado (selector de hotel para SUPER_ADMIN)
+    - [x] Editar rol/hotel/área de usuario
+    - [x] Eliminar usuario (no puede eliminarse a sí mismo)
 
-- [ ] **3.4.3** 2FA Modal (pendiente)
-  - [ ] Modal para activar/desactivar 2FA
-  - [ ] Mostrar QR code para escanear
-  - [ ] Input para código de verificación
+  - [ ] **3.4.3** 2FA Modal (pendiente)
+    - [ ] Modal para activar/desactivar 2FA
+    - [ ] Mostrar QR code para escanear
+    - [ ] Input para código de verificación
 
-**Checkpoint Fase 3**:
-- [x] Página `/areas` funcional con CRUD
-- [x] Ninguna API accesible sin token válido
-- [x] Cada rol ve solo lo que le corresponde
-- [x] Página `/users` con gestión completa
-- [x] Tests RBAC pasando
+  **Checkpoint Fase 3**:
+  - [x] Página `/areas` funcional con CRUD
+  - [x] Ninguna API accesible sin token válido
+  - [x] Cada rol ve solo lo que le corresponde
+  - [x] Página `/users` con gestión completa
+  - [x] Tests RBAC pasando
 
 ---
 
@@ -147,20 +147,20 @@
 **Prioridad**: 🔴 CRÍTICA  
 **Objetivo**: Reproductor funcional para SmartTVs
 
-#### 4.1 Reproducción Básica (3 días)
-- [ ] **4.1.1** Setup HLS.js
-  - [ ] Instalar y configurar HLS.js
-  - [ ] Componente `<VideoPlayer>` con controles
-  - [ ] Fallback a video nativo si soporta HLS
+#### 4.1 Reproducción Básica (3 días) ✅
+- [x] **4.1.1** Setup HLS.js
+  - [x] Instalar hls.js en player
+  - [x] Componente `<VideoPlayer>` con HLS.js
+  - [x] Fallback a video nativo para Safari/iOS
   
-- [ ] **4.1.2** Playlist secuencial
-  - [ ] Cargar playlist del display desde API
-  - [ ] Reproducir videos en secuencia
-  - [ ] Loop automático al terminar
+- [x] **4.1.2** Playlist secuencial
+  - [x] Componente `<PlaylistPlayer>` con loop automático
+  - [x] Cargar playlist del display desde API
+  - [x] Reproducir videos en secuencia
 
-- [ ] **4.1.3** Manejo de imágenes/HTML
-  - [ ] Mostrar imágenes con duración configurable
-  - [ ] Renderizar contenido HTML animado
+- [x] **4.1.3** Manejo de imágenes/HTML
+  - [x] Componente `<ImageDisplay>` con duración configurable
+  - [x] Placeholder para contenido HTML
 
 #### 4.2 Conexión Tiempo Real (2 días)
 - [ ] **4.2.1** Socket.io client en player

@@ -41,7 +41,7 @@ export const config = {
   /**
    * CORS allowed origins
    */
-  corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+  corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3002'],
 
   /**
    * JWT secret for authentication
