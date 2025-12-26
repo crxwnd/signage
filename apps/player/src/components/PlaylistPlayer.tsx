@@ -18,10 +18,11 @@ interface PlaylistItem {
 
 interface PlaylistPlayerProps {
     items: PlaylistItem[];
+    isPaused?: boolean;
     onItemChange?: (index: number, item: PlaylistItem) => void;
 }
 
-export function PlaylistPlayer({ items, onItemChange }: PlaylistPlayerProps) {
+export function PlaylistPlayer({ items, isPaused: _isPaused = false, onItemChange }: PlaylistPlayerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const currentItem = items[currentIndex];

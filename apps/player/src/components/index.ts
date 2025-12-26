@@ -4,3 +4,4 @@
 
 export { VideoPlayer } from './VideoPlayer';
 export { PlaylistPlayer } from './PlaylistPlayer';
+export { PairingScreen } from './PairingScreen';
