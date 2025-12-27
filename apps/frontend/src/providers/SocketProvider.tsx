@@ -1,12 +1,13 @@
 /**
  * Socket Provider
  * React Context for Socket.io client
+ * Protected against React StrictMode double-mount
  */
 
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { initializeSocket, disconnectSocket, TypedSocket } from '@/lib/socket';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import { initializeSocket, releaseSocket, TypedSocket } from '@/lib/socket';
 
 interface SocketContextValue {
   socket: TypedSocket | null;
@@ -27,55 +28,74 @@ interface SocketProviderProps {
 export function SocketProvider({ children }: SocketProviderProps) {
   const [socket, setSocket] = useState<TypedSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(true);
+  const mountedRef = useRef(false);
+  const socketRef = useRef<TypedSocket | null>(null);
 
   useEffect(() => {
-    // Initialize socket connection
-    setIsConnecting(true);
-    const socketInstance = initializeSocket();
-    setSocket(socketInstance);
+    // Track if this effect instance is still valid
+    let isCurrentMount = true;
 
-    // Connection event handlers
+    // Prevent duplicate initialization logging, but always setup
+    if (mountedRef.current) {
+      console.log('[SocketProvider] Re-mount detected (StrictMode)');
+    }
+    mountedRef.current = true;
+
+    // Initialize socket
+    const socketInstance = initializeSocket();
+    socketRef.current = socketInstance;
+
+    if (isCurrentMount) {
+      setSocket(socketInstance);
+    }
+
+    // Event handlers with mount check
     const handleConnect = () => {
       console.log('[SocketProvider] Connected');
-      setIsConnected(true);
-      setIsConnecting(false);
-
-      // Join 'displays' room for real-time updates
-      // The socket will automatically be added to the room on the server
-      // but we emit a custom event here for explicit room joining if needed
-      console.log('[SocketProvider] Joined displays room for real-time updates');
+      if (isCurrentMount) {
+        setIsConnected(true);
+        setIsConnecting(false);
+      }
     };
 
     const handleDisconnect = () => {
       console.log('[SocketProvider] Disconnected');
-      setIsConnected(false);
-      setIsConnecting(false);
+      if (isCurrentMount) {
+        setIsConnected(false);
+        setIsConnecting(false);
+      }
     };
 
-    const handleReconnectAttempt = () => {
-      console.log('[SocketProvider] Attempting to reconnect...');
-      setIsConnecting(true);
-      setIsConnected(false);
+    const handleConnectError = (error: Error) => {
+      console.error('[SocketProvider] Connection error:', error.message);
+      if (isCurrentMount) {
+        setIsConnecting(false);
+      }
     };
 
-    // Attach event listeners
+    // Attach listeners
     socketInstance.on('connect', handleConnect);
     socketInstance.on('disconnect', handleDisconnect);
-    (socketInstance as any).on('reconnect_attempt', handleReconnectAttempt);
+    socketInstance.on('connect_error', handleConnectError);
 
-    // Check initial connection state
+    // Check if already connected
     if (socketInstance.connected) {
       setIsConnected(true);
       setIsConnecting(false);
     }
 
-    // Cleanup on unmount
+    // Cleanup
     return () => {
+      isCurrentMount = false;
+
+      // Remove only our listeners, don't kill the socket
       socketInstance.off('connect', handleConnect);
       socketInstance.off('disconnect', handleDisconnect);
-      (socketInstance as any).off('reconnect_attempt', handleReconnectAttempt);
-      disconnectSocket();
+      socketInstance.off('connect_error', handleConnectError);
+
+      // Release our reference (socket stays alive)
+      releaseSocket();
     };
   }, []);
 

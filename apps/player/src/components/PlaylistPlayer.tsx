@@ -5,7 +5,7 @@
  * Plays a sequence of videos and images in a loop
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { VideoPlayer } from './VideoPlayer';
 
 interface PlaylistItem {
@@ -93,24 +93,35 @@ function ImageDisplay({
     onComplete: () => void;
 }) {
     const [timeLeft, setTimeLeft] = useState(duration);
+    const onCompleteRef = useRef(onComplete);
 
+    // Keep ref updated
     useEffect(() => {
-        // Reset timer when src changes
-        setTimeLeft(duration);
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    onComplete();
-                    return 0;
-                }
-                return prev - 1;
-            });
+    // Reset timer when src changes
+    useEffect(() => {
+        setTimeLeft(duration);
+    }, [src, duration]);
+
+    // Timer countdown
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+
+        const timer = setTimeout(() => {
+            setTimeLeft(prev => prev - 1);
         }, 1000);
 
-        return () => clearInterval(timer);
-    }, [src, duration, onComplete]);
+        return () => clearTimeout(timer);
+    }, [timeLeft]);
+
+    // Call onComplete when time reaches 0 (separate effect to avoid setState during render)
+    useEffect(() => {
+        if (timeLeft === 0) {
+            onCompleteRef.current();
+        }
+    }, [timeLeft]);
 
     return (
         <div className="relative w-full h-full bg-black">
@@ -127,3 +138,4 @@ function ImageDisplay({
         </div>
     );
 }
+
