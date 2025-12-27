@@ -100,12 +100,17 @@ export function createApp(): Application {
   app.use(logger);
 
   // ==============================================
-  // 📂 STATIC FILES (AGREGAR ESTO)
+  // 📂 STATIC FILES (FIX DEFINITIVO)
   // ==============================================
-  // Esto hace públicas las carpetas para que el frontend pueda ver las imágenes
-  app.use('/uploads', express.static(path.join(__dirname, '../../storage/uploads')));
-  app.use('/thumbnails', express.static(path.join(__dirname, '../../storage/thumbnails')));
-  app.use('/hls', express.static(path.join(__dirname, '../../storage/hls')));
+  const storagePath = path.join(process.cwd(), 'storage');
+
+  console.log('📂 Static files config:');
+  console.log('   - CWD:', process.cwd());
+  console.log('   - Storage path:', storagePath);
+
+  app.use('/uploads', express.static(path.join(storagePath, 'uploads')));
+  app.use('/thumbnails', express.static(path.join(storagePath, 'thumbnails')));
+  app.use('/hls', express.static(path.join(storagePath, 'hls')));
 
   // ==============================================
   // ROUTES
