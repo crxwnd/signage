@@ -14,6 +14,17 @@ import { usePlayerSocket } from '@/hooks/usePlayerSocket';
 // Backend URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+/**
+ * Prepend backend URL to content paths
+ */
+function getFullUrl(path: string | null | undefined): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path; // Already absolute
+  }
+  return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 interface ContentItem {
   id: string;
   name: string;
@@ -61,13 +72,13 @@ export default function PlayerPage() {
       const data = await response.json();
       const rawItems = data.data?.items || data.items || [];
 
-      // Transform to PlaylistPlayer format
+      // Transform to PlaylistPlayer format with full URLs
       const items: PlaylistItem[] = rawItems
         .sort((a: DisplayContentItem, b: DisplayContentItem) => a.order - b.order)
         .map((item: DisplayContentItem) => ({
           id: item.content.id,
           type: item.content.type,
-          url: item.content.hlsUrl || item.content.originalUrl,
+          url: getFullUrl(item.content.hlsUrl || item.content.originalUrl),
           duration: item.content.duration || 10,
           name: item.content.name,
         }));

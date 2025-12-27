@@ -1,6 +1,6 @@
 /**
  * Socket.io client configuration
- * Typed socket client for real-time communication with backend
+ * Singleton pattern con protección contra StrictMode
  */
 
 import { io, Socket } from 'socket.io-client';
@@ -9,86 +9,94 @@ import type {
   ServerToClientEvents,
 } from '@shared-types';
 
-// Socket.io server URL from environment variable
 export const SOCKET_URL =
   process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
 
-// Typed Socket type
-export type TypedSocket = Socket<
-  ServerToClientEvents,
-  ClientToServerEvents
->;
+export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
+// Singleton state
 let socket: TypedSocket | null = null;
+let connectionCount = 0; // Track active consumers
 
 /**
- * Initialize Socket.io client connection
- * Returns a typed socket instance
+ * Initialize or get existing socket connection
+ * Uses reference counting to manage lifecycle
  */
 export function initializeSocket(): TypedSocket {
-  if (socket) {
-    console.log('[Socket] Already initialized');
+  connectionCount++;
+
+  if (socket?.connected) {
+    console.log('[Socket] Reusing existing connection, consumers:', connectionCount);
     return socket;
   }
 
-  console.log('[Socket] Initializing connection to', SOCKET_URL);
+  if (socket) {
+    // Socket exists but disconnected - reconnect it
+    console.log('[Socket] Reconnecting existing socket');
+    socket.connect();
+    return socket;
+  }
+
+  console.log('[Socket] Creating new connection to', SOCKET_URL);
 
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: 10,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
+    autoConnect: true,
   }) as TypedSocket;
 
-  // Connection event handlers
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket?.id);
   });
 
   socket.on('disconnect', (reason) => {
     console.log('[Socket] Disconnected:', reason);
+    // Don't null the socket - let it reconnect automatically
   });
 
   socket.on('connect_error', (error) => {
     console.error('[Socket] Connection error:', error.message);
   });
 
-  // Reconnection events (using any for reserved socket.io events)
-  (socket as any).on('reconnect', (attemptNumber: number) => {
-    console.log('[Socket] Reconnected after', attemptNumber, 'attempts');
-  });
-
-  (socket as any).on('reconnect_attempt', (attemptNumber: number) => {
-    console.log('[Socket] Reconnection attempt', attemptNumber);
-  });
-
-  (socket as any).on('reconnect_error', (error: Error) => {
-    console.error('[Socket] Reconnection error:', error.message);
-  });
-
-  (socket as any).on('reconnect_failed', () => {
-    console.error('[Socket] Reconnection failed after all attempts');
-  });
-
   return socket;
 }
 
 /**
- * Get the current socket instance
+ * Get the current socket instance (may be null)
  */
 export function getSocket(): TypedSocket | null {
   return socket;
 }
 
 /**
- * Disconnect and cleanup socket
+ * Release a socket consumer
+ * Only truly disconnects when all consumers are gone
  */
-export function disconnectSocket(): void {
+export function releaseSocket(): void {
+  connectionCount = Math.max(0, connectionCount - 1);
+  console.log('[Socket] Released, remaining consumers:', connectionCount);
+
+  // Don't disconnect - let socket persist for app lifetime
+  // Only disconnect on explicit destroySocket() call
+}
+
+/**
+ * Force disconnect and destroy socket (use sparingly)
+ * Only call this on app unmount or explicit logout
+ */
+export function destroySocket(): void {
   if (socket) {
-    console.log('[Socket] Disconnecting...');
+    console.log('[Socket] Destroying socket');
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
+    connectionCount = 0;
   }
 }
+
+// Backwards compatibility alias
+export const disconnectSocket = releaseSocket;
