@@ -147,6 +147,55 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+### 4.4.1 Detección de Conexión y Modo Offline
+**Fecha**: 28/12/2025  
+**Objetivo**: Implementar modo offline para player SmartTV
+
+#### Modificaciones Realizadas:
+
+**1. Nuevo: `apps/player/src/hooks/useNetworkStatus.ts`**
+- Detecta eventos online/offline del navegador
+- Verificación periódica cada 5s como respaldo
+- Estado: isOnline, wasOffline, offlineSince, lastOnline
+
+**2. Nuevo: `apps/player/src/hooks/useOfflineMode.ts`**
+- Integra detección de red con cola de eventos
+- Callbacks onReconnect, onDisconnect
+- Procesa cola automáticamente al reconectar
+
+**3. Nuevo: `apps/player/src/components/OfflineBanner.tsx`**
+- Banner rojo fijo en parte superior
+- Muestra duración de desconexión
+- Icono SVG de sin conexión
+
+**4. Nuevo: `apps/player/src/lib/services/offlineQueue.ts`**
+- Cola de eventos en localStorage
+- Métodos: enqueue, processQueue, clear
+- Reintentos: 3 intentos por evento
+
+**5. `apps/player/src/app/page.tsx`**
+- Integrado OfflineBanner
+- Hook useOfflineMode con callbacks
+- Estado de errores adaptado para offline
+- Status overlay muestra modo offline y pendientes
+
+**6. `apps/player/src/hooks/usePlayerSocket.ts`**
+- Handlers de reconexión: reconnect, reconnect_attempt, reconnect_failed
+- Re-registro de display automático al reconectar
+
+**7. `apps/player/src/components/PlaylistPlayer.tsx`**
+- Prop isOffline para comportamiento futuro
+- Preparado para filtrar solo contenido cacheado
+
+#### Resultados:
+- ✅ `pnpm typecheck` pasa sin errores
+- ✅ Banner visual cuando pierde conexión
+- ✅ Player continúa con contenido cacheado
+- ✅ Reconexión automática con recarga de playlist
+- ✅ Cola de eventos sincroniza al reconectar
+
+---
+
 ## Formato de Entradas
 
 Cada entrada sigue el formato:

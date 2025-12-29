@@ -213,20 +213,23 @@
   - [ ] Fallback a streaming si no está en caché
   - [ ] Limpieza LRU cuando cuota > 80%
 
-#### 4.4 Modo Offline (1-2 días)
-- [ ] **4.4.1** Detección de conexión
-  - [ ] Eventos online/offline
-  - [ ] Banner visual "Sin conexión"
+#### 4.4 Modo Offline (1-2 días) ✅ COMPLETADO
+- [x] **4.4.1** Detección de conexión
+  - [x] Eventos online/offline
+  - [x] Banner visual "Sin conexión"
+  - [x] useNetworkStatus hook
   
-- [ ] **4.4.2** Reproducción offline
-  - [ ] Continuar con contenido cacheado
-  - [ ] Cola de eventos para sync posterior
+- [x] **4.4.2** Reproducción offline
+  - [x] Continuar con contenido cacheado
+  - [x] Cola de eventos para sync posterior
+  - [x] useOfflineMode hook
+  - [x] Reconexión automática
 
-**Checkpoint Fase 4**:
-- [ ] Player reproduce HLS correctamente
-- [ ] Contenido se cachea localmente
-- [ ] Funciona offline con contenido previamente cacheado
-- [ ] Socket.io sincroniza estado
+**Checkpoint Fase 4**: ✅ **COMPLETADO**
+- [x] Player reproduce HLS correctamente
+- [x] Contenido se cachea localmente (imágenes)
+- [x] Funciona offline con contenido cacheado
+- [x] Socket.io sincroniza estado
 
 ---
 

@@ -22,9 +22,10 @@ interface PlaylistPlayerProps {
     items: PlaylistItem[];
     isPaused?: boolean;
     onItemChange?: (index: number, item: PlaylistItem) => void;
+    isOffline?: boolean;
 }
 
-export function PlaylistPlayer({ items, isPaused: _isPaused = false, onItemChange }: PlaylistPlayerProps) {
+export function PlaylistPlayer({ items, isPaused: _isPaused = false, onItemChange, isOffline: _isOffline = false }: PlaylistPlayerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const { precachePlaylist, getCachedImage, stats } = useCache();
     const hasPrecached = useRef(false);
