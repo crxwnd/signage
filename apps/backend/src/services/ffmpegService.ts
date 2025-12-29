@@ -47,7 +47,7 @@ export async function checkFFmpegInstalled(): Promise<boolean> {
  * @param filePath Path to the video file
  * @returns Promise<VideoMetadata> Video metadata
  */
-export async function getVideoInfo(filePath: string): Promise<VideoMetadata> {
+export function getVideoInfo(filePath: string): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
     log.info('Extracting video metadata', { filePath });
 
@@ -133,7 +133,7 @@ export async function getVideoInfo(filePath: string): Promise<VideoMetadata> {
  * @param timeOffset Time offset in seconds (default: 1 second)
  * @returns Promise<string> Path to the generated thumbnail
  */
-export async function generateThumbnail(
+export function generateThumbnail(
   inputPath: string,
   outputPath: string,
   timeOffset: number = 1
@@ -295,8 +295,10 @@ export async function transcodeToHLS(
   );
 
   if (applicableQualities.length === 0) {
-    // If source is very low quality, use lowest preset
-    applicableQualities.push(QUALITY_PRESETS[0]!);
+    const lowestPreset = QUALITY_PRESETS[0];
+    if (lowestPreset) {
+      applicableQualities.push(lowestPreset);
+    }
   }
 
   log.info('Selected quality presets', {

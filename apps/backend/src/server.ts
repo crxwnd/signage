@@ -59,7 +59,7 @@ async function startServer(): Promise<void> {
     });
 
     // Graceful shutdown handlers
-    const shutdown = async (signal: string): Promise<void> => {
+    const shutdown = (signal: string): void => {
       log.info(`${signal} received. Starting graceful shutdown...`);
 
       // Stop accepting new connections
@@ -79,12 +79,14 @@ async function startServer(): Promise<void> {
         }
 
         log.info('Graceful shutdown complete');
+        // eslint-disable-next-line no-process-exit
         process.exit(0);
       });
 
       // Force shutdown after timeout
       setTimeout(() => {
         log.error('Forced shutdown after timeout');
+        // eslint-disable-next-line no-process-exit
         process.exit(1);
       }, 10000);
     };
@@ -105,6 +107,7 @@ async function startServer(): Promise<void> {
     });
   } catch (error) {
     log.error('Failed to start server', error as Error);
+    // eslint-disable-next-line no-process-exit
     process.exit(1);
   }
 }

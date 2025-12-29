@@ -126,7 +126,7 @@ export async function getAreasHandler(req: Request, res: Response): Promise<void
         });
         break;
 
-      default:
+      default: {
         const errorResponse: ApiErrorResponse = {
           success: false,
           error: {
@@ -137,6 +137,7 @@ export async function getAreasHandler(req: Request, res: Response): Promise<void
         };
         res.status(403).json(errorResponse);
         return;
+      }
     }
 
     const response: ApiSuccessResponse = {

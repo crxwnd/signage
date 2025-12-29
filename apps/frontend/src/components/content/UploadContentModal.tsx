@@ -21,7 +21,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useHotels } from '@/hooks/useHotels';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadContent } from '@/lib/api/content';
 import { Upload, X, FileVideo, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -130,6 +138,15 @@ export function UploadContentModal({
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [nameError, setNameError] = React.useState<string | null>(null);
 
+  // Hotel selection state (for Super Admin)
+  const [selectedHotelId, setSelectedHotelId] = React.useState<string>('');
+
+  // Fetch hotels using the existing hook (for Super Admin)
+  const { data: hotels = [], isLoading: hotelsLoading } = useHotels();
+
+  // Effective hotelId: user's hotel OR selected hotel for Super Admin
+  const effectiveHotelId = user?.hotelId || selectedHotelId;
+
   /**
    * Reset form when modal closes
    */
@@ -142,8 +159,19 @@ export function UploadContentModal({
       setUploadProgress(0);
       setErrorMessage(null);
       setNameError(null);
+      setSelectedHotelId('');
     }
   }, [isOpen]);
+
+  /**
+   * Pre-select first hotel for Super Admin when hotels load
+   */
+  React.useEffect(() => {
+    const firstHotel = hotels[0];
+    if (user?.role === 'SUPER_ADMIN' && !user?.hotelId && firstHotel && !selectedHotelId) {
+      setSelectedHotelId(firstHotel.id);
+    }
+  }, [hotels, user, selectedHotelId]);
 
   /**
    * Create preview URL for images
@@ -252,12 +280,15 @@ export function UploadContentModal({
       return;
     }
 
-    // Validate hotelId from auth context
-    if (!user?.hotelId) {
-      setErrorMessage('No hotel assigned to your account. Please contact an administrator.');
+    // Validate hotelId (either from user's hotel or selected hotel for Super Admin)
+    if (!effectiveHotelId) {
+      const errorMsg = user?.role === 'SUPER_ADMIN'
+        ? 'Please select a hotel to upload content.'
+        : 'No hotel assigned to your account. Please contact an administrator.';
+      setErrorMessage(errorMsg);
       toast({
         title: 'Upload failed',
-        description: 'No hotel assigned to your account',
+        description: errorMsg,
         variant: 'destructive',
       });
       return;
@@ -279,11 +310,11 @@ export function UploadContentModal({
         });
       }, 200);
 
-      // Upload file using hotelId from authenticated user
+      // Upload file using effectiveHotelId (user's hotel or selected hotel)
       const content = await uploadContent(
         selectedFile,
         name,
-        user.hotelId
+        effectiveHotelId
       );
 
       clearInterval(progressInterval);
@@ -459,6 +490,33 @@ export function UploadContentModal({
               </div>
             )}
 
+            {/* Hotel Selector for Super Admin */}
+            {selectedFile && uploadState === 'idle' && user?.role === 'SUPER_ADMIN' && !user?.hotelId && (
+              <div className="grid gap-2">
+                <Label htmlFor="hotel">
+                  Target Hotel <span className="text-destructive">*</span>
+                </Label>
+                {hotelsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading hotels...</p>
+                ) : hotels.length === 0 ? (
+                  <p className="text-sm text-destructive">No hotels available</p>
+                ) : (
+                  <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
+                    <SelectTrigger id="hotel">
+                      <SelectValue placeholder="Select hotel for this content" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hotels.map((hotel) => (
+                        <SelectItem key={hotel.id} value={hotel.id}>
+                          {hotel.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
             {/* Upload Progress */}
             {isUploading && (
               <div className="space-y-4">
@@ -527,7 +585,7 @@ export function UploadContentModal({
             {!isSuccess && !isError && (
               <Button
                 type="submit"
-                disabled={!selectedFile || isUploading}
+                disabled={!selectedFile || isUploading || !effectiveHotelId}
               >
                 {isUploading ? 'Uploading...' : 'Upload'}
               </Button>
