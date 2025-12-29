@@ -195,10 +195,13 @@
   - [x] Endpoint `POST /api/displays/confirm-pairing`
 
 #### 4.3 Caché Local con IndexedDB (3 días)
-- [ ] **4.3.1** Setup Dexie.js
-  - [ ] Instalar Dexie.js
-  - [ ] Schema: videos, chunks, metadata
-  - [ ] Gestión de cuota (navigator.storage.estimate)
+- [x] **4.3.1** Setup Dexie.js ✅ COMPLETADO
+  - [x] Instalar Dexie.js (v4.2.1)
+  - [x] Schema: contents, segments, metadata
+  - [x] Gestión de cuota (navigator.storage.estimate)
+  - [x] cacheService con LRU eviction
+  - [x] useCache hook
+  - [x] PlaylistPlayer integrado con cache
 
 - [ ] **4.3.2** Descarga en background
   - [ ] Descargar contenido programado anticipadamente
