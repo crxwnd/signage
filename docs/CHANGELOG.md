@@ -106,6 +106,47 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+### 4.3.1 Setup Dexie.js y Cache Service
+**Fecha**: 28/12/2025  
+**Objetivo**: Implementar cache local con IndexedDB para reproducción offline
+
+#### Modificaciones Realizadas:
+
+**1. Nuevo: `apps/player/src/lib/db/cacheDb.ts`**
+- Schema Dexie con tablas: contents, segments, metadata
+- Tipos: CachedContent, CachedSegment, CacheMetadata
+- Índices para LRU: lastAccessed, cachedAt
+
+**2. Nuevo: `apps/player/src/lib/services/cacheService.ts`**
+- `cacheImage()`, `getCachedImage()` - cache de imágenes
+- `cacheSegment()`, `getCachedSegment()` - cache de segmentos HLS
+- `ensureSpace()`, `evictLRU()` - gestión de espacio con LRU
+- `precachePlaylist()` - pre-cache automático
+- `getStorageEstimate()` - uso de navigator.storage.estimate()
+- Límite: 500MB, threshold: 80%
+
+**3. Nuevo: `apps/player/src/hooks/useCache.ts`**
+- Hook React para acceder al cache
+- Stats: used, quota, percentage, itemCount
+- Métodos: cacheImage, getCachedImage, clearCache, precachePlaylist
+
+**4. `apps/player/src/components/PlaylistPlayer.tsx`**
+- Integrado pre-caching de imágenes al cargar playlist
+- Usa imágenes cacheadas si disponibles (con indicador 📦)
+- CacheIndicator: muestra tamaño de cache y cantidad de items
+- Cleanup de Object URLs al desmontar
+
+**5. `apps/player/package.json`**
+- Añadida dependencia: `dexie ^4.2.1`
+
+#### Resultados:
+- ✅ `pnpm typecheck` pasa sin errores
+- ✅ Imágenes se cachean automáticamente
+- ✅ Cache con límite 500MB y LRU eviction al 80%
+- ✅ Indicador visual de cache en player
+
+---
+
 ## Formato de Entradas
 
 Cada entrada sigue el formato:
