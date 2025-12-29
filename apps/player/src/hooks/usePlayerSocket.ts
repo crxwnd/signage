@@ -77,6 +77,23 @@ export function usePlayerSocket({
             setError(err.message);
         });
 
+        // Reconnection handlers
+        socket.io.on('reconnect', (attempt) => {
+            console.log(`[PlayerSocket] Reconnected after ${attempt} attempts`);
+            setIsConnected(true);
+            setError(null);
+            // Re-register display after reconnection (handled in separate effect)
+        });
+
+        socket.io.on('reconnect_attempt', (attempt) => {
+            console.log(`[PlayerSocket] Reconnection attempt ${attempt}`);
+        });
+
+        socket.io.on('reconnect_failed', () => {
+            console.log('[PlayerSocket] Reconnection failed - continuing offline');
+            setError('Connection failed - running in offline mode');
+        });
+
         // Event handlers using refs
         socket.on('playlist:updated' as any, () => {
             console.log('[PlayerSocket] Playlist updated event');
