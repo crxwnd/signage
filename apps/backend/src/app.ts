@@ -10,7 +10,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
-import { logger } from './middleware/logger';
+import { logger, log } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRouter from './routes/health';
 import displaysRouter from './routes/displays';
@@ -29,7 +29,7 @@ import hotelsRouter from './routes/hotels';
 // ==============================================
 // Esto soluciona el error "Do not know how to serialize a BigInt"
 // Convierte los BigInt de Prisma a string al enviar JSON
-// @ts-ignore
+// @ts-expect-error BigInt prototype extension
 BigInt.prototype.toJSON = function (): string {
   return this.toString();
 };
@@ -104,9 +104,10 @@ export function createApp(): Application {
   // ==============================================
   const storagePath = path.join(process.cwd(), 'storage');
 
-  console.log('📂 Static files config:');
-  console.log('   - CWD:', process.cwd());
-  console.log('   - Storage path:', storagePath);
+  log.info('📂 Static files config:', {
+    cwd: process.cwd(),
+    storagePath,
+  });
 
   app.use('/uploads', express.static(path.join(storagePath, 'uploads')));
   app.use('/thumbnails', express.static(path.join(storagePath, 'thumbnails')));

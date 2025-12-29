@@ -40,6 +40,7 @@ interface AuthContextState {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 /**
@@ -183,6 +184,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [router]);
 
   /**
+   * Refresh user data without full re-auth
+   * Used after changes like 2FA enable/disable
+   */
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await getMe();
+      setUser(userData);
+    } catch (error) {
+      console.warn('[Auth] Failed to refresh user:', error);
+    }
+  }, []);
+
+  /**
    * Check auth ONCE on mount
    */
   useEffect(() => {
@@ -235,6 +249,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     checkAuth,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

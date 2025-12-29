@@ -291,3 +291,76 @@ export async function authenticatedFetch(
     credentials: 'include',
   });
 }
+
+// ==============================================
+// 2FA Functions
+// ==============================================
+
+export interface Setup2FAResponse {
+  secret: string;
+  qrCode: string;
+  otpauthUrl: string;
+}
+
+/**
+ * Setup 2FA for current user
+ * Returns QR code and secret for authenticator app
+ */
+export async function setup2FA(): Promise<Setup2FAResponse> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/setup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Failed to setup 2FA',
+      data.error?.code || 'SETUP_2FA_ERROR'
+    );
+  }
+
+  return data.data;
+}
+
+/**
+ * Verify 2FA token and enable 2FA
+ */
+export async function verify2FA(token: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Invalid verification code',
+      data.error?.code || 'VERIFY_2FA_ERROR'
+    );
+  }
+}
+
+/**
+ * Disable 2FA for current user
+ * Requires valid TOTP token
+ */
+export async function disable2FA(token: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/disable`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Failed to disable 2FA',
+      data.error?.code || 'DISABLE_2FA_ERROR'
+    );
+  }
+}

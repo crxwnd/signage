@@ -12,7 +12,9 @@ import type { ApiErrorResponse } from '@shared-types';
 /**
  * Extend Express Request to include user data
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: DecodedToken;

@@ -3,5 +3,10 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
   - esbuild
+  - msgpackr-extract
+  - prisma
   - unrs-resolver

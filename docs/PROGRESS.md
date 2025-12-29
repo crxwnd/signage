@@ -1,8 +1,8 @@
 # 📊 ROADMAP DEL PROYECTO - Sistema de Señalización Digital
 
 **Proyecto**: Sistema de Señalización Digital para Hoteles  
-**Última actualización**: 17/12/2025  
-**Estado global**: ~45% completado
+**Última actualización**: 28/12/2025  
+**Estado global**: ~50% completado
 
 ---
 
@@ -128,17 +128,37 @@
     - [x] Editar rol/hotel/área de usuario
     - [x] Eliminar usuario (no puede eliminarse a sí mismo)
 
-  - [ ] **3.4.3** 2FA Modal (pendiente)
-    - [ ] Modal para activar/desactivar 2FA
-    - [ ] Mostrar QR code para escanear
-    - [ ] Input para código de verificación
+  - [x] **3.4.3** 2FA Modal ✅ COMPLETADO
+    - [x] Modal para activar/desactivar 2FA
+    - [x] Mostrar QR code para escanear
+    - [x] Input para código de verificación
+    - [x] Funciones API: setup2FA, verify2FA, disable2FA
+    - [x] Integrado en página Settings
 
-  **Checkpoint Fase 3**:
+#### 3.5 Mantenimiento y Bugfixes (1 día) ✅ COMPLETADO
+- [x] **3.5.1** Corrección de Errores de Linting Backend
+  - [x] `app.ts`: @ts-expect-error, console.log → log.info
+  - [x] `auth.ts`: eslint-disable para namespace
+  - [x] `authController.ts`: remove async sin await
+  - [x] `areaController.ts`: lexical declaration en case block
+  - [x] `server.ts`: eslint-disable para process.exit
+  - [x] `ffmpegService.ts`: remove async, fix non-null assertion
+  - [x] **Resultado**: 0 errores, 23 warnings (solo no-explicit-any)
+
+- [x] **3.5.2** Fix: Super Admin Upload Content
+  - [x] Selector de hotel para SUPER_ADMIN en UploadContentModal
+  - [x] Uso del hook `useHotels` existente
+  - [x] Pre-selección del primer hotel disponible
+  - [x] Validación con `effectiveHotelId`
+
+  **Checkpoint Fase 3**: ✅ **COMPLETADO**
   - [x] Página `/areas` funcional con CRUD
   - [x] Ninguna API accesible sin token válido
   - [x] Cada rol ve solo lo que le corresponde
   - [x] Página `/users` con gestión completa
   - [x] Tests RBAC pasando
+  - [x] Linting backend sin errores
+  - [x] Modal 2FA funcional en Settings
 
 ---
 
