@@ -154,11 +154,9 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
   };
 
   const handleDeleted = () => {
-    if (onRefetch) {
-      onRefetch();
-    } else {
-      window.location.reload();
-    }
+    // Just call onRefetch if provided - no page reload needed
+    // The parent component should handle the state update
+    onRefetch?.();
   };
 
   return (

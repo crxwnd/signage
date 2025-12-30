@@ -10,7 +10,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
-import { logger, log } from './middleware/logger';
+import { logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRouter from './routes/health';
 import displaysRouter from './routes/displays';
@@ -71,12 +71,44 @@ export function createApp(): Application {
     })
   );
 
-  // Rate limiting
+  // ==============================================
+  // 📂 STATIC FILES (BEFORE RATE LIMITER)
+  // ==============================================
+  // Static files don't need rate limiting - they're served directly
+  const storagePath = path.join(process.cwd(), 'storage');
+
+  console.log('📂 Static files config:');
+  console.log('   - CWD:', process.cwd());
+  console.log('   - Storage path:', storagePath);
+
+  app.use('/uploads', express.static(path.join(storagePath, 'uploads')));
+  app.use('/thumbnails', express.static(path.join(storagePath, 'thumbnails')));
+  app.use('/hls', express.static(path.join(storagePath, 'hls')));
+
+  // Rate limiting (AFTER static files - only for API routes)
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
-    standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-    legacyHeaders: false, // Disable `X-RateLimit-*` headers
+    max: 200, // Increased from 100 to 200 requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Skip rate limiting for static files and auth session endpoints
+    skip: (req) => {
+      const reqPath = req.path;
+      // Static files (already served above, but skip anyway)
+      if (reqPath.startsWith('/hls/') ||
+        reqPath.startsWith('/uploads/') ||
+        reqPath.startsWith('/thumbnails/')) {
+        return true;
+      }
+      // Auth session endpoints (called frequently, should not be rate limited)
+      // Note: /api/auth/login IS rate limited to prevent brute force
+      if (reqPath === '/api/auth/refresh' ||
+        reqPath === '/api/auth/me' ||
+        reqPath === '/api/auth/logout') {
+        return true;
+      }
+      return false;
+    },
     message: {
       success: false,
       error: {
@@ -99,19 +131,7 @@ export function createApp(): Application {
   // Request logging
   app.use(logger);
 
-  // ==============================================
-  // 📂 STATIC FILES (FIX DEFINITIVO)
-  // ==============================================
-  const storagePath = path.join(process.cwd(), 'storage');
-
-  log.info('📂 Static files config:', {
-    cwd: process.cwd(),
-    storagePath,
-  });
-
-  app.use('/uploads', express.static(path.join(storagePath, 'uploads')));
-  app.use('/thumbnails', express.static(path.join(storagePath, 'thumbnails')));
-  app.use('/hls', express.static(path.join(storagePath, 'hls')));
+  // Note: Static files are served BEFORE rate limiter (see above)
 
   // ==============================================
   // ROUTES
