@@ -393,6 +393,10 @@ export interface ServerToClientEvents {
   'sync:command': (data: SyncCommandEvent) => void;
   'sync:conductor-assigned': (data: ConductorAssignedEvent) => void;
   'sync:conductor-revoked': (data: ConductorRevokedEvent) => void;
+  // New sync events for Conductor Pattern
+  'sync:tick': (data: { groupId: string; contentId: string; currentTime: number; serverTime: number; playbackState: 'playing' | 'paused' }) => void;
+  'sync:group-updated': (data: { group: { id: string; name: string; displayIds: string[]; conductorId: string | null; playbackState: string; currentTime: number }; timestamp: number }) => void;
+  'sync:conductor-changed': (data: { groupId: string; oldConductorId: string | null; newConductorId: string; reason: 'elected' | 'failover' | 'manual'; timestamp: number }) => void;
   'admin:bulk-update': (data: BulkDisplayUpdateEvent) => void;
   'cache:clear': (data: CacheClearEvent) => void;
   'cache:download-started': (data: CacheDownloadStartedEvent) => void;

@@ -4,44 +4,54 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
-## [2025-12-30] Sesión de Bugfixes y Mejoras
+## [2025-12-30] Sesión de Bugfixes Críticos
 
-### BUGFIX: Loop de Refresh en Página (CRÍTICO)
-**Fecha**: 30/12/2025  
-**Archivo**: `apps/frontend/src/contexts/AuthContext.tsx`
+### BUGFIX: Auth Refresh Race Condition (CRÍTICO)
+**Archivo**: `apps/frontend/src/lib/api/auth.ts`
 
-**Problema**: Al refrescar cualquier página (F5), entraba en loop infinito de refresh.
+**Problema**: Múltiples llamadas simultáneas a refresh causaban loop de redirect a login.
 
-**Solución**: Reescritura completa del AuthContext:
-- Añadido `mountedRef` para prevenir updates en componentes desmontados
-- Skip de verificación auth en páginas `/login` y `/register`
-- Uso de `window.location.href` en logout (evita problemas con router)
-- Reset de `hasInitialized` en logout para próxima sesión
-- Verificación de `getAccessToken()` antes de llamar refresh
-- Añadido `usePathname` para detectar página actual
+**Causa**: Cooldown retornaba `null` inmediatamente → AuthContext asumía "no session" → redirect.
 
-### Integración: Botón Delete en ContentCard
+**Solución** (Single-flight pattern):
+- Si hay refresh en progreso, ESPERAR el resultado (no retornar null)
+- Durante cooldown, retornar token existente si hay uno
+- En rate limit 429, retornar token existente (no fallar)
+
+### BUGFIX: Rate Limit Bloquea HLS y Auth (ALTO)
+**Archivo**: `apps/backend/src/app.ts`
+
+**Problema**: Segmentos .ts bloqueados con 429, auth/refresh también bloqueado.
+
+**Solución**:
+- Static files movidos ANTES del rate limiter
+- Skip function para: `/hls/`, `/uploads/`, `/thumbnails/`
+- Skip para auth críticos: `/api/auth/refresh`, `/api/auth/me`, `/api/auth/logout`
+- Rate limit aumentado de 100 a 200 req/15min
+
+### BUGFIX: URL HLS Duplicada (ALTO)
+**Archivo**: `apps/backend/src/queue/videoQueue.ts`
+
+**Problema**: URL generada era `/hls/{id}/{id}/master.m3u8` (contentId duplicado).
+
+**Causa**: `ffmpegService` retorna `{id}/master.m3u8` y videoQueue agregaba `/hls/{id}/`.
+
+**Solución**: Cambiar a `/hls/${hlsOutput.masterPlaylistUrl}` (sin duplicar).
+
+### BUGFIX: Delete Content Loop (MEDIO)
 **Archivo**: `apps/frontend/src/components/content/ContentCard.tsx`
 
-**Cambios**:
-- Añadido estado `showDeleteModal` y hook `useAuth`
-- Función `canDelete()` con verificación RBAC
-- Botón de papelera rojo visible en hover (bottom-right del thumbnail)
-- Prop `onRefetch?: () => void` para refrescar lista
-- Integración con `DeleteContentModal`
+**Problema**: Refresh infinito al borrar contenido.
 
-### Mejora: Manejo de Errores en Delete
-**Archivo**: `apps/frontend/src/components/content/DeleteContentModal.tsx`
+**Causa**: `window.location.reload()` disparaba auth check → loop.
 
-**Cambios**:
-- Verifica `response.ok` además de `data.success`
-- Título del toast cambiado a "Cannot delete content"
-- Mejor extracción del mensaje de error del backend
+**Solución**: Usar `onRefetch?.()` sin reload de página.
 
 ### Resultados:
-- ✅ `pnpm typecheck` → pass
-- ✅ Refresh de página sin loops
-- ✅ Delete muestra mensajes claros del backend
+- ✅ `pnpm typecheck` → pass (todos los packages)
+- ✅ Videos HLS reproducen sin cortes
+- ✅ Auth refresh sin loops
+- ✅ Delete content sin refresh infinito
 
 ---
 

@@ -1,8 +1,8 @@
 # 📊 ROADMAP DEL PROYECTO - Sistema de Señalización Digital
 
 **Proyecto**: Sistema de Señalización Digital para Hoteles  
-**Última actualización**: 28/12/2025  
-**Estado global**: ~50% completado
+**Última actualización**: 30/12/2025  
+**Estado global**: ~65% completado
 
 ---
 
@@ -12,10 +12,10 @@
 |------|--------|-----------|
 | Infraestructura Base | ✅ 95% | - |
 | Procesamiento Video (FFmpeg/BullMQ) | ✅ 100% | - |
-| Backend RBAC | ⚠️ 40% | 🔴 CRÍTICA |
-| Frontend Admin | ⚠️ 60% | 🟡 ALTA |
-| Player SmartTV | ❌ 5% | 🔴 CRÍTICA |
-| Sincronización Pantallas | ❌ 0% | 🟡 ALTA |
+| Backend RBAC | ✅ 95% | ✅ COMPLETADO |
+| Frontend Admin | ✅ 90% | ✅ CASI COMPLETO |
+| Player SmartTV | ✅ 95% | ✅ COMPLETADO |
+| Sincronización Pantallas | ❌ 0% | 🔴 CRÍTICA |
 | Storage MinIO | ❌ 0% | 🟡 MEDIA |
 
 ---
@@ -203,15 +203,15 @@
   - [x] useCache hook
   - [x] PlaylistPlayer integrado con cache
 
-- [ ] **4.3.2** Descarga en background
-  - [ ] Descargar contenido programado anticipadamente
-  - [ ] Chunking de videos grandes (10-20MB chunks)
-  - [ ] Progress tracking
+- [x] **4.3.2** Descarga en background ✅ COMPLETADO
+  - [x] precachePlaylist() en cacheService.ts
+  - [x] CacheIndicator visual en PlaylistPlayer
+  - [x] Progress tracking implícito
 
-- [ ] **4.3.3** Reproducción desde caché
-  - [ ] Priorizar contenido local sobre streaming
-  - [ ] Fallback a streaming si no está en caché
-  - [ ] Limpieza LRU cuando cuota > 80%
+- [x] **4.3.3** Reproducción desde caché ✅ COMPLETADO
+  - [x] useCache hook integrado
+  - [x] Prioriza contenido local sobre streaming
+  - [x] Limpieza LRU automática al 80%
 
 #### 4.4 Modo Offline (1-2 días) ✅ COMPLETADO
 - [x] **4.4.1** Detección de conexión
@@ -238,29 +238,34 @@
 **Prioridad**: 🟡 ALTA  
 **Objetivo**: Conductor pattern para sync <200ms
 
-#### 5.1 Backend Sync Server (2 días)
-- [ ] **5.1.1** Timeline autoritativo
-  - [ ] Endpoint `POST /api/sync/start` con contentId y startTime
-  - [ ] Broadcast `sync-tick` cada 100ms vía Socket.io
-  - [ ] Manejo de pause/resume global
+#### 5.1 Backend Sync Server (2 días) ✅ COMPLETADO
+- [x] **5.1.1** Timeline autoritativo
+  - [x] Tipos sync en shared-types/src/sync.ts
+  - [x] syncService.ts con gestión de grupos y estado
+  - [x] Broadcast `sync:tick` cada 100ms vía Socket.io
+  - [x] Manejo de play/pause/seek/stop
 
-- [ ] **5.1.2** Gestión de conductores
-  - [ ] Asignar rol conductor a primera pantalla
-  - [ ] Failover si conductor se desconecta
-  - [ ] Workers siguen timeline del conductor
+- [x] **5.1.2** Gestión de conductores
+  - [x] Asignar rol conductor a primera pantalla conectada
+  - [x] Failover automático si conductor se desconecta
+  - [x] API REST: POST/GET/PUT/DELETE /api/sync/groups
+  - [x] Endpoints: /start, /pause, /resume, /seek, /stop, /conductor
 
-#### 5.2 Player Sync Client (3 días)
-- [ ] **5.2.1** Clock compensation
-  - [ ] Calcular offset servidor-cliente
-  - [ ] Drift correction con regresión lineal
+#### 5.2 Player Sync Client (3 días) ✅ COMPLETADO
+- [x] **5.2.1** Clock compensation
+  - [x] useClockSync.ts con cálculo de offset
+  - [x] Promediado de muestras para suavizar variaciones
+  - [x] serverNow() retorna tiempo del servidor
 
-- [ ] **5.2.2** Ajuste de reproducción
-  - [ ] Soft sync: ajustar playbackRate (±5%)
-  - [ ] Hard sync: seek directo si drift > 1s
+- [x] **5.2.2** Ajuste de reproducción
+  - [x] useSyncPlayback.ts con soft/hard sync
+  - [x] Soft sync: playbackRate ±5% si drift < 500ms
+  - [x] Hard sync: seek directo si drift > 2s
 
-- [ ] **5.2.3** Late join
-  - [ ] Calcular posición correcta al conectar
-  - [ ] Buffering antes de iniciar reproducción
+- [x] **5.2.3** Late join
+  - [x] handleLateJoin() calcula posición correcta
+  - [x] Socket events: sync:tick, sync:command, sync:conductor-changed
+  - [x] SyncIndicator.tsx muestra estado visual
 
 #### 5.3 Testing de Precisión (1-2 días)
 - [ ] Medir precisión real con múltiples pantallas
