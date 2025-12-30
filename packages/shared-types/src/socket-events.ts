@@ -356,6 +356,26 @@ export interface CacheDownloadFailedEvent {
 // CLIENT-TO-SERVER EVENTS MAP
 // ==============================================
 
+// Import sync events from sync.ts to avoid duplication
+import type {
+  SyncJoinGroupEvent,
+  SyncLeaveGroupEvent,
+  SyncReportPositionEvent,
+} from './sync';
+
+// Re-export for convenience
+export type { SyncJoinGroupEvent, SyncLeaveGroupEvent, SyncReportPositionEvent };
+
+// Sync group state (Server to Client - for late join)
+export interface SyncGroupStateEvent {
+  groupId: string;
+  contentId: string | null;
+  currentTime: number;
+  playbackState: 'playing' | 'paused' | 'stopped';
+  conductorId: string | null;
+  displayIds: string[];
+}
+
 /**
  * Events that clients can emit to the server
  */
@@ -368,6 +388,10 @@ export interface ClientToServerEvents {
   'cache:download-progress': (data: CacheDownloadProgressEvent) => void;
   'admin:join': (data: AdminJoinedEvent) => void;
   'admin:action': (data: AdminActionEvent) => void;
+  // Sync group events
+  'sync:join-group': (data: SyncJoinGroupEvent) => void;
+  'sync:leave-group': (data: SyncLeaveGroupEvent) => void;
+  'sync:report-position': (data: SyncReportPositionEvent) => void;
 }
 
 // ==============================================
@@ -397,6 +421,7 @@ export interface ServerToClientEvents {
   'sync:tick': (data: { groupId: string; contentId: string; currentTime: number; serverTime: number; playbackState: 'playing' | 'paused' }) => void;
   'sync:group-updated': (data: { group: { id: string; name: string; displayIds: string[]; conductorId: string | null; playbackState: string; currentTime: number }; timestamp: number }) => void;
   'sync:conductor-changed': (data: { groupId: string; oldConductorId: string | null; newConductorId: string; reason: 'elected' | 'failover' | 'manual'; timestamp: number }) => void;
+  'sync:group-state': (data: SyncGroupStateEvent) => void;
   'admin:bulk-update': (data: BulkDisplayUpdateEvent) => void;
   'cache:clear': (data: CacheClearEvent) => void;
   'cache:download-started': (data: CacheDownloadStartedEvent) => void;

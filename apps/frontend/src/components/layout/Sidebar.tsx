@@ -19,6 +19,7 @@ import {
   LogOut,
   User,
   Building2,
+  Radio,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,12 @@ const navigation: NavItem[] = [
     href: '/video-demo',
     icon: Video,
     // All roles
+  },
+  {
+    name: 'Sync Groups',
+    href: '/sync',
+    icon: Radio,
+    requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'], // Only admins can manage sync
   },
   {
     name: 'Users',

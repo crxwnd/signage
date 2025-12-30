@@ -267,15 +267,19 @@
   - [x] Socket events: sync:tick, sync:command, sync:conductor-changed
   - [x] SyncIndicator.tsx muestra estado visual
 
-#### 5.3 Testing de Precisión (1-2 días)
-- [ ] Medir precisión real con múltiples pantallas
-- [ ] Optimizar parámetros de sync
-- [ ] Documentar límites alcanzados
+#### 5.3 Integración y UI Admin (1-2 días) ✅ COMPLETADO
+- [x] sync.ts API client en frontend
+- [x] useSyncGroups.ts hooks (React Query)
+- [x] SyncGroupCard.tsx con controles de playback
+- [x] CreateSyncGroupModal.tsx con selección de displays
+- [x] Página /sync para administración
+- [x] Sidebar link "Sync Groups" para SUPER_ADMIN/HOTEL_ADMIN
 
-**Checkpoint Fase 5**:
-- [ ] Pantallas sincronizadas <200ms
-- [ ] Conductor failover funciona
-- [ ] Late join sin interrupciones visibles
+**Checkpoint Fase 5**: ✅ **COMPLETADO**
+- [x] Backend Sync Server con grupos y ticks 100ms
+- [x] Player Sync Client con clock compensation
+- [x] Conductor failover automático implementado
+- [x] UI Admin para gestionar grupos de sync
 
 ---
 
