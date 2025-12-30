@@ -4,6 +4,47 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2025-12-30] Sesión de Bugfixes y Mejoras
+
+### BUGFIX: Loop de Refresh en Página (CRÍTICO)
+**Fecha**: 30/12/2025  
+**Archivo**: `apps/frontend/src/contexts/AuthContext.tsx`
+
+**Problema**: Al refrescar cualquier página (F5), entraba en loop infinito de refresh.
+
+**Solución**: Reescritura completa del AuthContext:
+- Añadido `mountedRef` para prevenir updates en componentes desmontados
+- Skip de verificación auth en páginas `/login` y `/register`
+- Uso de `window.location.href` en logout (evita problemas con router)
+- Reset de `hasInitialized` en logout para próxima sesión
+- Verificación de `getAccessToken()` antes de llamar refresh
+- Añadido `usePathname` para detectar página actual
+
+### Integración: Botón Delete en ContentCard
+**Archivo**: `apps/frontend/src/components/content/ContentCard.tsx`
+
+**Cambios**:
+- Añadido estado `showDeleteModal` y hook `useAuth`
+- Función `canDelete()` con verificación RBAC
+- Botón de papelera rojo visible en hover (bottom-right del thumbnail)
+- Prop `onRefetch?: () => void` para refrescar lista
+- Integración con `DeleteContentModal`
+
+### Mejora: Manejo de Errores en Delete
+**Archivo**: `apps/frontend/src/components/content/DeleteContentModal.tsx`
+
+**Cambios**:
+- Verifica `response.ok` además de `data.success`
+- Título del toast cambiado a "Cannot delete content"
+- Mejor extracción del mensaje de error del backend
+
+### Resultados:
+- ✅ `pnpm typecheck` → pass
+- ✅ Refresh de página sin loops
+- ✅ Delete muestra mensajes claros del backend
+
+---
+
 ## [2025-12-29] Sesión de Bugfixes Críticos
 
 ### BUGFIX: Corrección de Issues Críticos
