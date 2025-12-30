@@ -180,36 +180,51 @@ const REFRESH_COOLDOWN = 5000; // 5 seconds between refresh attempts
 /**
  * Refresh access token
  * Returns null if refresh fails (instead of throwing)
- * Implements singleton pattern to avoid race conditions
+ * Implements single-flight pattern to avoid race conditions
+ * 
+ * IMPORTANT: If a refresh is in progress, callers will wait for it.
+ * If cooldown is active, returns existing token (does NOT redirect).
  */
 export async function refreshToken(): Promise<string | null> {
-  // Cooldown: prevent rapid-fire refresh attempts
-  const now = Date.now();
-  if (now - lastRefreshAttempt < REFRESH_COOLDOWN) {
-    console.log('[Auth] Refresh cooldown active, skipping...');
-    return null;
-  }
-  lastRefreshAttempt = now;
-
-  // If already refreshing, return the existing promise
+  // If already refreshing, wait for the existing promise
+  // This is the key fix: don't return null, wait for the result
   if (isRefreshing && refreshPromise) {
+    console.log('[Auth] Refresh in progress, waiting...');
     return refreshPromise;
   }
 
+  // Cooldown: prevent rapid-fire refresh attempts
+  const now = Date.now();
+  if (now - lastRefreshAttempt < REFRESH_COOLDOWN) {
+    // During cooldown, return existing token if we have one
+    // Don't return null - that causes redirect loop
+    const existingToken = getAccessToken();
+    if (existingToken) {
+      console.log('[Auth] Cooldown active, using existing token');
+      return existingToken;
+    }
+    console.log('[Auth] Cooldown active, no existing token');
+    // No token during cooldown - still don't return null immediately
+    // Wait a bit and try again (or return null if truly no session)
+    return null;
+  }
+
+  lastRefreshAttempt = now;
   isRefreshing = true;
 
   refreshPromise = (async (): Promise<string | null> => {
     try {
+      console.log('[Auth] Refreshing token...');
       const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
 
-      // Handle rate limiting gracefully
+      // Handle rate limiting gracefully - but don't clear token
       if (response.status === 429) {
-        console.warn('[Auth] Rate limited on refresh, please wait...');
-        return null;
+        console.warn('[Auth] Rate limited on refresh, keeping existing token');
+        return getAccessToken(); // Return existing token, don't fail
       }
 
       // Handle other errors
@@ -223,6 +238,7 @@ export async function refreshToken(): Promise<string | null> {
       const token = data?.data?.accessToken;
 
       if (token) {
+        console.log('[Auth] Token refreshed successfully');
         setAccessToken(token);
         return token;
       }
@@ -290,4 +306,77 @@ export async function authenticatedFetch(
     },
     credentials: 'include',
   });
+}
+
+// ==============================================
+// 2FA Functions
+// ==============================================
+
+export interface Setup2FAResponse {
+  secret: string;
+  qrCode: string;
+  otpauthUrl: string;
+}
+
+/**
+ * Setup 2FA for current user
+ * Returns QR code and secret for authenticator app
+ */
+export async function setup2FA(): Promise<Setup2FAResponse> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/setup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Failed to setup 2FA',
+      data.error?.code || 'SETUP_2FA_ERROR'
+    );
+  }
+
+  return data.data;
+}
+
+/**
+ * Verify 2FA token and enable 2FA
+ */
+export async function verify2FA(token: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Invalid verification code',
+      data.error?.code || 'VERIFY_2FA_ERROR'
+    );
+  }
+}
+
+/**
+ * Disable 2FA for current user
+ * Requires valid TOTP token
+ */
+export async function disable2FA(token: string): Promise<void> {
+  const response = await authenticatedFetch(`${API_URL}/api/auth/2fa/disable`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new ApiError(
+      data.error?.message || 'Failed to disable 2FA',
+      data.error?.code || 'DISABLE_2FA_ERROR'
+    );
+  }
 }
