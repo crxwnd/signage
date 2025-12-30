@@ -215,7 +215,8 @@ export const videoWorker = new Worker<VideoTranscodeJobData, VideoTranscodeJobRe
       // Step 3: Update database (90% -> 100%)
       await job.updateProgress(95);
 
-      const hlsUrl = `/hls/${contentId}/${hlsOutput.masterPlaylistUrl}`;
+      // masterPlaylistUrl already contains contentId/master.m3u8
+      const hlsUrl = `/hls/${hlsOutput.masterPlaylistUrl}`;
       const thumbnailUrl = `/thumbnails/${contentId}.jpg`;
 
       await prisma.content.update({
@@ -273,6 +274,14 @@ videoWorker.on('progress', (job, progress) => {
 
 videoWorker.on('error', (error) => {
   log.error('❌ Worker error', error);
+});
+
+videoWorker.on('ready', () => {
+  log.info('✅ Video worker is READY and listening for jobs');
+});
+
+videoWorker.on('active', (job) => {
+  log.info(`🎬 Job ${job.id} is now ACTIVE`, { contentId: job.data.contentId });
 });
 
 // ============================================================================

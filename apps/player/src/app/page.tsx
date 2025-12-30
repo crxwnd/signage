@@ -5,11 +5,13 @@
  * Main entry point for SmartTV display player
  * Loads playlist from backend and plays content in a loop
  * Supports Socket.io for real-time updates and pairing
+ * Supports offline mode with cached content
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { PlaylistPlayer, PairingScreen } from '@/components';
+import { PlaylistPlayer, PairingScreen, OfflineBanner } from '@/components';
 import { usePlayerSocket } from '@/hooks/usePlayerSocket';
+import { useOfflineMode } from '@/hooks/useOfflineMode';
 
 // Backend URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -91,7 +93,10 @@ export default function PlayerPage() {
       }
     } catch (err) {
       console.error('Failed to load playlist:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load playlist');
+      // Only set error if not offline - offline mode will use cached content
+      if (navigator.onLine) {
+        setError(err instanceof Error ? err.message : 'Failed to load playlist');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +148,19 @@ export default function PlayerPage() {
     },
     onCommand: handleCommand,
     onPaired: handlePaired,
+  });
+
+  // Offline mode
+  const { isOffline, offlineSince, pendingEvents } = useOfflineMode({
+    onReconnect: () => {
+      console.log('[Player] Reconnected - reloading playlist');
+      if (displayId) {
+        loadPlaylist(displayId);
+      }
+    },
+    onDisconnect: () => {
+      console.log('[Player] Disconnected - using cached content');
+    }
   });
 
   // Get initial displayId from URL or localStorage
@@ -213,8 +231,8 @@ export default function PlayerPage() {
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state (only show if online and no cached content)
+  if (error && !isOffline && playlist.length === 0) {
     return (
       <div className="w-screen h-screen bg-black flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -233,18 +251,22 @@ export default function PlayerPage() {
     );
   }
 
-  // Player
+  // Player (including offline mode with cached content)
   return (
     <div className="player-container w-screen h-screen bg-black overflow-hidden relative">
+      {/* Offline Banner */}
+      <OfflineBanner isOffline={isOffline} offlineSince={offlineSince} />
+
       <PlaylistPlayer
         items={playlist}
         isPaused={isPaused}
         onItemChange={handleItemChange}
+        isOffline={isOffline}
       />
 
       {/* Status overlay - only in development */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-4 left-4 bg-black/50 px-3 py-2 rounded text-white text-sm" style={{ zIndex: 1000 }}>
+        <div className="absolute top-4 left-4 bg-black/50 px-3 py-2 rounded text-white text-sm" style={{ zIndex: 1000, marginTop: isOffline ? '40px' : '0' }}>
           <p style={{ color: isConnected ? '#4CAF50' : '#ff6b6b' }}>
             {isConnected ? '● Connected' : '○ Disconnected'}
           </p>
@@ -252,6 +274,8 @@ export default function PlayerPage() {
           <p>Playing: {nowPlaying}</p>
           <p>Items: {playlist.length}</p>
           {isPaused && <p style={{ color: '#ff9800', fontWeight: 'bold' }}>PAUSED</p>}
+          {isOffline && <p style={{ color: '#ff6b6b' }}>OFFLINE MODE</p>}
+          {pendingEvents > 0 && <p style={{ color: '#ff9800' }}>Pending: {pendingEvents}</p>}
         </div>
       )}
     </div>

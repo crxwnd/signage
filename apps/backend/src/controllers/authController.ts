@@ -35,7 +35,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,
   // En producción (HTTPS) secure: true. En desarrollo (HTTP) secure: false.
-  secure: isProduction, 
+  secure: isProduction,
   // 'lax' es más permisivo para desarrollo local que 'strict'
   sameSite: 'lax' as const,
   path: '/',
@@ -389,7 +389,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     };
 
     const accessToken = generateAccessToken(payload);
-    
+
     // Opcional: Rotar refresh token (generar uno nuevo)
     // Por simplicidad y evitar problemas de concurrencia, podemos mantener el mismo hasta que expire
     // O renovarlo aquí:
@@ -426,7 +426,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
  * POST /api/auth/logout
  * Logout user by clearing refresh token cookie
  */
-export async function logout(_req: Request, res: Response): Promise<void> {
+export function logout(_req: Request, res: Response): void {
   try {
     // Clear refresh token cookie
     res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
