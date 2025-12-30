@@ -15,7 +15,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   login as apiLogin,
   logout as apiLogout,
@@ -23,6 +23,7 @@ import {
   getMe,
   refreshToken,
   clearAccessToken,
+  getAccessToken,
   type User,
   type LoginPayload,
   type RegisterPayload,
@@ -61,12 +62,14 @@ interface AuthProviderProps {
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Prevent multiple initialization attempts
+  // Refs to prevent multiple executions
   const hasInitialized = useRef(false);
   const isCheckingAuth = useRef(false);
+  const mountedRef = useRef(true);
 
   /**
    * Check authentication status
@@ -79,34 +82,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
+    // Don't check on login page
+    if (pathname === '/login' || pathname === '/register') {
+      console.log('[Auth] On auth page, skipping check');
+      setIsLoading(false);
+      return;
+    }
+
     isCheckingAuth.current = true;
+    console.log('[Auth] Starting auth check...');
 
     try {
-      setIsLoading(true);
+      // First check if we have a token at all
+      const existingToken = getAccessToken();
 
-      // Try to refresh token from cookie
-      const token = await refreshToken();
+      if (!existingToken) {
+        // No token, try to refresh from cookie
+        console.log('[Auth] No access token, trying refresh...');
+        const newToken = await refreshToken();
 
-      // If refresh failed, user is not authenticated
-      if (!token) {
-        console.log('[Auth] No valid token, user not authenticated');
-        setUser(null);
-        return;
+        if (!newToken) {
+          console.log('[Auth] No valid session');
+          if (mountedRef.current) {
+            setUser(null);
+            setIsLoading(false);
+          }
+          isCheckingAuth.current = false;
+          return;
+        }
       }
 
       // Fetch current user data
+      console.log('[Auth] Fetching user data...');
       const userData = await getMe();
-      setUser(userData);
+
+      if (mountedRef.current) {
+        setUser(userData);
+        console.log('[Auth] User loaded:', userData.email);
+      }
     } catch (error) {
       // Not authenticated or token expired
       console.warn('[Auth] Check auth failed:', error);
-      setUser(null);
-      clearAccessToken();
+      if (mountedRef.current) {
+        setUser(null);
+        clearAccessToken();
+      }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
       isCheckingAuth.current = false;
     }
-  }, []);
+  }, [pathname]);
 
   /**
    * Login user
@@ -127,6 +154,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Set user data
         setUser(response.user);
+        hasInitialized.current = true;
 
         // Redirect to displays page
         router.push('/displays');
@@ -153,6 +181,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Set user data
         setUser(response.user);
+        hasInitialized.current = true;
 
         // Redirect to displays page
         router.push('/displays');
@@ -168,20 +197,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /**
    * Logout user
+   * Clears state immediately and redirects to login
    */
   const logout = useCallback(async () => {
-    try {
-      // Call logout API
-      await apiLogout();
-    } finally {
-      // Always clear user state
-      setUser(null);
-      clearAccessToken();
+    console.log('[Auth] Logging out...');
 
-      // Redirect to login page
-      router.push('/login');
-    }
-  }, [router]);
+    // Reset initialization flag
+    hasInitialized.current = false;
+
+    // Clear state FIRST to prevent any re-auth attempts
+    setUser(null);
+    clearAccessToken();
+
+    // Call logout API in background (don't wait for response)
+    apiLogout().catch((err) => {
+      // Ignore errors - we're logging out anyway
+      console.log('[Auth] Logout API error (ignored):', err);
+    });
+
+    // Use window.location for clean redirect (avoids Next.js router issues)
+    window.location.href = '/login';
+  }, []);
 
   /**
    * Refresh user data without full re-auth
@@ -190,7 +226,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshUser = useCallback(async () => {
     try {
       const userData = await getMe();
-      setUser(userData);
+      if (mountedRef.current) {
+        setUser(userData);
+      }
     } catch (error) {
       console.warn('[Auth] Failed to refresh user:', error);
     }
@@ -200,13 +238,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Check auth ONCE on mount
    */
   useEffect(() => {
+    mountedRef.current = true;
+
     // Only initialize once
     if (hasInitialized.current) {
+      console.log('[Auth] Already initialized, skipping...');
+      setIsLoading(false);
       return;
     }
     hasInitialized.current = true;
 
     checkAuth();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [checkAuth]);
 
   /**
@@ -218,28 +264,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const interval = setInterval(
       async () => {
+        // Don't refresh if already checking
+        if (isCheckingAuth.current) return;
+
         try {
+          console.log('[Auth] Auto-refreshing token...');
           const token = await refreshToken();
-          if (!token) {
+          if (!token && mountedRef.current) {
             // Token refresh failed silently, log out user
             console.warn('[Auth] Auto-refresh failed, logging out...');
             setUser(null);
             clearAccessToken();
-            router.push('/login');
+            hasInitialized.current = false;
+            window.location.href = '/login';
           }
         } catch (error) {
           // Token refresh failed, log out user
           console.error('[Auth] Auto-refresh error:', error);
-          setUser(null);
-          clearAccessToken();
-          router.push('/login');
+          if (mountedRef.current) {
+            setUser(null);
+            clearAccessToken();
+            hasInitialized.current = false;
+            window.location.href = '/login';
+          }
         }
       },
       10 * 60 * 1000
     ); // 10 minutes
 
     return () => clearInterval(interval);
-  }, [user, router]);
+  }, [user]);
 
   const value: AuthContextState = {
     user,
@@ -268,4 +322,3 @@ export function useAuth(): AuthContextState {
 
   return context;
 }
-

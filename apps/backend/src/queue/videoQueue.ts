@@ -275,6 +275,14 @@ videoWorker.on('error', (error) => {
   log.error('❌ Worker error', error);
 });
 
+videoWorker.on('ready', () => {
+  log.info('✅ Video worker is READY and listening for jobs');
+});
+
+videoWorker.on('active', (job) => {
+  log.info(`🎬 Job ${job.id} is now ACTIVE`, { contentId: job.data.contentId });
+});
+
 // ============================================================================
 // GRACEFUL SHUTDOWN
 // ============================================================================

@@ -4,6 +4,47 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2025-12-29] Sesión de Bugfixes Críticos
+
+### BUGFIX: Corrección de Issues Críticos
+**Fecha**: 29/12/2025  
+**Reportado en**: Pruebas manuales post Fase 4
+
+#### Bug 1: Loop de Logout (CRÍTICO)
+**Archivo**: `apps/frontend/src/contexts/AuthContext.tsx`
+- **Causa**: Auto-refresh de token ejecutándose después de logout
+- **Fix**: Limpiar estado ANTES de llamar API, no esperar respuesta
+- **Cambio**: `setUser(null)` y `clearAccessToken()` al inicio de logout
+
+#### Bug 2: 2FA Inválido (ALTA)
+- **Revisión**: Código verificado, TOTP_WINDOW=1 configurado
+- **Status**: Implementación correcta, requiere testing manual
+
+#### Bug 3: Videos en Error (ALTA)
+**Archivo**: `apps/backend/src/queue/videoQueue.ts`
+- **Añadido**: Handler `ready` para confirmar worker activo
+- **Añadido**: Handler `active` para logging de jobs iniciados
+- **Status**: Worker tiene logging mejorado
+
+#### Feature 4: Delete Content con RBAC (MEDIA)
+**Backend** `apps/backend/src/controllers/contentController.ts`:
+- RBAC: SUPER_ADMIN todo, HOTEL_ADMIN/AREA_MANAGER su hotel
+- Verificación de asignaciones a displays
+- Limpieza de archivos físicos (original, thumbnail, HLS)
+
+**Frontend** `apps/frontend/src/components/content/DeleteContentModal.tsx`:
+- Modal de confirmación con estados de carga
+- Toast de éxito/error
+- Integración con authenticatedFetch
+
+#### Resultados:
+- ✅ `pnpm typecheck` backend → pass
+- ✅ `pnpm typecheck` frontend → pass
+- ✅ Logout sin loops
+- ✅ Delete content con permisos
+
+---
+
 ## [2025-12-28] Sesión de Desarrollo
 
 ### 3.5.1 Corrección de Errores de Linting Backend

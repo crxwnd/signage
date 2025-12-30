@@ -372,7 +372,7 @@ export async function updateContent(
 
 /**
  * DELETE /api/content/:id
- * Delete content
+ * Delete content with RBAC and file cleanup
  */
 export async function deleteContent(
   req: Request,
@@ -380,6 +380,7 @@ export async function deleteContent(
 ): Promise<void> {
   try {
     const { id } = req.params;
+    const user = (req as any).user as RBACUser;
 
     if (!id) {
       const errorResponse: ApiErrorResponse = {
@@ -394,7 +395,103 @@ export async function deleteContent(
       return;
     }
 
-    // Delete content
+    if (!user) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Not authenticated',
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(401).json(errorResponse);
+      return;
+    }
+
+    // Get content with hotel info
+    const content = await contentService.getContentById(id);
+
+    if (!content) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Content not found',
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(404).json(errorResponse);
+      return;
+    }
+
+    // RBAC: Check if user can delete this content
+    const canDelete =
+      user.role === 'SUPER_ADMIN' ||
+      (user.role === 'HOTEL_ADMIN' && content.hotelId === user.hotelId) ||
+      (user.role === 'AREA_MANAGER' && content.hotelId === user.hotelId);
+
+    if (!canDelete) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Not authorized to delete this content',
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(403).json(errorResponse);
+      return;
+    }
+
+    // Check if content is assigned to any displays
+    const { prisma } = await import('../utils/prisma');
+    const assignments = await prisma.displayContent.findMany({
+      where: { contentId: id },
+    });
+
+    if (assignments.length > 0) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'CONTENT_IN_USE',
+          message: `Content is assigned to ${assignments.length} display(s). Remove assignments first.`,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    // Delete physical files
+    try {
+      const fs = await import('fs/promises');
+      const storageDir = path.join(process.cwd(), 'storage');
+
+      // Delete original file
+      if (content.originalUrl) {
+        const originalPath = path.join(storageDir, content.originalUrl);
+        await fs.unlink(originalPath).catch(() => { });
+      }
+
+      // Delete thumbnail
+      if (content.thumbnailUrl) {
+        const thumbPath = path.join(storageDir, content.thumbnailUrl);
+        await fs.unlink(thumbPath).catch(() => { });
+      }
+
+      // Delete HLS folder
+      if (content.hlsUrl) {
+        const hlsDir = path.join(storageDir, 'hls', id);
+        await fs.rm(hlsDir, { recursive: true, force: true }).catch(() => { });
+      }
+
+      log.info('Content files deleted', { contentId: id });
+    } catch (fileError) {
+      log.warn('Failed to delete some content files', { contentId: id, error: fileError });
+      // Continue with DB deletion even if file deletion fails
+    }
+
+    // Delete from database
     await contentService.deleteContent(id);
 
     const response: ApiSuccessResponse = {
@@ -406,19 +503,6 @@ export async function deleteContent(
     res.status(200).json(response);
   } catch (error) {
     log.error('Failed to delete content', error);
-
-    if (error instanceof Error && error.message.includes('not found')) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: error.message,
-        },
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(errorResponse);
-      return;
-    }
 
     const errorResponse: ApiErrorResponse = {
       success: false,

@@ -1,18 +1,24 @@
 /**
  * ContentCard Component
  * Card component for displaying individual content information
+ * Includes delete functionality with RBAC
  */
 
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import type { Content, ContentType, ContentStatus } from '@/lib/api/content';
-import { Video, Image as ImageIcon, FileCode, Clock, HardDrive } from 'lucide-react';
+import { Video, Image as ImageIcon, FileCode, Clock, HardDrive, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { DeleteContentModal } from './DeleteContentModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ContentCardProps {
   content: Content;
+  onRefetch?: () => void;
 }
 
 /**
@@ -133,81 +139,130 @@ function formatFileSize(bytes: string | null): string {
   return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function ContentCard({ content }: ContentCardProps) {
+export function ContentCard({ content, onRefetch }: ContentCardProps) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { user } = useAuth();
+
+  // Check if user can delete this content (RBAC)
+  const canDelete = (): boolean => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'HOTEL_ADMIN' && content.hotelId === user.hotelId) return true;
+    if (user.role === 'AREA_MANAGER' && content.hotelId === user.hotelId) return true;
+    return false;
+  };
+
+  const handleDeleted = () => {
+    if (onRefetch) {
+      onRefetch();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
-    <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
-      {/* Thumbnail */}
-      <div className="relative h-48 w-full overflow-hidden bg-muted">
-        {content.thumbnailUrl ? (
-          <Image
-            src={`${API_URL}${content.thumbnailUrl}`}
-            alt={content.name}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-            {getContentTypeIcon(content.type)}
+    <>
+      <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
+        {/* Thumbnail */}
+        <div className="relative h-48 w-full overflow-hidden bg-muted">
+          {content.thumbnailUrl ? (
+            <Image
+              src={`${API_URL}${content.thumbnailUrl}`}
+              alt={content.name}
+              fill
+              className="object-cover transition-transform group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+              {getContentTypeIcon(content.type)}
+            </div>
+          )}
+
+          {/* Type badge overlay */}
+          <div className="absolute top-2 left-2">
+            {getTypeBadge(content.type)}
           </div>
-        )}
 
-        {/* Type badge overlay */}
-        <div className="absolute top-2 left-2">
-          {getTypeBadge(content.type)}
+          {/* Status badge overlay */}
+          <div className="absolute top-2 right-2">
+            {getStatusBadge(content.status)}
+          </div>
+
+          {/* Delete button overlay (only visible on hover if user can delete) */}
+          {canDelete() && (
+            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="destructive"
+                size="icon"
+                className="h-8 w-8 shadow-lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteModal(true);
+                }}
+                title="Delete content"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Status badge overlay */}
-        <div className="absolute top-2 right-2">
-          {getStatusBadge(content.status)}
-        </div>
-      </div>
+        {/* Content info */}
+        <div className="p-4">
+          {/* Name */}
+          <h3 className="mb-2 font-semibold text-foreground line-clamp-1">
+            {content.name}
+          </h3>
 
-      {/* Content info */}
-      <div className="p-4">
-        {/* Name */}
-        <h3 className="mb-2 font-semibold text-foreground line-clamp-1">
-          {content.name}
-        </h3>
+          {/* Metadata */}
+          <div className="space-y-2">
+            {/* Duration (for videos) */}
+            {content.type === 'VIDEO' && content.duration && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>{formatDuration(content.duration)}</span>
+              </div>
+            )}
 
-        {/* Metadata */}
-        <div className="space-y-2">
-          {/* Duration (for videos) */}
-          {content.type === 'VIDEO' && content.duration && (
+            {/* Resolution (for videos) */}
+            {content.resolution && (
+              <div className="text-xs text-muted-foreground">
+                Resolution: <span className="font-medium">{content.resolution}</span>
+              </div>
+            )}
+
+            {/* File size */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{formatDuration(content.duration)}</span>
+              <HardDrive className="h-4 w-4" />
+              <span>{formatFileSize(content.fileSize)}</span>
             </div>
-          )}
-
-          {/* Resolution (for videos) */}
-          {content.resolution && (
-            <div className="text-xs text-muted-foreground">
-              Resolution: <span className="font-medium">{content.resolution}</span>
-            </div>
-          )}
-
-          {/* File size */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <HardDrive className="h-4 w-4" />
-            <span>{formatFileSize(content.fileSize)}</span>
           </div>
+
+          {/* Hotel info (if available) */}
+          {content.hotel && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <span className="text-xs text-muted-foreground">
+                Hotel: <span className="font-medium">{content.hotel.name}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Hover effect overlay */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
+      </Card>
 
-        {/* Hotel info (if available) */}
-        {content.hotel && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <span className="text-xs text-muted-foreground">
-              Hotel: <span className="font-medium">{content.hotel.name}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Hover effect overlay */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-    </Card>
+      {/* Delete Confirmation Modal */}
+      <DeleteContentModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        contentId={content.id}
+        contentName={content.name}
+        onDeleted={handleDeleted}
+      />
+    </>
   );
 }
+
