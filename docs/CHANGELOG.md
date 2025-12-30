@@ -4,6 +4,27 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2025-12-30] BUGFIX: Integración Sync Handlers Faltantes
+
+### Problema Detectado
+El player emitía `sync:join-group` y `sync:leave-group` pero el backend no tenía handlers. Los displays no podían unirse a grupos de sync.
+
+### Solución
+**Archivos creados**:
+- `apps/backend/src/socket/syncHandlers.ts` - Handlers para sync:join-group, sync:leave-group, sync:report-position
+
+**Archivos modificados**:
+- `packages/shared-types/src/socket-events.ts` - Import/re-export de sync types, agregado SyncGroupStateEvent
+- `apps/backend/src/socket/socketManager.ts` - Import y llamada a setupSyncHandlers()
+
+**Funcionalidad**:
+- Players pueden unirse a grupos de sync via Socket.io
+- Late join envía sync:group-state con estado actual
+- Conductor puede reportar posición
+- Logs detallados para debugging
+
+---
+
 ## [2025-12-30] Sesión de Bugfixes Críticos
 
 ### BUGFIX: Auth Refresh Race Condition (CRÍTICO)
@@ -52,6 +73,52 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 - ✅ Videos HLS reproducen sin cortes
 - ✅ Auth refresh sin loops
 - ✅ Delete content sin refresh infinito
+
+---
+
+## [2025-12-30] Fase 5: Sincronización Entre Pantallas
+
+### 5.1 Backend Sync Server ✅
+**Archivos creados**:
+- `packages/shared-types/src/sync.ts` - Tipos para SyncGroup, SyncTick, SyncCommand
+- `apps/backend/src/services/syncService.ts` - Gestión de grupos de sync
+- `apps/backend/src/routes/sync.ts` - API REST para sync groups
+
+**Funcionalidades**:
+- Grupos de sincronización con múltiples displays
+- Broadcast `sync:tick` cada 100ms para grupos activos
+- Asignación automática de conductor (primer display conectado)
+- Failover automático cuando conductor se desconecta
+- Endpoints: CRUD grupos + start/pause/resume/seek/stop/conductor
+
+### 5.2 Player Sync Client ✅
+**Archivos creados**:
+- `apps/player/src/hooks/useClockSync.ts` - Compensación de reloj cliente-servidor
+- `apps/player/src/hooks/useSyncPlayback.ts` - Ajuste de reproducción (soft/hard sync)
+- `apps/player/src/components/SyncIndicator.tsx` - UI de estado de sync
+
+**Funcionalidades**:
+- Cálculo de offset cliente-servidor con promediado de muestras
+- Soft sync: ajuste playbackRate ±5% para drift <500ms
+- Hard sync: seek directo para drift >2s
+- Tolerancia: ±50ms considerado "en sync"
+- Late join: handleLateJoin() para conexión tardía
+
+### 5.3 UI Admin para Sync ✅
+**Archivos creados**:
+- `apps/frontend/src/lib/api/sync.ts` - API client
+- `apps/frontend/src/hooks/useSyncGroups.ts` - React Query hooks
+- `apps/frontend/src/components/sync/SyncGroupCard.tsx` - Card con controles
+- `apps/frontend/src/components/sync/CreateSyncGroupModal.tsx` - Modal creación
+- `apps/frontend/src/app/(dashboard)/sync/page.tsx` - Página principal
+
+**Funcionalidades**:
+- Página /sync para administración de grupos
+- Crear grupos seleccionando ≥2 displays
+- Controles de playback: Play, Pause, Stop
+- Ver estado en tiempo real (playing/paused/stopped)
+- Ver conductor actual
+- Sidebar link "Sync Groups" para SUPER_ADMIN/HOTEL_ADMIN
 
 ---
 
