@@ -215,7 +215,8 @@ export const videoWorker = new Worker<VideoTranscodeJobData, VideoTranscodeJobRe
       // Step 3: Update database (90% -> 100%)
       await job.updateProgress(95);
 
-      const hlsUrl = `/hls/${contentId}/${hlsOutput.masterPlaylistUrl}`;
+      // masterPlaylistUrl already contains contentId/master.m3u8
+      const hlsUrl = `/hls/${hlsOutput.masterPlaylistUrl}`;
       const thumbnailUrl = `/thumbnails/${contentId}.jpg`;
 
       await prisma.content.update({
