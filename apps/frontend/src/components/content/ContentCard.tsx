@@ -1,15 +1,12 @@
 /**
  * ContentCard Component
- * Card component for displaying individual content information
- * Includes delete functionality with RBAC
+ * Premium card for displaying content with status badges and RBAC delete
  */
 
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui';
-import { Badge } from '@/components/ui';
-import { Button } from '@/components/ui/button';
+import { Card, Badge, Button } from '@/components/ui';
 import type { Content, ContentType, ContentStatus } from '@/lib/api/content';
 import { Video, Image as ImageIcon, FileCode, Clock, HardDrive, Trash2 } from 'lucide-react';
 import Image from 'next/image';
@@ -27,83 +24,47 @@ interface ContentCardProps {
 function getContentTypeIcon(type: ContentType) {
   switch (type) {
     case 'VIDEO':
-      return <Video className="h-5 w-5 text-primary" />;
+      return <Video className="h-8 w-8 text-brand-primary" />;
     case 'IMAGE':
-      return <ImageIcon className="h-5 w-5 text-primary" />;
+      return <ImageIcon className="h-8 w-8 text-brand-primary" />;
     case 'HTML':
-      return <FileCode className="h-5 w-5 text-primary" />;
+      return <FileCode className="h-8 w-8 text-brand-primary" />;
     default:
-      return <FileCode className="h-5 w-5 text-primary" />;
+      return <FileCode className="h-8 w-8 text-brand-primary" />;
   }
 }
 
 /**
- * Get badge for content type
+ * Get badge variant for content type
  */
-function getTypeBadge(type: ContentType) {
+function getTypeBadgeVariant(type: ContentType): 'processing' | 'secondary' | 'warning' {
   switch (type) {
     case 'VIDEO':
-      return (
-        <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20">
-          Video
-        </Badge>
-      );
+      return 'processing'; // Blue
     case 'IMAGE':
-      return (
-        <Badge className="bg-purple-500/10 text-purple-600 hover:bg-purple-500/20">
-          Image
-        </Badge>
-      );
+      return 'secondary';
     case 'HTML':
-      return (
-        <Badge className="bg-orange-500/10 text-orange-600 hover:bg-orange-500/20">
-          HTML
-        </Badge>
-      );
+      return 'warning';
     default:
-      return (
-        <Badge className="bg-gray-500/10 text-gray-600">Unknown</Badge>
-      );
+      return 'secondary';
   }
 }
 
 /**
- * Get badge color based on content status
+ * Get badge variant for content status
  */
-function getStatusBadge(status: ContentStatus) {
+function getStatusBadgeVariant(status: ContentStatus): 'ready' | 'pending' | 'processing' | 'error' {
   switch (status) {
     case 'READY':
-      return (
-        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
-          Ready
-        </Badge>
-      );
+      return 'ready';
     case 'PENDING':
-      return (
-        <Badge className="bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-yellow-500" />
-          Pending
-        </Badge>
-      );
+      return 'pending';
     case 'PROCESSING':
-      return (
-        <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          Processing
-        </Badge>
-      );
+      return 'processing';
     case 'ERROR':
-      return (
-        <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
-          Error
-        </Badge>
-      );
+      return 'error';
     default:
-      return (
-        <Badge className="bg-gray-500/10 text-gray-600">Unknown</Badge>
-      );
+      return 'pending';
   }
 }
 
@@ -154,14 +115,12 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
   };
 
   const handleDeleted = () => {
-    // Just call onRefetch if provided - no page reload needed
-    // The parent component should handle the state update
     onRefetch?.();
   };
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
+      <Card className="group relative overflow-hidden card-hover">
         {/* Thumbnail */}
         <div className="relative h-48 w-full overflow-hidden bg-muted">
           {content.thumbnailUrl ? (
@@ -169,28 +128,35 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
               src={`${API_URL}${content.thumbnailUrl}`}
               alt={content.name}
               fill
-              className="object-cover transition-transform group-hover:scale-105"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-primary/5 to-brand-secondary/5">
               {getContentTypeIcon(content.type)}
             </div>
           )}
 
           {/* Type badge overlay */}
-          <div className="absolute top-2 left-2">
-            {getTypeBadge(content.type)}
+          <div className="absolute top-3 left-3">
+            <Badge variant={getTypeBadgeVariant(content.type)} className="shadow-sm">
+              {content.type}
+            </Badge>
           </div>
 
           {/* Status badge overlay */}
-          <div className="absolute top-2 right-2">
-            {getStatusBadge(content.status)}
+          <div className="absolute top-3 right-3">
+            <Badge variant={getStatusBadgeVariant(content.status)} className="shadow-sm">
+              {content.status === 'PROCESSING' && (
+                <div className="mr-1.5 h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+              )}
+              {content.status}
+            </Badge>
           </div>
 
-          {/* Delete button overlay (only visible on hover if user can delete) */}
+          {/* Delete button overlay */}
           {canDelete() && (
-            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <Button
                 variant="destructive"
                 size="icon"
@@ -215,24 +181,22 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
           </h3>
 
           {/* Metadata */}
-          <div className="space-y-2">
+          <div className="space-y-2 text-sm text-muted-foreground">
             {/* Duration (for videos) */}
             {content.type === 'VIDEO' && content.duration && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>{formatDuration(content.duration)}</span>
-              </div>
-            )}
-
-            {/* Resolution (for videos) */}
-            {content.resolution && (
-              <div className="text-xs text-muted-foreground">
-                Resolution: <span className="font-medium">{content.resolution}</span>
+                {content.resolution && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-muted">
+                    {content.resolution}
+                  </span>
+                )}
               </div>
             )}
 
             {/* File size */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
               <HardDrive className="h-4 w-4" />
               <span>{formatFileSize(content.fileSize)}</span>
             </div>
@@ -240,15 +204,12 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
 
           {/* Hotel info (if available) */}
           {content.hotel && (
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className="mt-3 pt-3 border-t border-border/50">
               <span className="text-xs text-muted-foreground">
                 Hotel: <span className="font-medium">{content.hotel.name}</span>
               </span>
             </div>
           )}
-
-          {/* Hover effect overlay */}
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
       </Card>
 
@@ -263,4 +224,3 @@ export function ContentCard({ content, onRefetch }: ContentCardProps) {
     </>
   );
 }
-

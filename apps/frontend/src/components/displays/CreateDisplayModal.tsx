@@ -24,12 +24,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { createDisplay } from '@/lib/api/displays';
 import { useAreas } from '@/hooks/useAreas';
+import { useHotels } from '@/hooks/useHotels';
 
 // Schema actualizado con areaId
 const createDisplaySchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   location: z.string().min(1, 'Location is required'),
-  areaId: z.string().optional(), // Nuevo campo
+  areaId: z.string().optional(),
   orientation: z.enum(['horizontal', 'vertical']),
   resolution: z.enum(['1920x1080', '3840x2160']),
 });
@@ -50,12 +51,33 @@ export function CreateDisplayModal({
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
-  const { areas, isLoading: areasLoading } = useAreas({ enabled: isOpen });
+  const [selectedHotelId, setSelectedHotelId] = React.useState<string>('');
+
+  // Fetch hotels for SUPER_ADMIN
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { data: hotels, isLoading: hotelsLoading } = useHotels();
+
+  // Calculate effective hotelId
+  const effectiveHotelId = isSuperAdmin ? selectedHotelId : user?.hotelId;
+
+  // Fetch areas based on selected hotel
+  const { areas, isLoading: areasLoading } = useAreas({
+    enabled: isOpen && !!effectiveHotelId,
+    filter: effectiveHotelId ? { hotelId: effectiveHotelId } : undefined
+  });
+
+  // Pre-select first hotel for SUPER_ADMIN
+  React.useEffect(() => {
+    const firstHotel = hotels?.[0];
+    if (isSuperAdmin && firstHotel && !selectedHotelId) {
+      setSelectedHotelId(firstHotel.id);
+    }
+  }, [isSuperAdmin, hotels, selectedHotelId]);
 
   const [formData, setFormData] = React.useState<CreateDisplayFormData>({
     name: '',
     location: '',
-    areaId: '', // Inicializar vacío
+    areaId: '',
     orientation: 'horizontal',
     resolution: '1920x1080',
   });
@@ -94,22 +116,24 @@ export function CreateDisplayModal({
         return;
       }
 
-      // 2. Validate hotelId from auth context
-      if (!user?.hotelId) {
+      // 2. Validate hotelId
+      if (!effectiveHotelId) {
         toast({
           title: 'Error',
-          description: 'No hotel assigned to your account. Please contact an administrator.',
+          description: isSuperAdmin
+            ? 'Please select a hotel first.'
+            : 'No hotel assigned to your account. Please contact an administrator.',
           variant: 'destructive',
         });
         setIsLoading(false);
         return;
       }
 
-      // 3. Enviar a la API con hotelId del usuario autenticado
+      // 3. Enviar a la API
       await createDisplay({
         name: result.data.name,
         location: result.data.location,
-        hotelId: user.hotelId,
+        hotelId: effectiveHotelId,
         areaId: result.data.areaId || undefined,
       });
 
@@ -118,7 +142,7 @@ export function CreateDisplayModal({
         description: 'Display created successfully',
       });
 
-      // 3. Limpiar y cerrar
+      // 4. Limpiar y cerrar
       setFormData({
         name: '',
         location: '',
@@ -139,6 +163,23 @@ export function CreateDisplayModal({
     }
   };
 
+  // Reset selected hotel when modal closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      if (isSuperAdmin) {
+        setSelectedHotelId('');
+      }
+      setFormData({
+        name: '',
+        location: '',
+        areaId: '',
+        orientation: 'horizontal',
+        resolution: '1920x1080',
+      });
+      setErrors({});
+    }
+  }, [isOpen, isSuperAdmin]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
@@ -148,12 +189,39 @@ export function CreateDisplayModal({
             Register a new screen to the signage network.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          
+
+          {/* HOTEL SELECT (SUPER_ADMIN only) */}
+          {isSuperAdmin && (
+            <div className="grid gap-2">
+              <Label htmlFor="hotel">Hotel *</Label>
+              <Select
+                value={selectedHotelId || 'none'}
+                onValueChange={(value) => {
+                  setSelectedHotelId(value === 'none' ? '' : value);
+                  // Reset area when hotel changes
+                  setFormData(prev => ({ ...prev, areaId: '' }));
+                }}
+                disabled={isLoading || hotelsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={hotelsLoading ? "Loading hotels..." : "Select Hotel"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {hotels?.map((hotel: { id: string; name: string }) => (
+                    <SelectItem key={hotel.id} value={hotel.id}>
+                      {hotel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* NAME */}
           <div className="grid gap-2">
-            <Label htmlFor="name">Display Name</Label>
+            <Label htmlFor="name">Display Name *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -168,7 +236,7 @@ export function CreateDisplayModal({
 
           {/* LOCATION */}
           <div className="grid gap-2">
-            <Label htmlFor="location">Location Description</Label>
+            <Label htmlFor="location">Location Description *</Label>
             <Input
               id="location"
               value={formData.location}
@@ -181,16 +249,22 @@ export function CreateDisplayModal({
             )}
           </div>
 
-          {/* AREA SELECT (NUEVO) */}
+          {/* AREA SELECT */}
           <div className="grid gap-2">
             <Label htmlFor="area">Area (Optional)</Label>
             <Select
               value={formData.areaId || 'none'}
               onValueChange={(value) => handleChange('areaId', value === 'none' ? '' : value)}
-              disabled={isLoading || areasLoading}
+              disabled={isLoading || areasLoading || !effectiveHotelId}
             >
               <SelectTrigger>
-                <SelectValue placeholder={areasLoading ? "Loading areas..." : "Select Area"} />
+                <SelectValue placeholder={
+                  !effectiveHotelId
+                    ? "Select hotel first"
+                    : areasLoading
+                      ? "Loading areas..."
+                      : "Select Area"
+                } />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No Area Assigned</SelectItem>
@@ -209,7 +283,7 @@ export function CreateDisplayModal({
               <Label htmlFor="orientation">Orientation</Label>
               <Select
                 value={formData.orientation}
-                onValueChange={(value: any) => handleChange('orientation', value)}
+                onValueChange={(value: 'horizontal' | 'vertical') => handleChange('orientation', value)}
                 disabled={isLoading}
               >
                 <SelectTrigger>
@@ -225,7 +299,7 @@ export function CreateDisplayModal({
               <Label htmlFor="resolution">Resolution</Label>
               <Select
                 value={formData.resolution}
-                onValueChange={(value: any) => handleChange('resolution', value)}
+                onValueChange={(value: '1920x1080' | '3840x2160') => handleChange('resolution', value)}
                 disabled={isLoading}
               >
                 <SelectTrigger>
@@ -245,7 +319,10 @@ export function CreateDisplayModal({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || (isSuperAdmin && !selectedHotelId)}
+          >
             {isLoading ? 'Creating...' : 'Create Display'}
           </Button>
         </DialogFooter>
