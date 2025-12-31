@@ -157,7 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         hasInitialized.current = true;
 
         // Redirect to displays page
-        router.push('/displays');
+        router.push('/');
       } catch (error) {
         setUser(null);
         throw error;
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         hasInitialized.current = true;
 
         // Redirect to displays page
-        router.push('/displays');
+        router.push('/');
       } catch (error) {
         setUser(null);
         throw error;
