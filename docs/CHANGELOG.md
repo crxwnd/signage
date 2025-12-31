@@ -4,6 +4,77 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2025-12-31] BUGFIX: Dashboard/Analytics 401 Unauthorized
+
+### Problema
+Error 401 en `/api/dashboard/stats` y `/api/analytics/*` por 3 causas:
+1. Login redirige a `/displays` en vez de `/home`
+2. API clients no usan `authenticatedFetch` (fetch sin token)
+3. Hooks disparan fetch antes de auth
+
+### Solucion
+- `app/(auth)/login/page.tsx` - Default redirect de `/displays` a `/home`
+- `lib/api/dashboard.ts` - Usar `authenticatedFetch` en vez de `fetch`
+- `lib/api/analytics.ts` - Usar `authenticatedFetch` en todas las funciones
+- `hooks/useDashboard.ts` - Agregar `enabled: !!user && !authLoading`
+- `hooks/useAnalytics.ts` - Agregar `enabled: !!user && !authLoading` a 4 hooks
+
+---
+
+## [2025-12-31] Analytics System - Sistema de Reportes
+
+### Objetivo
+Implementar sistema completo de analytics con 4 subsecciones para monitorear rendimiento de displays, contenido y bandwidth.
+
+### Backend
+- `routes/analytics.ts` [NEW] - 4 endpoints:
+  - `GET /api/analytics/overview` - KPIs, activity trend, top displays
+  - `GET /api/analytics/displays` - Metricas por display (uptime, horas, desconexiones)
+  - `GET /api/analytics/bandwidth` - Uso diario, por display, proyeccion mensual
+  - `GET /api/analytics/content` - Ranking contenido, plays, completion rate
+
+### Frontend
+- `lib/api/analytics.ts` [NEW] - API client con tipos TypeScript
+- `hooks/useAnalytics.ts` [NEW] - React Query hooks con cache 60s
+- `Sidebar.tsx` - Nueva seccion "Analytics" con 4 items
+- Paginas:
+  - `/analytics` - Overview con 4 KPI cards, grafico 7 dias, top 5 displays
+  - `/analytics/displays` - Tabla sortable con metricas por display
+  - `/analytics/bandwidth` - 3 cards resumen, grafico 30 dias, top 10 consumidores
+  - `/analytics/content` - Ranking por plays, completion rate, avg duration
+
+---
+
+## [2025-12-31] Home Dashboard - Panel Post-Login
+
+### Objetivo
+Transformar pagina Home en dashboard funcional con stats del sistema.
+
+### Backend
+- `routes/dashboard.ts` [NEW] - `GET /api/dashboard/stats`
+  - Display stats (total, online, offline, error)
+  - Content stats (total, videos, images, processing)
+  - Sync groups stats
+  - Recent activity (ultimos 10 cambios)
+  - System status (server, database, redis, storage)
+
+### Frontend
+- `lib/api/dashboard.ts` [NEW] - API client
+- `hooks/useDashboard.ts` [NEW] - React Query hook (refresh 30s)
+- `components/dashboard/` [NEW]:
+  - `StatsCard.tsx` - Card individual con icono y valor
+  - `StatsGrid.tsx` - Grid 4 columnas responsive
+  - `ActivityFeed.tsx` - Timeline de actividad reciente
+  - `QuickActions.tsx` - Botones de acceso rapido
+  - `SystemStatus.tsx` - Panel estado del sistema
+- `app/(dashboard)/home/page.tsx` [NEW] - Dashboard completo
+- `app/page.tsx` - Redirect a `/home`
+- `Sidebar.tsx` - href Home cambiado de `/` a `/home`
+- `AuthContext.tsx` - redirect post-login a `/home`
+
+---
+
+
 ## [2025-12-31] UI Overhaul - Rediseno Visual Premium
 
 ### Objetivo

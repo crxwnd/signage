@@ -23,6 +23,7 @@ import usersRouter from './routes/users';
 import hotelsRouter from './routes/hotels';
 import syncRouter from './routes/sync';
 import dashboardRouter from './routes/dashboard';
+import analyticsRouter from './routes/analytics';
 
 // ... otros imports ...
 
@@ -153,6 +154,7 @@ export function createApp(): Application {
   app.use('/api/hotels', hotelsRouter);
   app.use('/api/sync', syncRouter);
   app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/analytics', analyticsRouter);
 
   // ==============================================
   // ERROR HANDLING
