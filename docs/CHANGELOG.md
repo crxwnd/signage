@@ -4,6 +4,34 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2025-12-31] Fase 6: Sistema de Programación Avanzada
+
+### Objetivo
+Sistema completo de scheduling con fechas, horas, recurrencias RRULE y calendario visual.
+
+### Backend
+- **Prisma Model**: `Schedule` con relaciones a Content, Display, Area, Hotel, User
+- `services/scheduleService.ts` - Lógica RRULE (getActiveContent, isScheduleActiveNow, getNextOccurrences)
+- `controllers/scheduleController.ts` - CRUD con RBAC completo
+- `routes/schedules.ts` - 7 endpoints: CRUD + /active/:displayId + /:id/preview
+
+### Frontend
+- `lib/api/schedules.ts` - API client con authenticatedFetch
+- `hooks/useSchedules.ts` - React Query hooks (useSchedules, useCreateSchedule, etc)
+- `app/(dashboard)/schedules/page.tsx` - Página principal con tabs Calendario/Lista
+- Componentes:
+  - `ScheduleCalendar.tsx` - Vista FullCalendar
+  - `ScheduleList.tsx` - Tabla con acciones
+  - `CreateScheduleModal.tsx` - Form completo
+  - `RecurrenceEditor.tsx` - Editor RRULE visual
+- Sidebar: Link "Schedules" en Management
+
+### Dependencias
+- Backend: `rrule` (RRULE parsing)
+- Frontend: `@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, `@fullcalendar/interaction`, `rrule`, `date-fns`, `@radix-ui/react-tabs`
+
+---
+
 ## [2025-12-31] BUGFIX: Dashboard/Analytics 401 Unauthorized
 
 ### Problema
