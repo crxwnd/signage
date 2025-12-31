@@ -22,6 +22,7 @@ import playlistRouter from './routes/playlist';
 import usersRouter from './routes/users';
 import hotelsRouter from './routes/hotels';
 import syncRouter from './routes/sync';
+import dashboardRouter from './routes/dashboard';
 
 // ... otros imports ...
 
@@ -151,6 +152,7 @@ export function createApp(): Application {
   app.use('/api/users', usersRouter);
   app.use('/api/hotels', hotelsRouter);
   app.use('/api/sync', syncRouter);
+  app.use('/api/dashboard', dashboardRouter);
 
   // ==============================================
   // ERROR HANDLING
