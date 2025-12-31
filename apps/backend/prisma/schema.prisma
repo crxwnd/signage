@@ -68,6 +68,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Schedules created by this user
+  createdSchedules Schedule[]
+
   @@index([email])
   @@index([hotelId])
   @@index([areaId])
@@ -81,10 +84,11 @@ model Hotel {
   address String
 
   // Relationships
-  users    User[]
-  areas    Area[]    // CAMBIO: Agregado para gestionar áreas del hotel
-  displays Display[]
-  contents Content[]
+  users     User[]
+  areas     Area[]    // CAMBIO: Agregado para gestionar áreas del hotel
+  displays  Display[]
+  contents  Content[]
+  schedules Schedule[] // Schedules de este hotel
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -105,8 +109,9 @@ model Area {
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   // Relationships
-  displays Display[] // Displays que pertenecen a esta área
-  users    User[]    // Area Managers asignados a esta área
+  displays  Display[] // Displays que pertenecen a esta área
+  users     User[]    // Area Managers asignados a esta área
+  schedules Schedule[] // Schedules aplicados a esta área
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -142,6 +147,7 @@ model Display {
 
   // Relationships
   displayContents DisplayContent[]
+  schedules       Schedule[] // Schedules directos del display
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -176,6 +182,7 @@ model Content {
 
   // Relationships
   displayContents DisplayContent[]
+  schedules       Schedule[] // Schedules que usan este contenido
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -212,3 +219,59 @@ model DisplayContent {
   @@index([startTime, endTime])
   @@map("display_contents")
 }
+
+// ==============================================
+// SCHEDULING MODEL
+// ==============================================
+
+model Schedule {
+  id   String @id @default(cuid())
+  name String
+
+  // Contenido a mostrar
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  // Destino: Display específico (opcional)
+  displayId String?
+  display   Display? @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // O aplicar a todos los displays de un área (opcional)
+  areaId String?
+  area   Area? @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  // Temporalidad
+  startDate DateTime // Fecha inicio
+  endDate   DateTime? // Fecha fin (null = sin fecha fin)
+  startTime String // "09:00" formato HH:mm
+  endTime   String // "18:00" formato HH:mm
+
+  // Recurrencia (RFC 5545 RRULE)
+  recurrence String? // "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR" o null para único
+
+  // Prioridad (mayor número = mayor prioridad)
+  priority Int @default(0)
+
+  // Estado
+  isActive Boolean @default(true)
+
+  // RBAC - Hotel owner
+  hotelId String
+  hotel   Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  // Audit - Quien creó
+  createdBy String
+  creator   User @relation(fields: [createdBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([displayId])
+  @@index([areaId])
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("schedules")
+}
+
