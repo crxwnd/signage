@@ -1,47 +1,166 @@
-# 📝 CHANGELOG - Sistema de Señalización Digital
+# CHANGELOG - Sistema de Senalizacion Digital
 
 Este archivo documenta todos los cambios y modificaciones realizados en el proyecto.
 
 ---
 
-## [2025-12-30] Sesión de Bugfixes y Mejoras
+## [2025-12-31] UI Overhaul - Rediseno Visual Premium
 
-### BUGFIX: Loop de Refresh en Página (CRÍTICO)
-**Fecha**: 30/12/2025  
-**Archivo**: `apps/frontend/src/contexts/AuthContext.tsx`
+### Objetivo
+Transformar el frontend de funcional-basico a visualmente impactante con estilo Slack y liquid glass.
 
-**Problema**: Al refrescar cualquier página (F5), entraba en loop infinito de refresh.
+### Paleta de Colores
+- Primary: #254D6E (Azul profundo)
+- Secondary: #B88F69 (Dorado/Bronce)
+- Background: #EDECE4 (Crema)
+- Sidebar: #1a1a2e (Oscuro)
 
-**Solución**: Reescritura completa del AuthContext:
-- Añadido `mountedRef` para prevenir updates en componentes desmontados
-- Skip de verificación auth en páginas `/login` y `/register`
-- Uso de `window.location.href` en logout (evita problemas con router)
-- Reset de `hasInitialized` en logout para próxima sesión
-- Verificación de `getAccessToken()` antes de llamar refresh
-- Añadido `usePathname` para detectar página actual
+### Archivos Modificados
 
-### Integración: Botón Delete en ContentCard
+**Foundation:**
+- `globals.css` - Nueva paleta HSL, animaciones (fadeIn, slideDown, pulse-subtle), clases .glass y .card-hover, scrollbar custom
+- `tailwind.config.ts` - Colores brand/sidebar, keyframes, shadows, Space Grotesk font
+- `layout.tsx` - Importa Space Grotesk de Google Fonts, Toaster con glass styling
+
+**Sidebar (Estilo Slack):**
+- `SidebarSection.tsx` [NEW] - Componente colapsable con chevron animado
+- `Sidebar.tsx` - Fondo oscuro, secciones agrupadas (Dashboard, Management, Settings), glass dropdown
+
+**Componentes UI:**
+- `card.tsx` - Prop glass opcional, rounded-2xl, shadow-card hover
+- `button.tsx` - Variantes default/outline/secondary/accent con brand colors
+- `badge.tsx` - 7 variantes de estado (online, offline, error, warning, processing, ready, pending)
+- `input.tsx` - Focus ring con brand color, hover state, rounded-lg
+- `select.tsx` - Focus ring con brand color, rounded-xl dropdown, check indicator con brand color
+- `dialog.tsx` - Backdrop blur, rounded-2xl, shadow-xl
+- `Header.tsx` - Glass effect, useAuth integrado, notification badge con brand color
+
+**Cards:**
+- `DisplayCard.tsx` - Usa badge variants, card-hover, pulse animation para online
+- `ContentCard.tsx` - Usa badge variants, brand gradients, hover scaling mejorado
+
+### Resultado
+- Typecheck: PASS
+- Sin emojis en UI
+- Transiciones suaves 150ms
+
+---
+
+## [2025-12-30] BUGFIX: Integración Sync Handlers Faltantes
+
+### Problema Detectado
+El player emitía `sync:join-group` y `sync:leave-group` pero el backend no tenía handlers. Los displays no podían unirse a grupos de sync.
+
+### Solución
+**Archivos creados**:
+- `apps/backend/src/socket/syncHandlers.ts` - Handlers para sync:join-group, sync:leave-group, sync:report-position
+
+**Archivos modificados**:
+- `packages/shared-types/src/socket-events.ts` - Import/re-export de sync types, agregado SyncGroupStateEvent
+- `apps/backend/src/socket/socketManager.ts` - Import y llamada a setupSyncHandlers()
+
+**Funcionalidad**:
+- Players pueden unirse a grupos de sync via Socket.io
+- Late join envía sync:group-state con estado actual
+- Conductor puede reportar posición
+- Logs detallados para debugging
+
+---
+
+## [2025-12-30] Sesión de Bugfixes Críticos
+
+### BUGFIX: Auth Refresh Race Condition (CRÍTICO)
+**Archivo**: `apps/frontend/src/lib/api/auth.ts`
+
+**Problema**: Múltiples llamadas simultáneas a refresh causaban loop de redirect a login.
+
+**Causa**: Cooldown retornaba `null` inmediatamente → AuthContext asumía "no session" → redirect.
+
+**Solución** (Single-flight pattern):
+- Si hay refresh en progreso, ESPERAR el resultado (no retornar null)
+- Durante cooldown, retornar token existente si hay uno
+- En rate limit 429, retornar token existente (no fallar)
+
+### BUGFIX: Rate Limit Bloquea HLS y Auth (ALTO)
+**Archivo**: `apps/backend/src/app.ts`
+
+**Problema**: Segmentos .ts bloqueados con 429, auth/refresh también bloqueado.
+
+**Solución**:
+- Static files movidos ANTES del rate limiter
+- Skip function para: `/hls/`, `/uploads/`, `/thumbnails/`
+- Skip para auth críticos: `/api/auth/refresh`, `/api/auth/me`, `/api/auth/logout`
+- Rate limit aumentado de 100 a 200 req/15min
+
+### BUGFIX: URL HLS Duplicada (ALTO)
+**Archivo**: `apps/backend/src/queue/videoQueue.ts`
+
+**Problema**: URL generada era `/hls/{id}/{id}/master.m3u8` (contentId duplicado).
+
+**Causa**: `ffmpegService` retorna `{id}/master.m3u8` y videoQueue agregaba `/hls/{id}/`.
+
+**Solución**: Cambiar a `/hls/${hlsOutput.masterPlaylistUrl}` (sin duplicar).
+
+### BUGFIX: Delete Content Loop (MEDIO)
 **Archivo**: `apps/frontend/src/components/content/ContentCard.tsx`
 
-**Cambios**:
-- Añadido estado `showDeleteModal` y hook `useAuth`
-- Función `canDelete()` con verificación RBAC
-- Botón de papelera rojo visible en hover (bottom-right del thumbnail)
-- Prop `onRefetch?: () => void` para refrescar lista
-- Integración con `DeleteContentModal`
+**Problema**: Refresh infinito al borrar contenido.
 
-### Mejora: Manejo de Errores en Delete
-**Archivo**: `apps/frontend/src/components/content/DeleteContentModal.tsx`
+**Causa**: `window.location.reload()` disparaba auth check → loop.
 
-**Cambios**:
-- Verifica `response.ok` además de `data.success`
-- Título del toast cambiado a "Cannot delete content"
-- Mejor extracción del mensaje de error del backend
+**Solución**: Usar `onRefetch?.()` sin reload de página.
 
 ### Resultados:
-- ✅ `pnpm typecheck` → pass
-- ✅ Refresh de página sin loops
-- ✅ Delete muestra mensajes claros del backend
+- ✅ `pnpm typecheck` → pass (todos los packages)
+- ✅ Videos HLS reproducen sin cortes
+- ✅ Auth refresh sin loops
+- ✅ Delete content sin refresh infinito
+
+---
+
+## [2025-12-30] Fase 5: Sincronización Entre Pantallas
+
+### 5.1 Backend Sync Server ✅
+**Archivos creados**:
+- `packages/shared-types/src/sync.ts` - Tipos para SyncGroup, SyncTick, SyncCommand
+- `apps/backend/src/services/syncService.ts` - Gestión de grupos de sync
+- `apps/backend/src/routes/sync.ts` - API REST para sync groups
+
+**Funcionalidades**:
+- Grupos de sincronización con múltiples displays
+- Broadcast `sync:tick` cada 100ms para grupos activos
+- Asignación automática de conductor (primer display conectado)
+- Failover automático cuando conductor se desconecta
+- Endpoints: CRUD grupos + start/pause/resume/seek/stop/conductor
+
+### 5.2 Player Sync Client ✅
+**Archivos creados**:
+- `apps/player/src/hooks/useClockSync.ts` - Compensación de reloj cliente-servidor
+- `apps/player/src/hooks/useSyncPlayback.ts` - Ajuste de reproducción (soft/hard sync)
+- `apps/player/src/components/SyncIndicator.tsx` - UI de estado de sync
+
+**Funcionalidades**:
+- Cálculo de offset cliente-servidor con promediado de muestras
+- Soft sync: ajuste playbackRate ±5% para drift <500ms
+- Hard sync: seek directo para drift >2s
+- Tolerancia: ±50ms considerado "en sync"
+- Late join: handleLateJoin() para conexión tardía
+
+### 5.3 UI Admin para Sync ✅
+**Archivos creados**:
+- `apps/frontend/src/lib/api/sync.ts` - API client
+- `apps/frontend/src/hooks/useSyncGroups.ts` - React Query hooks
+- `apps/frontend/src/components/sync/SyncGroupCard.tsx` - Card con controles
+- `apps/frontend/src/components/sync/CreateSyncGroupModal.tsx` - Modal creación
+- `apps/frontend/src/app/(dashboard)/sync/page.tsx` - Página principal
+
+**Funcionalidades**:
+- Página /sync para administración de grupos
+- Crear grupos seleccionando ≥2 displays
+- Controles de playback: Play, Pause, Stop
+- Ver estado en tiempo real (playing/paused/stopped)
+- Ver conductor actual
+- Sidebar link "Sync Groups" para SUPER_ADMIN/HOTEL_ADMIN
 
 ---
 

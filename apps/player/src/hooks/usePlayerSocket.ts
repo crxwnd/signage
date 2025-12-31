@@ -10,30 +10,62 @@ const HEARTBEAT_INTERVAL = 30000;
 let playerSocket: Socket | null = null;
 let isSocketInitialized = false;
 
+// Sync types
+export interface SyncTick {
+    groupId: string;
+    contentId: string;
+    currentTime: number;
+    serverTime: number;
+    playbackState: 'playing' | 'paused';
+}
+
+export interface SyncCommand {
+    type: 'play' | 'pause' | 'seek' | 'stop';
+    groupId: string;
+    contentId?: string;
+    seekTo?: number;
+}
+
 interface UsePlayerSocketOptions {
     displayId: string | null;
+    syncGroupId?: string | null;
     onPlaylistUpdate?: () => void;
     onCommand?: (command: string, data?: unknown) => void;
     onPaired?: (displayId: string) => void;
+    // Sync callbacks
+    onSyncTick?: (tick: SyncTick) => void;
+    onSyncCommand?: (command: SyncCommand) => void;
+    onConductorChanged?: (data: { groupId: string; newConductorId: string }) => void;
 }
 
 export function usePlayerSocket({
     displayId,
+    syncGroupId,
     onPlaylistUpdate,
     onCommand,
     onPaired,
+    onSyncTick,
+    onSyncCommand,
+    onConductorChanged,
 }: UsePlayerSocketOptions) {
     // Refs for callbacks (stable references)
     const onPlaylistUpdateRef = useRef(onPlaylistUpdate);
     const onCommandRef = useRef(onCommand);
     const onPairedRef = useRef(onPaired);
+    const onSyncTickRef = useRef(onSyncTick);
+    const onSyncCommandRef = useRef(onSyncCommand);
+    const onConductorChangedRef = useRef(onConductorChanged);
     const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     const registeredDisplayRef = useRef<string | null>(null);
+    const joinedSyncGroupRef = useRef<string | null>(null);
 
     // Keep refs updated
     useEffect(() => { onPlaylistUpdateRef.current = onPlaylistUpdate; }, [onPlaylistUpdate]);
     useEffect(() => { onCommandRef.current = onCommand; }, [onCommand]);
     useEffect(() => { onPairedRef.current = onPaired; }, [onPaired]);
+    useEffect(() => { onSyncTickRef.current = onSyncTick; }, [onSyncTick]);
+    useEffect(() => { onSyncCommandRef.current = onSyncCommand; }, [onSyncCommand]);
+    useEffect(() => { onConductorChangedRef.current = onConductorChanged; }, [onConductorChanged]);
 
     const [isConnected, setIsConnected] = useState(false);
     const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -70,6 +102,7 @@ export function usePlayerSocket({
             console.log('[PlayerSocket] Disconnected:', reason);
             setIsConnected(false);
             registeredDisplayRef.current = null;
+            joinedSyncGroupRef.current = null;
         });
 
         socket.on('connect_error', (err) => {
@@ -82,7 +115,6 @@ export function usePlayerSocket({
             console.log(`[PlayerSocket] Reconnected after ${attempt} attempts`);
             setIsConnected(true);
             setError(null);
-            // Re-register display after reconnection (handled in separate effect)
         });
 
         socket.io.on('reconnect_attempt', (attempt) => {
@@ -94,30 +126,44 @@ export function usePlayerSocket({
             setError('Connection failed - running in offline mode');
         });
 
-        // Event handlers using refs
-        socket.on('playlist:updated' as any, () => {
+        // Event handlers
+        socket.on('playlist:updated' as never, () => {
             console.log('[PlayerSocket] Playlist updated event');
             onPlaylistUpdateRef.current?.();
         });
 
-        socket.on('display:command' as any, (data: { command: string; payload?: unknown }) => {
+        socket.on('display:command' as never, (data: { command: string; payload?: unknown }) => {
             console.log('[PlayerSocket] Command received:', data.command);
             onCommandRef.current?.(data.command, data.payload);
         });
 
-        socket.on('pairing:code' as any, (data: { code: string }) => {
+        socket.on('pairing:code' as never, (data: { code: string }) => {
             console.log('[PlayerSocket] Pairing code:', data.code);
             setPairingCode(data.code);
         });
 
-        socket.on('pairing:confirmed' as any, (data: { displayId: string }) => {
+        socket.on('pairing:confirmed' as never, (data: { displayId: string }) => {
             console.log('[PlayerSocket] Pairing confirmed:', data.displayId);
             setPairingCode(null);
             onPairedRef.current?.(data.displayId);
         });
 
-        // No cleanup that destroys the socket
-        // Socket persists for player lifetime
+        // Sync event handlers
+        socket.on('sync:tick' as never, (tick: SyncTick) => {
+            onSyncTickRef.current?.(tick);
+        });
+
+        socket.on('sync:command' as never, (command: SyncCommand) => {
+            console.log('[PlayerSocket] Sync command:', command.type);
+            onSyncCommandRef.current?.(command);
+        });
+
+        socket.on('sync:conductor-changed' as never, (data: { groupId: string; newConductorId: string }) => {
+            console.log('[PlayerSocket] Conductor changed:', data.newConductorId);
+            onConductorChangedRef.current?.(data);
+        });
+
+        // No cleanup - socket persists for player lifetime
     }, []);
 
     // Register display when connected and displayId available
@@ -131,6 +177,27 @@ export function usePlayerSocket({
         playerSocket.emit('display:register', { displayId });
         registeredDisplayRef.current = displayId;
     }, [isConnected, displayId]);
+
+    // Join sync group when syncGroupId changes
+    useEffect(() => {
+        if (!isConnected || !playerSocket) return;
+
+        const currentGroup = joinedSyncGroupRef.current;
+
+        // Leave old group if different
+        if (currentGroup && currentGroup !== syncGroupId) {
+            console.log('[PlayerSocket] Leaving sync group:', currentGroup);
+            playerSocket.emit('sync:leave-group', { groupId: currentGroup, displayId });
+            joinedSyncGroupRef.current = null;
+        }
+
+        // Join new group
+        if (syncGroupId && syncGroupId !== currentGroup) {
+            console.log('[PlayerSocket] Joining sync group:', syncGroupId);
+            playerSocket.emit('sync:join-group', { groupId: syncGroupId, displayId });
+            joinedSyncGroupRef.current = syncGroupId;
+        }
+    }, [isConnected, syncGroupId, displayId]);
 
     // Heartbeat effect
     useEffect(() => {
@@ -162,9 +229,33 @@ export function usePlayerSocket({
 
     const requestPairing = useCallback(() => {
         if (playerSocket?.connected) {
-            playerSocket.emit('display:request-pairing' as any);
+            playerSocket.emit('display:request-pairing' as never);
         }
     }, []);
 
-    return { isConnected, pairingCode, error, requestPairing };
+    const joinSyncGroup = useCallback((groupId: string) => {
+        if (playerSocket?.connected && displayId) {
+            console.log('[PlayerSocket] Manual join sync group:', groupId);
+            playerSocket.emit('sync:join-group', { groupId, displayId });
+            joinedSyncGroupRef.current = groupId;
+        }
+    }, [displayId]);
+
+    const leaveSyncGroup = useCallback(() => {
+        if (playerSocket?.connected && joinedSyncGroupRef.current && displayId) {
+            console.log('[PlayerSocket] Leaving sync group:', joinedSyncGroupRef.current);
+            playerSocket.emit('sync:leave-group', { groupId: joinedSyncGroupRef.current, displayId });
+            joinedSyncGroupRef.current = null;
+        }
+    }, [displayId]);
+
+    return {
+        isConnected,
+        pairingCode,
+        error,
+        requestPairing,
+        joinSyncGroup,
+        leaveSyncGroup,
+        currentSyncGroup: joinedSyncGroupRef.current,
+    };
 }
