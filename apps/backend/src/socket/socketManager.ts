@@ -17,6 +17,7 @@ import { config } from '../config';
 import { log } from '../middleware/logger';
 import { prisma } from '../utils/prisma';
 import * as conductorManager from './conductorManager';
+import { setupSyncHandlers } from './syncHandlers';
 
 /**
  * Typed Socket type for convenience
@@ -130,6 +131,9 @@ export function initializeSocketIO(
 
     // Display event handlers
     setupDisplayHandlers(socket);
+
+    // Sync event handlers
+    setupSyncHandlers(socket);
 
     // Admin event handlers (will be implemented in future tasks)
     // setupAdminHandlers(socket);

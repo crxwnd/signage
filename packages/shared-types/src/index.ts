@@ -5,8 +5,10 @@
  * - models: Prisma model types
  * - api: API request/response types
  * - socket-events: Socket.io event types
+ * - sync: Synchronization types (Conductor Pattern)
  */
 
 export * from './models';
 export * from './api';
 export * from './socket-events';
+export * from './sync';
