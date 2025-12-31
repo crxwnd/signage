@@ -3,6 +3,8 @@
  * Fetches aggregated stats and system information
  */
 
+import { authenticatedFetch } from './auth';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface DashboardStats {
@@ -46,9 +48,7 @@ export interface ActivityItem {
  * Get dashboard statistics
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-    const response = await fetch(`${API_URL}/api/dashboard/stats`, {
-        credentials: 'include',
-    });
+    const response = await authenticatedFetch(`${API_URL}/api/dashboard/stats`);
 
     if (!response.ok) {
         throw new Error('Failed to fetch dashboard stats');
