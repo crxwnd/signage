@@ -20,28 +20,28 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   // Hook de autenticación
   const { login } = useAuth();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectUrl = searchParams.get('redirect') || '/displays';
+  const redirectUrl = searchParams.get('redirect') || '/home';
 
   const handleSubmit = async (e: React.FormEvent) => {
     // 🛑 SEGURIDAD: Prevenir envío por GET y recarga
     e.preventDefault();
     e.stopPropagation();
-    
+
     setError(null);
     setIsLoading(true);
 
     try {
       console.log('🔵 Iniciando login...');
-      
+
       // CORRECCIÓN: Se pasa un objeto { email, password } en lugar de dos argumentos separados
       await login({ email, password });
-      
+
       console.log('🟢 Login exitoso, redirigiendo a:', redirectUrl);
       router.push(redirectUrl);
     } catch (err: any) {
@@ -66,7 +66,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            
+
             {/* CORRECCIÓN: Usamos un div con estilos directos en lugar del componente Alert para evitar errores de importación */}
             {error && (
               <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -103,9 +103,9 @@ export default function LoginPage() {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? (

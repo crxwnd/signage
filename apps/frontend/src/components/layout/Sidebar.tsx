@@ -19,6 +19,9 @@ import {
   User,
   Building2,
   Radio,
+  BarChart3,
+  Wifi,
+  Film,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -47,7 +50,7 @@ const navSections = {
   dashboard: {
     title: 'Dashboard',
     items: [
-      { name: 'Home', href: '/', icon: Home },
+      { name: 'Home', href: '/home', icon: Home },
     ],
   },
   management: {
@@ -57,6 +60,15 @@ const navSections = {
       { name: 'Content', href: '/content', icon: FileVideo },
       { name: 'Areas', href: '/areas', icon: Layers, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Sync Groups', href: '/sync', icon: Radio, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+    ],
+  },
+  analytics: {
+    title: 'Analytics',
+    items: [
+      { name: 'Overview', href: '/analytics', icon: BarChart3, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Display Activity', href: '/analytics/displays', icon: Monitor, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Bandwidth', href: '/analytics/bandwidth', icon: Wifi, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Content Stats', href: '/analytics/content', icon: Film, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
     ],
   },
   settings: {
@@ -151,6 +163,15 @@ export function Sidebar() {
         {filterItems(navSections.management.items).length > 0 && (
           <SidebarSection title={navSections.management.title}>
             {filterItems(navSections.management.items).map((item) => (
+              <NavLink key={item.name} item={item} />
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* Analytics Section */}
+        {filterItems(navSections.analytics.items).length > 0 && (
+          <SidebarSection title={navSections.analytics.title}>
+            {filterItems(navSections.analytics.items).map((item) => (
               <NavLink key={item.name} item={item} />
             ))}
           </SidebarSection>
