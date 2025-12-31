@@ -1,13 +1,13 @@
 /**
  * DisplayCard Component
- * Card component for displaying individual display information
+ * Premium card for displaying individual display information
+ * Uses liquid glass effect and status badges
  */
 
 'use client';
 
 import { useState } from 'react';
-import { Card, Button } from '@/components/ui';
-import { Badge } from '@/components/ui';
+import { Card, Button, Badge } from '@/components/ui';
 import type { Display } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
 import { Monitor, MapPin, Clock, ListVideo } from 'lucide-react';
@@ -18,35 +18,18 @@ interface DisplayCardProps {
 }
 
 /**
- * Get badge color based on display status
+ * Get badge variant based on display status
  */
-function getStatusBadge(status: DisplayStatus) {
+function getStatusVariant(status: DisplayStatus): 'online' | 'offline' | 'error' {
   switch (status) {
     case DisplayStatus.ONLINE:
-      return (
-        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
-          Online
-        </Badge>
-      );
+      return 'online';
     case DisplayStatus.OFFLINE:
-      return (
-        <Badge className="bg-gray-500/10 text-gray-600 hover:bg-gray-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
-          Offline
-        </Badge>
-      );
+      return 'offline';
     case DisplayStatus.ERROR:
-      return (
-        <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20">
-          <div className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
-          Error
-        </Badge>
-      );
+      return 'error';
     default:
-      return (
-        <Badge className="bg-gray-500/10 text-gray-600">Unknown</Badge>
-      );
+      return 'offline';
   }
 }
 
@@ -73,20 +56,25 @@ export function DisplayCard({ display }: DisplayCardProps) {
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
+      <Card className="group relative overflow-hidden card-hover">
         <div className="p-6">
           {/* Header with name and status */}
           <div className="mb-4 flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Monitor className="h-5 w-5 text-primary" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary/10">
+                <Monitor className="h-5 w-5 text-brand-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">{display.name}</h3>
-                <p className="text-sm text-muted-foreground">{display.id.slice(0, 8)}</p>
+                <p className="text-sm text-muted-foreground font-mono">{display.id.slice(0, 8)}</p>
               </div>
             </div>
-            {getStatusBadge(display.status)}
+            <Badge variant={getStatusVariant(display.status)}>
+              <div className={`mr-1.5 h-2 w-2 rounded-full ${display.status === DisplayStatus.ONLINE ? 'bg-green-500 animate-pulse-soft' :
+                  display.status === DisplayStatus.ERROR ? 'bg-red-500' : 'bg-gray-500'
+                }`} />
+              {display.status}
+            </Badge>
           </div>
 
           {/* Location */}
@@ -103,7 +91,7 @@ export function DisplayCard({ display }: DisplayCardProps) {
 
           {/* Area ID (if exists) */}
           {display.areaId && (
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className="mt-3 pt-3 border-t border-border/50">
               <span className="text-xs text-muted-foreground">
                 Area: <span className="font-medium">{display.areaId}</span>
               </span>
@@ -111,7 +99,7 @@ export function DisplayCard({ display }: DisplayCardProps) {
           )}
 
           {/* Actions */}
-          <div className="mt-4 pt-4 border-t border-border">
+          <div className="mt-4 pt-4 border-t border-border/50">
             <Button
               variant="outline"
               size="sm"
@@ -122,9 +110,6 @@ export function DisplayCard({ display }: DisplayCardProps) {
               Manage Content
             </Button>
           </div>
-
-          {/* Hover effect overlay */}
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
       </Card>
 

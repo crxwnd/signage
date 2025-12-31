@@ -1,6 +1,48 @@
-# 📝 CHANGELOG - Sistema de Señalización Digital
+# CHANGELOG - Sistema de Senalizacion Digital
 
 Este archivo documenta todos los cambios y modificaciones realizados en el proyecto.
+
+---
+
+## [2025-12-31] UI Overhaul - Rediseno Visual Premium
+
+### Objetivo
+Transformar el frontend de funcional-basico a visualmente impactante con estilo Slack y liquid glass.
+
+### Paleta de Colores
+- Primary: #254D6E (Azul profundo)
+- Secondary: #B88F69 (Dorado/Bronce)
+- Background: #EDECE4 (Crema)
+- Sidebar: #1a1a2e (Oscuro)
+
+### Archivos Modificados
+
+**Foundation:**
+- `globals.css` - Nueva paleta HSL, animaciones (fadeIn, slideDown, pulse-subtle), clases .glass y .card-hover, scrollbar custom
+- `tailwind.config.ts` - Colores brand/sidebar, keyframes, shadows, Space Grotesk font
+- `layout.tsx` - Importa Space Grotesk de Google Fonts, Toaster con glass styling
+
+**Sidebar (Estilo Slack):**
+- `SidebarSection.tsx` [NEW] - Componente colapsable con chevron animado
+- `Sidebar.tsx` - Fondo oscuro, secciones agrupadas (Dashboard, Management, Settings), glass dropdown
+
+**Componentes UI:**
+- `card.tsx` - Prop glass opcional, rounded-2xl, shadow-card hover
+- `button.tsx` - Variantes default/outline/secondary/accent con brand colors
+- `badge.tsx` - 7 variantes de estado (online, offline, error, warning, processing, ready, pending)
+- `input.tsx` - Focus ring con brand color, hover state, rounded-lg
+- `select.tsx` - Focus ring con brand color, rounded-xl dropdown, check indicator con brand color
+- `dialog.tsx` - Backdrop blur, rounded-2xl, shadow-xl
+- `Header.tsx` - Glass effect, useAuth integrado, notification badge con brand color
+
+**Cards:**
+- `DisplayCard.tsx` - Usa badge variants, card-hover, pulse animation para online
+- `ContentCard.tsx` - Usa badge variants, brand gradients, hover scaling mejorado
+
+### Resultado
+- Typecheck: PASS
+- Sin emojis en UI
+- Transiciones suaves 150ms
 
 ---
 
