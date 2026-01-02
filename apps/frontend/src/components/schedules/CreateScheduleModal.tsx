@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useCreateSchedule } from '@/hooks/useSchedules';
-import { useContent } from '@/hooks/useContent';
 import { useDisplays } from '@/hooks/useDisplays';
 import { useAreas } from '@/hooks/useAreas';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { RecurrenceEditor } from './RecurrenceEditor';
+import { ContentSelector } from '@/components/ContentSelector';
 
 interface CreateScheduleModalProps {
     open: boolean;
@@ -34,7 +34,6 @@ interface CreateScheduleModalProps {
 export function CreateScheduleModal({ open, onOpenChange }: CreateScheduleModalProps) {
     const { user } = useAuth();
     const createSchedule = useCreateSchedule();
-    const { contents } = useContent();
     const { displays } = useDisplays();
     const { areas } = useAreas();
 
@@ -94,8 +93,7 @@ export function CreateScheduleModal({ open, onOpenChange }: CreateScheduleModalP
         }
     };
 
-    // Filter ready content only
-    const readyContents = contents.filter((c) => c.status === 'READY');
+
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,24 +122,13 @@ export function CreateScheduleModal({ open, onOpenChange }: CreateScheduleModalP
                     </div>
 
                     {/* Content Select */}
-                    <div className="space-y-2">
-                        <Label>Contenido</Label>
-                        <Select
-                            value={formData.contentId}
-                            onValueChange={(value) => setFormData({ ...formData, contentId: value })}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar contenido" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {readyContents.map((content) => (
-                                    <SelectItem key={content.id} value={content.id}>
-                                        {content.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <ContentSelector
+                        hotelId={user?.hotelId || ''}
+                        value={formData.contentId}
+                        onChange={(value) => setFormData({ ...formData, contentId: value })}
+                        label="Contenido"
+                        allowedTypes={['VIDEO', 'IMAGE']}
+                    />
 
                     {/* Target Type */}
                     <div className="space-y-2">

@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHotels } from '@/hooks/useHotels';
 import { useAreas } from '@/hooks/useAreas';
 import { useDisplays } from '@/hooks/useDisplays';
-import { useContent } from '@/hooks/useContent';
 import { useCreateAlert } from '@/hooks/useAlerts';
 import {
     Dialog,
@@ -30,6 +29,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { ContentSelector } from '@/components/ContentSelector';
 import type { AlertType } from '@shared-types';
 
 interface Props {
@@ -49,7 +49,6 @@ export function CreateAlertModal({ open, onOpenChange }: Props) {
         effectiveHotelId ? { filter: { hotelId: effectiveHotelId } } : undefined
     );
     const { displays } = useDisplays();
-    const { contents } = useContent();
     const createMutation = useCreateAlert();
 
     // Form state
@@ -111,7 +110,6 @@ export function CreateAlertModal({ open, onOpenChange }: Props) {
         }
     };
 
-    const readyContents = contents.filter((c) => c.status === 'READY');
     const filteredDisplays = displays.filter(
         (d) => effectiveHotelId && d.hotelId === effectiveHotelId
     );
@@ -165,21 +163,12 @@ export function CreateAlertModal({ open, onOpenChange }: Props) {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Contenido a mostrar *</Label>
-                        <Select value={contentId} onValueChange={setContentId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar contenido" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {readyContents.map((item) => (
-                                    <SelectItem key={item.id} value={item.id}>
-                                        {item.name} ({item.type})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <ContentSelector
+                        hotelId={effectiveHotelId}
+                        value={contentId}
+                        onChange={setContentId}
+                        label="Contenido a mostrar *"
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

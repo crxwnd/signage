@@ -10,6 +10,7 @@ import { config, validateConfig } from './config';
 import { log } from './middleware/logger';
 import { prisma } from './utils/prisma';
 import { initializeSocketIO, disconnectAll } from './socket/socketManager';
+import { startScheduleChecker } from './jobs/scheduleChecker';
 
 /**
  * Start the server
@@ -56,6 +57,9 @@ async function startServer(): Promise<void> {
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
       `);
+
+      // Start schedule checker job
+      startScheduleChecker();
     });
 
     // Graceful shutdown handlers
