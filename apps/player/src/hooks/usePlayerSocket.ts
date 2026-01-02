@@ -36,6 +36,12 @@ interface UsePlayerSocketOptions {
     onSyncTick?: (tick: SyncTick) => void;
     onSyncCommand?: (command: SyncCommand) => void;
     onConductorChanged?: (data: { groupId: string; newConductorId: string }) => void;
+    // Alert/Schedule callbacks
+    onAlertActivated?: (data: { alertId: string; alert: any }) => void;
+    onAlertDeactivated?: (data: { alertId: string }) => void;
+    onScheduleActivated?: (data: { scheduleId: string; schedule: any }) => void;
+    onScheduleEnded?: (data: { scheduleId: string }) => void;
+    onContentRefresh?: () => void;
 }
 
 export function usePlayerSocket({
@@ -47,6 +53,11 @@ export function usePlayerSocket({
     onSyncTick,
     onSyncCommand,
     onConductorChanged,
+    onAlertActivated,
+    onAlertDeactivated,
+    onScheduleActivated,
+    onScheduleEnded,
+    onContentRefresh,
 }: UsePlayerSocketOptions) {
     // Refs for callbacks (stable references)
     const onPlaylistUpdateRef = useRef(onPlaylistUpdate);
@@ -55,6 +66,11 @@ export function usePlayerSocket({
     const onSyncTickRef = useRef(onSyncTick);
     const onSyncCommandRef = useRef(onSyncCommand);
     const onConductorChangedRef = useRef(onConductorChanged);
+    const onAlertActivatedRef = useRef(onAlertActivated);
+    const onAlertDeactivatedRef = useRef(onAlertDeactivated);
+    const onScheduleActivatedRef = useRef(onScheduleActivated);
+    const onScheduleEndedRef = useRef(onScheduleEnded);
+    const onContentRefreshRef = useRef(onContentRefresh);
     const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     const registeredDisplayRef = useRef<string | null>(null);
     const joinedSyncGroupRef = useRef<string | null>(null);
@@ -66,6 +82,11 @@ export function usePlayerSocket({
     useEffect(() => { onSyncTickRef.current = onSyncTick; }, [onSyncTick]);
     useEffect(() => { onSyncCommandRef.current = onSyncCommand; }, [onSyncCommand]);
     useEffect(() => { onConductorChangedRef.current = onConductorChanged; }, [onConductorChanged]);
+    useEffect(() => { onAlertActivatedRef.current = onAlertActivated; }, [onAlertActivated]);
+    useEffect(() => { onAlertDeactivatedRef.current = onAlertDeactivated; }, [onAlertDeactivated]);
+    useEffect(() => { onScheduleActivatedRef.current = onScheduleActivated; }, [onScheduleActivated]);
+    useEffect(() => { onScheduleEndedRef.current = onScheduleEnded; }, [onScheduleEnded]);
+    useEffect(() => { onContentRefreshRef.current = onContentRefresh; }, [onContentRefresh]);
 
     const [isConnected, setIsConnected] = useState(false);
     const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -161,6 +182,34 @@ export function usePlayerSocket({
         socket.on('sync:conductor-changed' as never, (data: { groupId: string; newConductorId: string }) => {
             console.log('[PlayerSocket] Conductor changed:', data.newConductorId);
             onConductorChangedRef.current?.(data);
+        });
+
+        // Alert event handlers
+        socket.on('alert:activated' as never, (data: { alertId: string; alert: any }) => {
+            console.log('[PlayerSocket] Alert activated:', data.alertId);
+            onAlertActivatedRef.current?.(data);
+        });
+
+        socket.on('alert:deactivated' as never, (data: { alertId: string }) => {
+            console.log('[PlayerSocket] Alert deactivated:', data.alertId);
+            onAlertDeactivatedRef.current?.(data);
+        });
+
+        // Schedule event handlers
+        socket.on('schedule:activated' as never, (data: { scheduleId: string; schedule: any }) => {
+            console.log('[PlayerSocket] Schedule activated:', data.scheduleId);
+            onScheduleActivatedRef.current?.(data);
+        });
+
+        socket.on('schedule:ended' as never, (data: { scheduleId: string }) => {
+            console.log('[PlayerSocket] Schedule ended:', data.scheduleId);
+            onScheduleEndedRef.current?.(data);
+        });
+
+        // Content refresh handler
+        socket.on('content:refresh' as never, () => {
+            console.log('[PlayerSocket] Content refresh requested');
+            onContentRefreshRef.current?.();
         });
 
         // No cleanup - socket persists for player lifetime

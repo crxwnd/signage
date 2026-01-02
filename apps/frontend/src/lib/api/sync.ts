@@ -25,6 +25,19 @@ export interface SyncGroup {
 export interface CreateSyncGroupRequest {
     name: string;
     displayIds: string[];
+    hotelId?: string;
+    contentId?: string;
+    playlistItems?: Array<{
+        contentId: string;
+        duration: number;
+        order: number;
+    }>;
+    scheduleEnabled?: boolean;
+    scheduleStart?: string;
+    scheduleEnd?: string;
+    scheduleStartTime?: string;
+    scheduleEndTime?: string;
+    scheduleRecurrence?: string;
 }
 
 export interface UpdateSyncGroupRequest {

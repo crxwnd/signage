@@ -96,8 +96,14 @@ export function createApp(): Application {
     max: 200, // Increased from 100 to 200 requests per window
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for static files and auth session endpoints
+    // Skip rate limiting for static files, auth session endpoints, and localhost
     skip: (req) => {
+      // Skip for localhost/development (loopback addresses)
+      const ip = req.ip || req.socket?.remoteAddress || '';
+      if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+        return true;
+      }
+
       const reqPath = req.path;
       // Static files (already served above, but skip anyway)
       if (reqPath.startsWith('/hls/') ||
@@ -106,7 +112,7 @@ export function createApp(): Application {
         return true;
       }
       // Auth session endpoints (called frequently, should not be rate limited)
-      // Note: /api/auth/login IS rate limited to prevent brute force
+      // Note: /api/auth/login IS rate limited by its own limiter in auth routes
       if (reqPath === '/api/auth/refresh' ||
         reqPath === '/api/auth/me' ||
         reqPath === '/api/auth/logout') {
