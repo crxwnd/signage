@@ -156,3 +156,28 @@ export function canModifyResource(
 
     return user.hotelId === resource.hotelId;
 }
+
+/**
+ * Middleware to require specific roles
+ * Usage: router.post('/', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), handler)
+ */
+import type { Request, Response, NextFunction } from 'express';
+
+export function requireRole(allowedRoles: UserRole[]) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        if (!allowedRoles.includes(user.role as UserRole)) {
+            return res.status(403).json({
+                error: 'Access denied',
+                message: `This action requires one of the following roles: ${allowedRoles.join(', ')}`,
+            });
+        }
+
+        next();
+    };
+}

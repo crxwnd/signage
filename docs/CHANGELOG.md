@@ -4,6 +4,79 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-01] Fase 7: Sistema de Prioridad de Contenido y Alertas
+
+### Objetivo
+Sistema completo de prioridad de contenido con jerarquía definida: Alerts > Sync Groups > Schedules > Playlist > Fallback, incluyendo soporte para alertas urgentes y scheduling de sync groups.
+
+### Database (Prisma)
+- **Nuevos modelos**:
+  - `Alert` - Alertas con tipo (INFO/WARNING/EMERGENCY), prioridad, alcance (hotel/area/display)
+  - `SyncGroup` - Grupos de sincronización con campos de schedule (`scheduleEnabled`, `scheduleStart`, `scheduleEnd`, `scheduleStartTime`, `scheduleEndTime`, `scheduleRecurrence`)
+  - `SyncGroupDisplay` - Relación many-to-many con región opcional para video walls
+  - `SyncGroupContent` - Items del playlist de sync group
+  - `PlaybackLog` - Registro de reproducción por display
+  - `ContentSourceChange` - Auditoría de cambios de fuente de contenido
+- **Modificaciones**: Display ahora tiene `fallbackContentId` para contenido por defecto
+
+### Backend
+- `services/contentResolver.ts` - Resolución de prioridad con `isSyncScheduleActive()` para sync groups programados
+- `controllers/alertController.ts` - CRUD completo con RBAC y notificaciones Socket.io
+- `routes/alerts.ts` - 6 endpoints: CRUD + deactivate
+- `routes/displays.ts` - Nuevo endpoint `GET /:id/current-source` público para players
+- `middleware/permissions.ts` - Nuevo `requireRole()` middleware
+
+### Shared Types
+- `packages/shared-types/src/alert.ts` - AlertType, Alert, CreateAlertDTO
+- `packages/shared-types/src/content-source.ts` - ContentSource, SyncGroupInfo, ContentInfo
+
+### Frontend
+- `lib/api/alerts.ts` - API client con authenticatedFetch
+- `hooks/useAlerts.ts` - React Query hooks (useAlerts, useCreateAlert, etc)
+- `app/(dashboard)/alerts/page.tsx` - Página de gestión con tabla de activas + historial
+- `components/alerts/CreateAlertModal.tsx` - Modal con selector de tipo, contenido, alcance, prioridad
+- `Sidebar.tsx` - Link "Alerts" en Management
+
+### Player
+- `hooks/useContentSource.ts` - Hook para obtener fuente de contenido con polling
+- `components/AlertOverlay.tsx` - Overlay con colores por tipo (azul/amarillo/rojo)
+- `components/LoadingScreen.tsx` - Pantalla de carga
+- `components/NoContentScreen.tsx` - Pantalla sin contenido asignado
+- `components/SyncPlayer.tsx` - Player dedicado para sync con corrección de drift y overlay de pausa
+
+### Dependencias
+- Frontend: `date-fns` (formateo de fechas en alerts page)
+
+---
+
+## [2025-12-31] Fase 6: Sistema de Programación Avanzada
+
+### Objetivo
+Sistema completo de scheduling con fechas, horas, recurrencias RRULE y calendario visual.
+
+### Backend
+- **Prisma Model**: `Schedule` con relaciones a Content, Display, Area, Hotel, User
+- `services/scheduleService.ts` - Lógica RRULE (getActiveContent, isScheduleActiveNow, getNextOccurrences)
+- `controllers/scheduleController.ts` - CRUD con RBAC completo
+- `routes/schedules.ts` - 7 endpoints: CRUD + /active/:displayId + /:id/preview
+
+### Frontend
+- `lib/api/schedules.ts` - API client con authenticatedFetch
+- `hooks/useSchedules.ts` - React Query hooks (useSchedules, useCreateSchedule, etc)
+- `app/(dashboard)/schedules/page.tsx` - Página principal con tabs Calendario/Lista
+- Componentes:
+  - `ScheduleCalendar.tsx` - Vista FullCalendar
+  - `ScheduleList.tsx` - Tabla con acciones
+  - `CreateScheduleModal.tsx` - Form completo
+  - `RecurrenceEditor.tsx` - Editor RRULE visual
+- Sidebar: Link "Schedules" en Management
+
+### Dependencias
+- Backend: `rrule` (RRULE parsing)
+- Frontend: `@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, `@fullcalendar/interaction`, `rrule`, `date-fns`, `@radix-ui/react-tabs`
+
+---
+
 ## [2025-12-31] BUGFIX: Dashboard/Analytics 401 Unauthorized
 
 ### Problema

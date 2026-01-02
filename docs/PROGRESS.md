@@ -1,8 +1,8 @@
 # 📊 ROADMAP DEL PROYECTO - Sistema de Señalización Digital
 
 **Proyecto**: Sistema de Señalización Digital para Hoteles  
-**Última actualización**: 30/12/2025  
-**Estado global**: ~65% completado
+**Última actualización**: 01/01/2026  
+**Estado global**: ~85% completado
 
 ---
 
@@ -12,10 +12,14 @@
 |------|--------|-----------|
 | Infraestructura Base | ✅ 95% | - |
 | Procesamiento Video (FFmpeg/BullMQ) | ✅ 100% | - |
-| Backend RBAC | ✅ 95% | ✅ COMPLETADO |
-| Frontend Admin | ✅ 90% | ✅ CASI COMPLETO |
+| Backend RBAC | ✅ 100% | ✅ COMPLETADO |
+| Frontend Admin | ✅ 95% | ✅ COMPLETADO |
 | Player SmartTV | ✅ 95% | ✅ COMPLETADO |
-| Sincronización Pantallas | ❌ 0% | 🔴 CRÍTICA |
+| Sincronización Pantallas | ✅ 95% | ✅ COMPLETADO |
+| Home Dashboard | ✅ 100% | ✅ COMPLETADO |
+| Analytics System | ✅ 100% | ✅ COMPLETADO |
+| UI Overhaul | ✅ 100% | ✅ COMPLETADO |
+| Content Priority & Alerts | ✅ 100% | ✅ COMPLETADO |
 | Storage MinIO | ❌ 0% | 🟡 MEDIA |
 
 ---
@@ -283,29 +287,52 @@
 
 ---
 
-### FASE 6: PROGRAMACIÓN AVANZADA
-**Duración estimada**: 4-5 días  
-**Prioridad**: 🟡 MEDIA  
+### FEATURES ADICIONALES COMPLETADAS
+
+#### UI Overhaul (31/12/2025) ✅ COMPLETADO
+- [x] Paleta de colores premium (#254D6E, #B88F69, #EDECE4)
+- [x] Sidebar estilo Slack con secciones colapsables
+- [x] Efectos glass y animaciones suaves
+- [x] Componentes UI actualizados (cards, badges, inputs)
+- [x] Font Space Grotesk
+
+#### Home Dashboard (31/12/2025) ✅ COMPLETADO
+- [x] Backend: GET /api/dashboard/stats
+- [x] Stats Cards (Total Displays, Online, Content, Sync Groups)
+- [x] Activity Feed (últimos 10 cambios)
+- [x] Quick Actions (accesos rápidos)
+- [x] System Status (Server, DB, Redis, Storage)
+- [x] Redirect post-login a /home
+
+#### Analytics System (31/12/2025) ✅ COMPLETADO
+- [x] Backend: 4 endpoints en /api/analytics/*
+- [x] Sidebar con sección Analytics desplegable
+- [x] Página /analytics (Overview con KPIs)
+- [x] Página /analytics/displays (métricas por display)
+- [x] Página /analytics/bandwidth (uso de red)
+- [x] Página /analytics/content (ranking contenido)
+- [x] React Query hooks con cache 60s
+
+---
+
+### FASE 6: PROGRAMACIÓN AVANZADA ✅ COMPLETADO
+**Fecha**: 31/12/2025  
+**Prioridad**: ✅ COMPLETADO  
 **Objetivo**: Scheduling completo con recurrencias
 
-#### 6.1 Backend Scheduling (2 días)
-- [ ] **6.1.1** Modelo Schedule en Prisma
-  - [ ] Campos: startDate, endDate, recurrence (RRULE)
-  - [ ] Relación con Content y Display/DisplayGroup
-  
-- [ ] **6.1.2** API de programación
-  - [ ] CRUD de schedules
-  - [ ] Resolver contenido actual por fecha/hora
-  - [ ] BullMQ job para activar contenido programado
+#### 6.1 Backend Scheduling ✅
+- [x] Modelo Schedule en Prisma (fechas, horas, RRULE, prioridad)
+- [x] scheduleService.ts con lógica RRULE
+- [x] scheduleController.ts con RBAC
+- [x] routes/schedules.ts (7 endpoints)
 
-#### 6.2 Frontend Calendario (2-3 días)
-- [ ] **6.2.1** Vista calendario
-  - [ ] Calendario semanal/mensual de programación
-  - [ ] Drag & drop para asignar contenido
-  
-- [ ] **6.2.2** Editor de recurrencia
-  - [ ] UI para crear reglas (diario, semanal, mensual)
-  - [ ] Preview de fechas programadas
+#### 6.2 Frontend Calendario ✅
+- [x] ScheduleCalendar.tsx (FullCalendar)
+- [x] ScheduleList.tsx (tabla)
+- [x] CreateScheduleModal.tsx
+- [x] RecurrenceEditor.tsx (editor RRULE visual)
+- [x] Página /schedules
+- [x] Sidebar link
 
 **Checkpoint Fase 6**:
 - [ ] Contenido se activa automáticamente según schedule
@@ -349,13 +376,15 @@
 **Duración estimada**: Variable  
 **Prioridad**: 🟢 BAJA  
 
-- [ ] 2FA modal en frontend
-- [ ] Gestión de usuarios en frontend
+- [x] 2FA modal en frontend ✅
+- [x] Gestión de usuarios en frontend ✅
+- [x] Analytics de reproducción ✅
+- [x] UI Overhaul (diseño premium) ✅
+- [x] Home Dashboard ✅
 - [ ] Preview visual de contenido antes de publicar
 - [ ] Templates de programación
 - [ ] Prioridades de contenido (urgente interrumpe normal)
 - [ ] PWA/Service Worker para player
-- [ ] Analytics de reproducción
 - [ ] Multi-idioma
 
 ---
