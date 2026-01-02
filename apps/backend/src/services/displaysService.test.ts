@@ -19,6 +19,7 @@ vi.mock('../utils/prisma', () => ({
     },
     hotel: {
       findUnique: vi.fn(),
+      create: vi.fn(),
     },
   },
 }));
@@ -105,6 +106,7 @@ describe('DisplaysService', () => {
         deviceInfo: null,
         pairingCode: null,
         pairedAt: null,
+        fallbackContentId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         hotel: {
@@ -153,6 +155,7 @@ describe('DisplaysService', () => {
         deviceInfo: null,
         pairingCode: null,
         pairedAt: null,
+        fallbackContentId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         hotel: {
@@ -171,6 +174,7 @@ describe('DisplaysService', () => {
         deviceInfo: null,
         pairingCode: null,
         pairedAt: null,
+        fallbackContentId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         hotel: {
@@ -351,16 +355,47 @@ describe('DisplaysService', () => {
   });
 
   describe('createDisplay', () => {
-    it('should throw error when hotel not found', async () => {
-      vi.mocked(prisma.hotel.findUnique).mockResolvedValue(null);
+    it('should auto-create hotel when not found', async () => {
+      const mockCreatedHotel = {
+        id: 'new-hotel',
+        name: 'Demo Hotel',
+        address: '123 Demo Street, Demo City',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      await expect(
-        displaysService.createDisplay({
-          name: 'New Display',
-          location: 'Reception',
-          hotelId: 'non-existent-hotel',
-        })
-      ).rejects.toThrow('Hotel with id non-existent-hotel not found');
+      const mockDisplay = {
+        id: 'display-1',
+        name: 'New Display',
+        location: 'Reception',
+        status: DisplayStatus.OFFLINE,
+        hotelId: 'new-hotel',
+        areaId: null,
+        lastSeen: null,
+        deviceInfo: null,
+        pairingCode: null,
+        pairedAt: null,
+        fallbackContentId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        hotel: {
+          id: 'new-hotel',
+          name: 'Demo Hotel',
+        },
+      };
+
+      vi.mocked(prisma.hotel.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.hotel.create).mockResolvedValue(mockCreatedHotel);
+      vi.mocked(prisma.display.create).mockResolvedValue(mockDisplay);
+
+      const result = await displaysService.createDisplay({
+        name: 'New Display',
+        location: 'Reception',
+        hotelId: 'new-hotel',
+      });
+
+      expect(result.name).toBe('New Display');
+      expect(prisma.hotel.create).toHaveBeenCalled();
     });
 
     it('should create display with correct default status', async () => {
@@ -388,6 +423,7 @@ describe('DisplaysService', () => {
         deviceInfo: null,
         pairingCode: null,
         pairedAt: null,
+        fallbackContentId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         hotel: {
