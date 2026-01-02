@@ -1,8 +1,8 @@
 # 📊 ROADMAP DEL PROYECTO - Sistema de Señalización Digital
 
 **Proyecto**: Sistema de Señalización Digital para Hoteles  
-**Última actualización**: 31/12/2025  
-**Estado global**: ~80% completado
+**Última actualización**: 01/01/2026  
+**Estado global**: ~85% completado
 
 ---
 
@@ -19,6 +19,7 @@
 | Home Dashboard | ✅ 100% | ✅ COMPLETADO |
 | Analytics System | ✅ 100% | ✅ COMPLETADO |
 | UI Overhaul | ✅ 100% | ✅ COMPLETADO |
+| Content Priority & Alerts | ✅ 100% | ✅ COMPLETADO |
 | Storage MinIO | ❌ 0% | 🟡 MEDIA |
 
 ---
