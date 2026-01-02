@@ -1,133 +1,81 @@
 /**
- * Sync Socket Handlers
- * Handles sync group join/leave events from displays
+ * Sync Socket Handlers - Refactored
+ * Integrates with Prisma-based syncService
  */
 
 import { Socket } from 'socket.io';
-import type {
-    ClientToServerEvents,
-    ServerToClientEvents,
-    InterServerEvents,
-    SocketData,
-} from '@shared-types';
 import { log } from '../middleware/logger';
 import syncService from '../services/syncService';
-
-type TypedSocket = Socket<
-    ClientToServerEvents,
-    ServerToClientEvents,
-    InterServerEvents,
-    SocketData
->;
 
 /**
  * Setup sync event handlers for a socket connection
  */
-export function setupSyncHandlers(socket: TypedSocket): void {
-    // Handle display joining a sync group
-    socket.on('sync:join-group', (data) => {
+export function setupSyncHandlers(socket: Socket): void {
+    // Handle display identifying itself for sync
+    socket.on('sync:register', async (data: { displayId: string }) => {
+        const { displayId } = data;
+
+        if (!displayId) {
+            log.warn('[SyncHandlers] Invalid register data', { socketId: socket.id });
+            return;
+        }
+
+        log.info('[SyncHandlers] Display registering for sync', { displayId, socketId: socket.id });
+
+        try {
+            await syncService.registerDisplaySocket(socket.id, displayId);
+        } catch (error) {
+            log.error('[SyncHandlers] Failed to register display', { displayId, error });
+        }
+    });
+
+    // Handle display explicitly joining a sync group
+    socket.on('sync:join-group', async (data: { groupId: string; displayId: string }) => {
         const { groupId, displayId } = data;
 
         if (!groupId || !displayId) {
-            log.warn('[Sync] Invalid join-group data', { groupId, displayId, socketId: socket.id });
+            log.warn('[SyncHandlers] Invalid join-group data', { socketId: socket.id });
             return;
         }
 
-        log.info('[Sync] Display joining group', { displayId, groupId, socketId: socket.id });
+        log.info('[SyncHandlers] Display joining group', { displayId, groupId, socketId: socket.id });
 
-        // Register socket with sync service
-        syncService.registerDisplaySocket(socket.id, displayId);
+        // Join the room
+        socket.join(`sync:${groupId}`);
 
-        // Get or validate group
-        const group = syncService.getSyncGroup(groupId);
-
-        if (!group) {
-            log.warn('[Sync] Group not found', { groupId, displayId });
-            return;
+        // Register if not already
+        try {
+            await syncService.registerDisplaySocket(socket.id, displayId);
+        } catch (error) {
+            log.error('[SyncHandlers] Failed to register on join', { displayId, error });
         }
-
-        // Check if display is in the group
-        if (!group.displayIds.includes(displayId)) {
-            log.warn('[Sync] Display not member of group', { displayId, groupId });
-            return;
-        }
-
-        // Join the sync room for this group
-        socket.join(`sync-${groupId}`);
-
-        // Send current group state to the joining display (for late join)
-        const currentTime = syncService.getActiveGroups().find(g => g.id === groupId)
-            ? calculateCurrentTime(group)
-            : group.currentTime;
-
-        socket.emit('sync:group-state', {
-            groupId: group.id,
-            contentId: group.currentContentId,
-            currentTime,
-            playbackState: group.playbackState,
-            conductorId: group.conductorId,
-            displayIds: group.displayIds,
-        });
-
-        log.info('[Sync] Display joined group successfully', {
-            displayId,
-            groupId,
-            playbackState: group.playbackState,
-            currentTime,
-        });
     });
 
     // Handle display leaving a sync group
-    socket.on('sync:leave-group', (data) => {
-        const { groupId, displayId } = data;
+    socket.on('sync:leave-group', (data: { groupId: string }) => {
+        const { groupId } = data;
 
-        if (!groupId || !displayId) {
-            log.warn('[Sync] Invalid leave-group data', { groupId, displayId });
-            return;
-        }
+        if (!groupId) return;
 
-        log.info('[Sync] Display leaving group', { displayId, groupId, socketId: socket.id });
-
-        // Leave the sync room
-        socket.leave(`sync-${groupId}`);
-
-        // Unregister from sync service
-        syncService.unregisterDisplaySocket(socket.id);
-
-        log.info('[Sync] Display left group successfully', { displayId, groupId });
+        log.info('[SyncHandlers] Display leaving group', { groupId, socketId: socket.id });
+        socket.leave(`sync:${groupId}`);
     });
 
-    // Handle conductor reporting position
-    socket.on('sync:report-position', (data) => {
-        const { groupId, displayId, currentTime } = data;
+    // Handle conductor position reports (for drift correction)
+    socket.on('sync:report-position', (data: { groupId: string; displayId: string; currentTime: number }) => {
+        // This can be used for advanced drift correction
+        // For now, we trust server-side calculation
+        log.debug('[SyncHandlers] Position report', data);
+    });
 
-        if (!groupId || !displayId || typeof currentTime !== 'number') {
-            return;
-        }
+    // Handle disconnect - clean up
+    socket.on('disconnect', async () => {
+        log.info('[SyncHandlers] Socket disconnected', { socketId: socket.id });
 
-        const group = syncService.getSyncGroup(groupId);
-
-        // Only accept position reports from conductor
-        if (group && group.conductorId === displayId) {
-            // Update group's current time
-            // This helps maintain accurate time even if server tick drifts
-            log.debug('[Sync] Conductor position report', { groupId, displayId, currentTime });
+        try {
+            await syncService.unregisterDisplaySocket(socket.id);
+        } catch (error) {
+            log.error('[SyncHandlers] Failed to unregister on disconnect', { error });
         }
     });
-}
-
-/**
- * Calculate current playback time for a group
- */
-function calculateCurrentTime(group: {
-    playbackState: string;
-    startedAt: number | null;
-    currentTime: number;
-}): number {
-    if (group.playbackState !== 'playing' || !group.startedAt) {
-        return group.currentTime;
-    }
-
-    const elapsed = (Date.now() - group.startedAt) / 1000;
-    return group.currentTime + elapsed;
 }

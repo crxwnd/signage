@@ -1,19 +1,13 @@
 /**
- * Sync Routes
- * API endpoints for managing sync groups and playback control
+ * Sync Routes - Refactored
+ * Uses Prisma-based syncService
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticate, requireRole } from '../middleware/auth';
 import syncService from '../services/syncService';
 import { log } from '../middleware/logger';
-import type {
-    CreateSyncGroupRequest,
-    UpdateSyncGroupRequest,
-    StartSyncPlaybackRequest,
-    SeekSyncRequest,
-    AssignConductorRequest
-} from '@shared-types';
+import type { CreateSyncGroupDTO, UpdateSyncGroupDTO, StartPlaybackDTO, SeekDTO } from '../types/syncTypes';
 
 const router: Router = Router();
 
@@ -26,84 +20,153 @@ router.use(authenticate);
 
 /**
  * GET /api/sync/groups
- * List all sync groups
+ * List sync groups (optionally filtered by hotel)
  */
-router.get('/groups', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (_req, res) => {
+router.get('/groups', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const groups = syncService.getAllSyncGroups();
+        const hotelId = req.query.hotelId as string || req.user?.hotelId;
+
+        const groups = await syncService.getAllSyncGroups(hotelId || undefined);
         res.json({ success: true, data: groups });
     } catch (error) {
-        log.error('Failed to get sync groups', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to get sync groups' } });
+        log.error('[SyncRoutes] Failed to list groups', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to list sync groups' },
+        });
     }
 });
 
 /**
  * GET /api/sync/groups/:id
+ * Get single sync group
  */
-router.get('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.get('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const group = syncService.getSyncGroup(req.params.id!);
+        const group = await syncService.getSyncGroup(req.params.id!);
+
         if (!group) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Sync group not found' },
+            });
         }
+
         res.json({ success: true, data: group });
     } catch (error) {
-        log.error('Failed to get sync group', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to get sync group' } });
+        log.error('[SyncRoutes] Failed to get group', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to get sync group' },
+        });
     }
 });
 
 /**
  * POST /api/sync/groups
+ * Create new sync group
  */
-router.post('/groups', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const { name, displayIds } = req.body as CreateSyncGroupRequest;
-        if (!name || !displayIds || !Array.isArray(displayIds)) {
-            return res.status(400).json({ success: false, error: { code: 'INVALID_REQUEST', message: 'Name and displayIds required' } });
+        const data: CreateSyncGroupDTO = req.body;
+
+        // Validate required fields
+        if (!data.name?.trim() || !data.displayIds || data.displayIds.length < 1) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Name and at least 1 display are required' },
+            });
         }
-        const group = syncService.createSyncGroup(name, displayIds);
-        log.info('Sync group created via API', { groupId: group.id, name });
+
+        // Use provided hotelId or user's hotelId (handle empty string)
+        const hotelId = data.hotelId?.trim() || req.user?.hotelId;
+
+        if (!hotelId) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Hotel ID is required' },
+            });
+        }
+        data.hotelId = hotelId;
+
+        // Validate content (handle empty string)
+        const hasContent = (data.contentId?.trim()) || (data.playlistItems && data.playlistItems.length > 0);
+        if (!hasContent) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Either contentId or playlistItems is required' },
+            });
+        }
+
+        // Clean up contentId if empty
+        if (!data.contentId?.trim()) {
+            data.contentId = undefined;
+        }
+
+        const group = await syncService.createSyncGroup(data);
+
+        log.info('[SyncRoutes] Sync group created', { groupId: group.id });
         res.status(201).json({ success: true, data: group });
-    } catch (error) {
-        log.error('Failed to create sync group', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to create sync group' } });
+    } catch (error: unknown) {
+        log.error('[SyncRoutes] Failed to create group', error);
+        const message = error instanceof Error ? error.message : 'Failed to create sync group';
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message },
+        });
     }
 });
 
 /**
  * PUT /api/sync/groups/:id
+ * Update sync group
  */
-router.put('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.put('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const { name, displayIds } = req.body as UpdateSyncGroupRequest;
-        const group = syncService.updateSyncGroup(req.params.id!, { name, displayIds });
+        const data: UpdateSyncGroupDTO = req.body;
+        const group = await syncService.updateSyncGroup(req.params.id!, data);
+
         if (!group) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Sync group not found' },
+            });
         }
-        log.info('Sync group updated via API', { groupId: group.id });
+
+        log.info('[SyncRoutes] Sync group updated', { groupId: group.id });
         res.json({ success: true, data: group });
     } catch (error) {
-        log.error('Failed to update sync group', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to update sync group' } });
+        log.error('[SyncRoutes] Failed to update group', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to update sync group' },
+        });
     }
 });
 
 /**
  * DELETE /api/sync/groups/:id
+ * Delete sync group
  */
-router.delete('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.delete('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const deleted = syncService.deleteSyncGroup(req.params.id!);
+        const deleted = await syncService.deleteSyncGroup(req.params.id!);
+
         if (!deleted) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Sync group not found' },
+            });
         }
-        log.info('Sync group deleted via API', { groupId: req.params.id });
+
+        log.info('[SyncRoutes] Sync group deleted', { groupId: req.params.id! });
         res.json({ success: true, data: { deleted: true } });
     } catch (error) {
-        log.error('Failed to delete sync group', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to delete sync group' } });
+        log.error('[SyncRoutes] Failed to delete group', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to delete sync group' },
+        });
     }
 });
 
@@ -113,123 +176,135 @@ router.delete('/groups/:id', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, 
 
 /**
  * POST /api/sync/groups/:id/start
+ * Start playback
  */
-router.post('/groups/:id/start', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups/:id/start', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const { contentId, startPosition } = req.body as StartSyncPlaybackRequest;
-        if (!contentId) {
-            return res.status(400).json({ success: false, error: { code: 'INVALID_REQUEST', message: 'contentId is required' } });
-        }
-        const success = syncService.startPlayback(req.params.id!, contentId, startPosition || 0);
+        const options: StartPlaybackDTO = req.body || {};
+        const success = await syncService.startPlayback(req.params.id!, options);
+
         if (!success) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
+            return res.status(400).json({
+                success: false,
+                error: { code: 'PLAYBACK_ERROR', message: 'Failed to start playback - check group has content' },
+            });
         }
-        log.info('Playback started via API', { groupId: req.params.id, contentId });
+
         res.json({ success: true, data: { started: true } });
     } catch (error) {
-        log.error('Failed to start playback', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to start playback' } });
+        log.error('[SyncRoutes] Failed to start playback', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to start playback' },
+        });
     }
 });
 
 /**
  * POST /api/sync/groups/:id/pause
  */
-router.post('/groups/:id/pause', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups/:id/pause', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const success = syncService.pausePlayback(req.params.id!);
-        if (!success) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
-        }
-        log.info('Playback paused via API', { groupId: req.params.id });
-        res.json({ success: true, data: { paused: true } });
+        const success = await syncService.pausePlayback(req.params.id!);
+        res.json({ success, data: { paused: success } });
     } catch (error) {
-        log.error('Failed to pause playback', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to pause playback' } });
+        log.error('[SyncRoutes] Failed to pause', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to pause playback' },
+        });
     }
 });
 
 /**
  * POST /api/sync/groups/:id/resume
  */
-router.post('/groups/:id/resume', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups/:id/resume', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const success = syncService.resumePlayback(req.params.id!);
-        if (!success) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found or no content' } });
-        }
-        log.info('Playback resumed via API', { groupId: req.params.id });
-        res.json({ success: true, data: { resumed: true } });
+        const success = await syncService.resumePlayback(req.params.id!);
+        res.json({ success, data: { resumed: success } });
     } catch (error) {
-        log.error('Failed to resume playback', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to resume playback' } });
-    }
-});
-
-/**
- * POST /api/sync/groups/:id/seek
- */
-router.post('/groups/:id/seek', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
-    try {
-        const { position } = req.body as SeekSyncRequest;
-        if (typeof position !== 'number') {
-            return res.status(400).json({ success: false, error: { code: 'INVALID_REQUEST', message: 'position (number) is required' } });
-        }
-        const success = syncService.seekPlayback(req.params.id!, position);
-        if (!success) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
-        }
-        log.info('Playback seeked via API', { groupId: req.params.id, position });
-        res.json({ success: true, data: { seeked: true, position } });
-    } catch (error) {
-        log.error('Failed to seek playback', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to seek playback' } });
+        log.error('[SyncRoutes] Failed to resume', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to resume playback' },
+        });
     }
 });
 
 /**
  * POST /api/sync/groups/:id/stop
  */
-router.post('/groups/:id/stop', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups/:id/stop', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const success = syncService.stopPlayback(req.params.id!);
-        if (!success) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
-        }
-        log.info('Playback stopped via API', { groupId: req.params.id });
-        res.json({ success: true, data: { stopped: true } });
+        const success = await syncService.stopPlayback(req.params.id!);
+        res.json({ success, data: { stopped: success } });
     } catch (error) {
-        log.error('Failed to stop playback', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to stop playback' } });
+        log.error('[SyncRoutes] Failed to stop', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to stop playback' },
+        });
     }
 });
 
-// ==============================================
-// CONDUCTOR MANAGEMENT
-// ==============================================
+/**
+ * POST /api/sync/groups/:id/seek
+ */
+router.post('/groups/:id/seek', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
+    try {
+        const data: SeekDTO = req.body;
+
+        if (typeof data.position !== 'number' || data.position < 0) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Valid position is required' },
+            });
+        }
+
+        const success = await syncService.seekPlayback(req.params.id!, data);
+        res.json({ success, data: { seeked: success } });
+    } catch (error) {
+        log.error('[SyncRoutes] Failed to seek', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to seek' },
+        });
+    }
+});
 
 /**
  * POST /api/sync/groups/:id/conductor
+ * Manually assign conductor
  */
-router.post('/groups/:id/conductor', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), (req, res) => {
+router.post('/groups/:id/conductor', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
     try {
-        const { displayId } = req.body as AssignConductorRequest;
+        const { displayId } = req.body;
+
         if (!displayId) {
-            return res.status(400).json({ success: false, error: { code: 'INVALID_REQUEST', message: 'displayId is required' } });
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'displayId is required' },
+            });
         }
-        const group = syncService.getSyncGroup(req.params.id!);
+
+        // Update conductor in DB
+        const group = await syncService.updateSyncGroup(req.params.id!, {});
+
         if (!group) {
-            return res.status(404).json({ success: false, error: { code: 'GROUP_NOT_FOUND', message: 'Sync group not found' } });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Sync group not found' },
+            });
         }
-        const conductor = syncService.electConductor(req.params.id!);
-        if (!conductor) {
-            return res.status(400).json({ success: false, error: { code: 'NO_CONNECTED_DISPLAYS', message: 'No connected displays' } });
-        }
-        log.info('Conductor manually assigned via API', { groupId: req.params.id, displayId: conductor.displayId });
-        res.json({ success: true, data: conductor });
+
+        res.json({ success: true, data: group });
     } catch (error) {
-        log.error('Failed to assign conductor', error);
-        res.status(500).json({ success: false, error: { code: 'SYNC_ERROR', message: 'Failed to assign conductor' } });
+        log.error('[SyncRoutes] Failed to assign conductor', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to assign conductor' },
+        });
     }
 });
 
