@@ -40,6 +40,18 @@ enum ContentStatus {
   ERROR
 }
 
+enum AlertType {
+  INFO
+  WARNING
+  EMERGENCY
+}
+
+enum SyncState {
+  STOPPED
+  PLAYING
+  PAUSED
+}
+
 // ==============================================
 // MODELS
 // ==============================================
@@ -60,7 +72,6 @@ model User {
   hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: SetNull)
 
   // Area relationship (optional, only for AREA_MANAGER)
-  // CAMBIO: Agregado para vincular AREA_MANAGER a un área específica
   areaId String?
   area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
@@ -68,8 +79,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Schedules created by this user
+  // Relationships
   createdSchedules Schedule[]
+  createdAlerts    Alert[]
 
   @@index([email])
   @@index([hotelId])
@@ -84,11 +96,13 @@ model Hotel {
   address String
 
   // Relationships
-  users     User[]
-  areas     Area[]    // CAMBIO: Agregado para gestionar áreas del hotel
-  displays  Display[]
-  contents  Content[]
-  schedules Schedule[] // Schedules de este hotel
+  users      User[]
+  areas      Area[]
+  displays   Display[]
+  contents   Content[]
+  schedules  Schedule[]
+  alerts     Alert[]
+  syncGroups SyncGroup[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -98,7 +112,6 @@ model Hotel {
   @@map("hotels")
 }
 
-// NUEVO MODELO: Area para organización jerárquica
 model Area {
   id          String  @id @default(cuid())
   name        String
@@ -109,9 +122,10 @@ model Area {
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   // Relationships
-  displays  Display[] // Displays que pertenecen a esta área
-  users     User[]    // Area Managers asignados a esta área
-  schedules Schedule[] // Schedules aplicados a esta área
+  displays  Display[]
+  users     User[]
+  schedules Schedule[]
+  alerts    Alert[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -132,8 +146,7 @@ model Display {
   hotelId String
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
-  // Area relationship (optional for grouping displays)
-  // CAMBIO: Convertido de String? a relación FK real
+  // Area relationship
   areaId String?
   area   Area?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
 
@@ -145,9 +158,20 @@ model Display {
   pairingCode String?   @unique
   pairedAt    DateTime?
 
+  // Fallback content when no other content is available
+  fallbackContentId String?
+  fallbackContent   Content? @relation("DisplayFallback", fields: [fallbackContentId], references: [id], onDelete: SetNull)
+
   // Relationships
   displayContents DisplayContent[]
-  schedules       Schedule[] // Schedules directos del display
+  schedules       Schedule[]
+  alerts          Alert[]
+  syncGroups      SyncGroupDisplay[]
+  conductorOf     SyncGroup[]        @relation("SyncConductor")
+
+  // Audit logs
+  playbackLogs         PlaybackLog[]
+  contentSourceChanges ContentSourceChange[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -167,22 +191,26 @@ model Content {
   status ContentStatus @default(PENDING)
 
   // File URLs
-  originalUrl  String  // Original uploaded file
-  hlsUrl       String? // HLS m3u8 URL (for videos after transcoding)
-  thumbnailUrl String? // Thumbnail/preview image
+  originalUrl  String
+  hlsUrl       String?
+  thumbnailUrl String?
 
   // Metadata
-  duration   Int?    // Duration in seconds (for videos)
-  resolution String? // Video resolution (e.g., "1920x1080")
-  fileSize   BigInt? // File size in bytes
+  duration   Int?
+  resolution String?
+  fileSize   BigInt?
 
   // Hotel relationship
   hotelId String
   hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   // Relationships
-  displayContents DisplayContent[]
-  schedules       Schedule[] // Schedules que usan este contenido
+  displayContents   DisplayContent[]
+  schedules         Schedule[]
+  alerts            Alert[]
+  syncGroups        SyncGroup[]
+  syncGroupContents SyncGroupContent[]
+  displayFallbacks  Display[]          @relation("DisplayFallback")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -197,19 +225,16 @@ model Content {
 model DisplayContent {
   id String @id @default(cuid())
 
-  // Many-to-many relationship between Display and Content
   displayId String
   display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
 
   contentId String
   content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  // Scheduling
   order     Int
   startTime DateTime?
   endTime   DateTime?
 
-  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -232,38 +257,32 @@ model Schedule {
   contentId String
   content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  // Destino: Display específico (opcional)
+  // Destino: Display específico o área
   displayId String?
   display   Display? @relation(fields: [displayId], references: [id], onDelete: Cascade)
 
-  // O aplicar a todos los displays de un área (opcional)
   areaId String?
-  area   Area? @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: Cascade)
 
   // Temporalidad
-  startDate DateTime // Fecha inicio
-  endDate   DateTime? // Fecha fin (null = sin fecha fin)
-  startTime String // "09:00" formato HH:mm
-  endTime   String // "18:00" formato HH:mm
+  startDate  DateTime
+  endDate    DateTime?
+  startTime  String
+  endTime    String
+  recurrence String?
 
-  // Recurrencia (RFC 5545 RRULE)
-  recurrence String? // "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR" o null para único
-
-  // Prioridad (mayor número = mayor prioridad)
-  priority Int @default(0)
-
-  // Estado
+  // Prioridad
+  priority Int     @default(0)
   isActive Boolean @default(true)
 
-  // RBAC - Hotel owner
+  // RBAC
   hotelId String
-  hotel   Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
-  // Audit - Quien creó
+  // Audit
   createdBy String
-  creator   User @relation(fields: [createdBy], references: [id])
+  creator   User   @relation(fields: [createdBy], references: [id])
 
-  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -275,3 +294,184 @@ model Schedule {
   @@map("schedules")
 }
 
+// ==============================================
+// ALERTS MODEL
+// ==============================================
+
+model Alert {
+  id      String  @id @default(cuid())
+  name    String
+  message String?
+
+  // Contenido a mostrar
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  // Alcance (cascada: hotel > área > display)
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  areaId String?
+  area   Area?   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  displayId String?
+  display   Display? @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // Tipo y prioridad
+  type     AlertType @default(INFO)
+  priority Int       @default(100)
+
+  // Temporalidad
+  startAt DateTime @default(now())
+  endAt   DateTime?
+
+  // Estado
+  isActive Boolean @default(true)
+
+  // Audit
+  createdBy String
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId, isActive])
+  @@index([areaId, isActive])
+  @@index([displayId, isActive])
+  @@index([startAt, endAt])
+  @@map("alerts")
+}
+
+// ==============================================
+// SYNC GROUP MODELS
+// ==============================================
+
+model SyncGroup {
+  id   String @id @default(cuid())
+  name String
+
+  // Contenido único o playlist
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  playlistItems SyncGroupContent[]
+
+  // Estado de reproducción
+  state       SyncState @default(STOPPED)
+  position    Float     @default(0)
+  currentItem Int       @default(0)
+
+  // Schedule del sync group
+  scheduleEnabled    Boolean   @default(false)
+  scheduleStart      DateTime?
+  scheduleEnd        DateTime?
+  scheduleStartTime  String?
+  scheduleEndTime    String?
+  scheduleRecurrence String?
+
+  // Displays miembros
+  displays SyncGroupDisplay[]
+
+  // Conductor actual
+  conductorId String?
+  conductor   Display? @relation("SyncConductor", fields: [conductorId], references: [id], onDelete: SetNull)
+
+  // RBAC
+  hotelId String
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([state])
+  @@map("sync_groups")
+}
+
+model SyncGroupDisplay {
+  id String @id @default(cuid())
+
+  syncGroupId String
+  syncGroup   SyncGroup @relation(fields: [syncGroupId], references: [id], onDelete: Cascade)
+
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // Video wall region (optional)
+  region String?
+
+  joinedAt DateTime @default(now())
+
+  @@unique([syncGroupId, displayId])
+  @@index([syncGroupId])
+  @@index([displayId])
+  @@map("sync_group_displays")
+}
+
+model SyncGroupContent {
+  id String @id @default(cuid())
+
+  syncGroupId String
+  syncGroup   SyncGroup @relation(fields: [syncGroupId], references: [id], onDelete: Cascade)
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  order    Int
+  duration Int?
+
+  @@unique([syncGroupId, order])
+  @@index([syncGroupId])
+  @@map("sync_group_contents")
+}
+
+// ==============================================
+// AUDIT MODELS
+// ==============================================
+
+model PlaybackLog {
+  id String @id @default(cuid())
+
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // What was shown
+  sourceType String
+  sourceId   String?
+  contentId  String
+
+  // Timing
+  startedAt DateTime
+  endedAt   DateTime?
+  duration  Int?
+
+  // Why it changed
+  endReason String?
+
+  // Metadata
+  hotelId String
+
+  @@index([displayId, startedAt])
+  @@index([hotelId, startedAt])
+  @@index([contentId])
+  @@map("playback_logs")
+}
+
+model ContentSourceChange {
+  id String @id @default(cuid())
+
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  fromType String?
+  fromId   String?
+  toType   String
+  toId     String?
+
+  reason String
+
+  timestamp DateTime @default(now())
+
+  @@index([displayId, timestamp])
+  @@map("content_source_changes")
+}

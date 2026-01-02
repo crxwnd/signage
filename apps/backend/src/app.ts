@@ -25,6 +25,7 @@ import syncRouter from './routes/sync';
 import dashboardRouter from './routes/dashboard';
 import analyticsRouter from './routes/analytics';
 import schedulesRouter from './routes/schedules';
+import alertsRouter from './routes/alerts';
 
 // ... otros imports ...
 
@@ -157,6 +158,7 @@ export function createApp(): Application {
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/schedules', schedulesRouter);
+  app.use('/api/alerts', alertsRouter);
 
   // ==============================================
   // ERROR HANDLING

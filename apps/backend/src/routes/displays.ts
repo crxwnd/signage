@@ -11,6 +11,7 @@ import { authenticate } from '../middleware/auth';
 import * as displaysController from '../controllers/displaysController';
 import { prisma } from '../utils/prisma';
 import { log } from '../middleware/logger';
+import { contentResolver } from '../services/contentResolver';
 
 const router: ExpressRouter = Router();
 
@@ -18,6 +19,41 @@ const router: ExpressRouter = Router();
 // PUBLIC ROUTES (No authentication required)
 // These are for SmartTV displays that don't have user sessions
 // ==============================================
+
+/**
+ * GET /api/displays/:id/current-source
+ * PUBLIC endpoint for displays to get their current content source
+ * Returns the highest priority content source (alert > sync > schedule > playlist > fallback)
+ */
+router.get('/:id/current-source', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ error: 'Display ID required' });
+        }
+
+        const source = await contentResolver.resolve(id);
+
+        // Update lastSeen for this display
+        await prisma.display.update({
+            where: { id },
+            data: { lastSeen: new Date() },
+        }).catch(() => {
+            // Ignore if display doesn't exist
+        });
+
+        log.debug('Display current-source fetched', { displayId: id, type: source.type });
+
+        res.json({
+            success: true,
+            data: source,
+        });
+    } catch (error) {
+        log.error('Error fetching display current-source', { error });
+        next(error);
+    }
+});
 
 /**
  * GET /api/displays/:id/playlist
