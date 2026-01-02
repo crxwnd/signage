@@ -22,6 +22,8 @@ import {
   BarChart3,
   Wifi,
   Film,
+  Calendar,
+  Bell,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -58,6 +60,8 @@ const navSections = {
     items: [
       { name: 'Displays', href: '/displays', icon: Monitor },
       { name: 'Content', href: '/content', icon: FileVideo },
+      { name: 'Alerts', href: '/alerts', icon: Bell, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Schedules', href: '/schedules', icon: Calendar, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Areas', href: '/areas', icon: Layers, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Sync Groups', href: '/sync', icon: Radio, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
     ],

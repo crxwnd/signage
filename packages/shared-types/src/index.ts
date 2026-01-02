@@ -6,9 +6,14 @@
  * - api: API request/response types
  * - socket-events: Socket.io event types
  * - sync: Synchronization types (Conductor Pattern)
+ * - alert: Alert system types
+ * - content-source: Content priority/resolution types
  */
 
 export * from './models';
 export * from './api';
 export * from './socket-events';
 export * from './sync';
+export * from './alert';
+export * from './content-source';
+
