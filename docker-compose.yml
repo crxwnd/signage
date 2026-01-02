@@ -54,6 +54,31 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - default
+
+  # MinIO setup job - creates buckets on first run
+  minio-setup:
+    image: minio/mc:latest
+    container_name: signage-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing myminio/signage-uploads;
+      mc mb --ignore-existing myminio/signage-hls;
+      mc mb --ignore-existing myminio/signage-thumbnails;
+      mc anonymous set download myminio/signage-hls;
+      mc anonymous set download myminio/signage-thumbnails;
+      echo 'Buckets created successfully';
+      exit 0;
+      "
+    networks:
+      - default
 
   # Backend Service
   backend:
