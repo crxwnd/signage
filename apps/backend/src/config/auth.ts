@@ -41,13 +41,13 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
 
 /**
  * Rate Limiting Configuration for Auth Endpoints
- * More lenient in development mode
+ * More lenient limits to prevent accidental lockouts during development
  */
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export const AUTH_RATE_LIMIT = {
-  windowMs: isDevelopment ? 60 * 1000 : 15 * 60 * 1000, // 1 min dev, 15 min prod
-  max: isDevelopment ? 1000 : 5, // 1000 req/min dev, 5 req/15min prod
+  windowMs: isDevelopment ? 60 * 1000 : 5 * 60 * 1000, // 1 min dev, 5 min prod (was 15)
+  max: isDevelopment ? 1000 : 30, // 1000 req/min dev, 30 req/5min prod (was 5)
   message: 'Too many authentication attempts, please try again later',
 };
 

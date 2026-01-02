@@ -3,14 +3,23 @@
 /**
  * Player Page
  * Main entry point for SmartTV display player
- * Loads playlist from backend and plays content in a loop
- * Supports Socket.io for real-time updates and pairing
- * Supports offline mode with cached content
+ * Uses Content Priority System:
+ * 1. Alerts (highest priority)
+ * 2. Sync Groups
+ * 3. Schedules
+ * 4. Playlist (default)
+ * 5. Fallback
  */
 
 import { useEffect, useState, useCallback } from 'react';
 import { PlaylistPlayer, PairingScreen, OfflineBanner } from '@/components';
+import { AlertOverlay } from '@/components/AlertOverlay';
+import { SyncPlayer } from '@/components/SyncPlayer';
+import { VideoPlayer } from '@/components/VideoPlayer';
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { NoContentScreen } from '@/components/NoContentScreen';
 import { usePlayerSocket } from '@/hooks/usePlayerSocket';
+import { useContentSource } from '@/hooks/useContentSource';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 
 // Backend URL
@@ -22,24 +31,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 function getFullUrl(path: string | null | undefined): string {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path; // Already absolute
+    return path;
   }
   return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
-}
-
-interface ContentItem {
-  id: string;
-  name: string;
-  type: 'VIDEO' | 'IMAGE' | 'HTML';
-  hlsUrl: string | null;
-  originalUrl: string;
-  duration: number | null;
-}
-
-interface DisplayContentItem {
-  id: string;
-  content: ContentItem;
-  order: number;
 }
 
 interface PlaylistItem {
@@ -52,63 +46,27 @@ interface PlaylistItem {
 
 export default function PlayerPage() {
   const [displayId, setDisplayId] = useState<string | null>(null);
-  const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
-  const [nowPlaying, setNowPlaying] = useState<string>('');
 
-  // Load playlist function
-  const loadPlaylist = useCallback(async (id: string) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${API_URL}/api/displays/${id}/playlist`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Display not found');
-        }
-        throw new Error(`Failed to load playlist: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const rawItems = data.data?.items || data.items || [];
-
-      // Transform to PlaylistPlayer format with full URLs
-      const items: PlaylistItem[] = rawItems
-        .sort((a: DisplayContentItem, b: DisplayContentItem) => a.order - b.order)
-        .map((item: DisplayContentItem) => ({
-          id: item.content.id,
-          type: item.content.type,
-          url: getFullUrl(item.content.hlsUrl || item.content.originalUrl),
-          duration: item.content.duration || 10,
-          name: item.content.name,
-        }));
-
-      setPlaylist(items);
-      setError(null);
-
-      if (items.length > 0 && items[0]) {
-        setNowPlaying(items[0].name);
-      }
-    } catch (err) {
-      console.error('Failed to load playlist:', err);
-      // Only set error if not offline - offline mode will use cached content
-      if (navigator.onLine) {
-        setError(err instanceof Error ? err.message : 'Failed to load playlist');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Content source from priority system
+  const {
+    source,
+    isLoading: sourceLoading,
+    error: sourceError,
+    refetch,
+    isAlert,
+    isSync,
+    isSchedule,
+    isPlaylist,
+    isFallback,
+  } = useContentSource({ displayId, pollInterval: 60000 });
 
   // Handler for when pairing is confirmed
   const handlePaired = useCallback((newDisplayId: string) => {
     console.log('[Player] Paired with displayId:', newDisplayId);
     localStorage.setItem('displayId', newDisplayId);
     setDisplayId(newDisplayId);
-    loadPlaylist(newDisplayId);
-  }, [loadPlaylist]);
+  }, []);
 
   // Handler for remote commands
   const handleCommand = useCallback((command: string) => {
@@ -123,15 +81,11 @@ export default function PlayerPage() {
       case 'restart':
         window.location.reload();
         break;
-      case 'refresh-playlist':
-        if (displayId) {
-          loadPlaylist(displayId);
-        }
+      case 'refresh':
+        refetch();
         break;
-      default:
-        console.log('[Player] Unknown command:', command);
     }
-  }, [displayId, loadPlaylist]);
+  }, [refetch]);
 
   // Socket connection
   const {
@@ -141,22 +95,33 @@ export default function PlayerPage() {
     requestPairing,
   } = usePlayerSocket({
     displayId,
-    onPlaylistUpdate: () => {
-      if (displayId) {
-        loadPlaylist(displayId);
-      }
-    },
+    onPlaylistUpdate: refetch,
     onCommand: handleCommand,
     onPaired: handlePaired,
+    onAlertActivated: () => {
+      console.log('[Player] Alert received via socket');
+      refetch();
+    },
+    onAlertDeactivated: () => {
+      console.log('[Player] Alert deactivated via socket');
+      refetch();
+    },
+    onScheduleActivated: () => {
+      console.log('[Player] Schedule activated via socket');
+      refetch();
+    },
+    onScheduleEnded: () => {
+      console.log('[Player] Schedule ended via socket');
+      refetch();
+    },
+    onContentRefresh: refetch,
   });
 
   // Offline mode
-  const { isOffline, offlineSince, pendingEvents } = useOfflineMode({
+  const { isOffline, offlineSince } = useOfflineMode({
     onReconnect: () => {
-      console.log('[Player] Reconnected - reloading playlist');
-      if (displayId) {
-        loadPlaylist(displayId);
-      }
+      console.log('[Player] Reconnected - refreshing content');
+      refetch();
     },
     onDisconnect: () => {
       console.log('[Player] Disconnected - using cached content');
@@ -171,11 +136,8 @@ export default function PlayerPage() {
     if (id) {
       setDisplayId(id);
       localStorage.setItem('displayId', id);
-      loadPlaylist(id);
-    } else {
-      setIsLoading(false);
     }
-  }, [loadPlaylist]);
+  }, []);
 
   // Hide cursor after inactivity
   useEffect(() => {
@@ -200,12 +162,6 @@ export default function PlayerPage() {
     };
   }, []);
 
-  // Handle item change
-  const handleItemChange = useCallback((index: number, item: PlaylistItem) => {
-    console.log(`Now playing: ${item.name} (${index + 1}/${playlist.length})`);
-    setNowPlaying(item.name);
-  }, [playlist.length]);
-
   // If no displayId, show pairing screen
   if (!displayId) {
     return (
@@ -219,63 +175,100 @@ export default function PlayerPage() {
   }
 
   // Loading state
-  if (isLoading) {
+  if (sourceLoading && !source) {
+    return <LoadingScreen />;
+  }
+
+  // Error state
+  if (sourceError && !source) {
     return (
-      <div className="w-screen h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-xl">Loading content...</p>
-          <p className="text-gray-500 text-sm mt-2">Display: {displayId}</p>
-        </div>
-      </div>
+      <NoContentScreen reason={`Error de conexión: ${sourceError.message}`} />
     );
   }
 
-  // Error state (only show if online and no cached content)
-  if (error && !isOffline && playlist.length === 0) {
+  // No content available
+  if (!source || source.type === 'none') {
     return (
-      <div className="w-screen h-screen bg-black flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <p className="text-white text-xl mb-2">Error</p>
-          <p className="text-gray-400">{error}</p>
-          <p className="text-gray-500 text-sm mt-4">Display: {displayId}</p>
-          <button
-            onClick={() => loadPlaylist(displayId)}
-            className="mt-6 px-4 py-2 bg-white/10 text-white rounded-lg"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <NoContentScreen reason="Configure una playlist o schedule para este display" />
     );
   }
 
-  // Player (including offline mode with cached content)
+  // Convert source content to playlist items for PlaylistPlayer
+  const getPlaylistItems = (): PlaylistItem[] => {
+    if (source.syncGroup?.playlistItems) {
+      return source.syncGroup.playlistItems.map(item => ({
+        id: item.content.id,
+        type: item.content.type,
+        url: getFullUrl(item.content.hlsUrl || item.content.originalUrl),
+        duration: item.duration || item.content.duration || 10,
+        name: item.content.name,
+      }));
+    }
+    if (source.content) {
+      return [{
+        id: source.content.id,
+        type: source.content.type,
+        url: getFullUrl(source.content.hlsUrl || source.content.originalUrl),
+        duration: source.content.duration || 10,
+        name: source.content.name,
+      }];
+    }
+    return [];
+  };
+
+  // RENDER BASED ON CONTENT TYPE
   return (
     <div className="player-container w-screen h-screen bg-black overflow-hidden relative">
       {/* Offline Banner */}
       <OfflineBanner isOffline={isOffline} offlineSince={offlineSince} />
 
-      <PlaylistPlayer
-        items={playlist}
-        isPaused={isPaused}
-        onItemChange={handleItemChange}
-        isOffline={isOffline}
-      />
+      {/* PRIORITY 1: Alert */}
+      {isAlert && source.alert && (
+        <AlertOverlay source={source}>
+          {source.content && (
+            <VideoPlayer
+              src={getFullUrl(source.content.hlsUrl || source.content.originalUrl)}
+              autoPlay
+              muted
+            />
+          )}
+        </AlertOverlay>
+      )}
+
+      {/* PRIORITY 2: Sync Group */}
+      {isSync && source.syncGroup && (
+        <SyncPlayer
+          syncGroup={source.syncGroup}
+        />
+      )}
+
+      {/* PRIORITY 3: Schedule or Playlist */}
+      {(isSchedule || isPlaylist || isFallback) && (
+        <PlaylistPlayer
+          items={getPlaylistItems()}
+          isPaused={isPaused}
+          onItemChange={(index, item) => {
+            console.log(`[Player] Now playing: ${item.name} (${index + 1}/${getPlaylistItems().length})`);
+          }}
+          isOffline={isOffline}
+        />
+      )}
 
       {/* Status overlay - only in development */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-4 left-4 bg-black/50 px-3 py-2 rounded text-white text-sm" style={{ zIndex: 1000, marginTop: isOffline ? '40px' : '0' }}>
+        <div
+          className="absolute top-4 left-4 bg-black/50 px-3 py-2 rounded text-white text-sm"
+          style={{ zIndex: 1000, marginTop: isOffline ? '40px' : '0' }}
+        >
           <p style={{ color: isConnected ? '#4CAF50' : '#ff6b6b' }}>
             {isConnected ? '● Connected' : '○ Disconnected'}
           </p>
           <p>Display: {displayId}</p>
-          <p>Playing: {nowPlaying}</p>
-          <p>Items: {playlist.length}</p>
+          <p>Source: <strong>{source.type.toUpperCase()}</strong></p>
+          <p>Priority: {source.priority}</p>
+          {source.reason && <p className="text-xs text-gray-400">{source.reason}</p>}
           {isPaused && <p style={{ color: '#ff9800', fontWeight: 'bold' }}>PAUSED</p>}
           {isOffline && <p style={{ color: '#ff6b6b' }}>OFFLINE MODE</p>}
-          {pendingEvents > 0 && <p style={{ color: '#ff9800' }}>Pending: {pendingEvents}</p>}
         </div>
       )}
     </div>
