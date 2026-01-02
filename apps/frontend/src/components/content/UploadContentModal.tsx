@@ -502,10 +502,15 @@ export function UploadContentModal({
                   <p className="text-sm text-destructive">No hotels available</p>
                 ) : (
                   <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
-                    <SelectTrigger id="hotel">
+                    <SelectTrigger id="hotel" className="w-full">
                       <SelectValue placeholder="Select hotel for this content" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent
+                      position="popper"
+                      sideOffset={4}
+                      align="start"
+                      className="w-[--radix-select-trigger-width] max-h-60"
+                    >
                       {hotels.map((hotel) => (
                         <SelectItem key={hotel.id} value={hotel.id}>
                           {hotel.name}

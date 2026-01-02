@@ -11,6 +11,9 @@ import { log } from './middleware/logger';
 import { prisma } from './utils/prisma';
 import { initializeSocketIO, disconnectAll } from './socket/socketManager';
 import { startScheduleChecker } from './jobs/scheduleChecker';
+import { startMetricsUpdater, stopMetricsUpdater } from './jobs/metricsUpdater';
+import syncService from './services/syncService';
+import storageService from './services/storageService';
 
 /**
  * Start the server
@@ -36,6 +39,12 @@ async function startServer(): Promise<void> {
     try {
       await prisma.$connect();
       log.info('✓ Database connected successfully');
+
+      // Initialize sync service (restore runtime state for playing groups)
+      await syncService.initializeSyncService();
+
+      // Initialize storage (MinIO or local)
+      await storageService.initializeStorage();
     } catch (error) {
       log.error('✗ Database connection failed', error);
       log.warn('Server will start but database features may not work');
@@ -60,6 +69,9 @@ async function startServer(): Promise<void> {
 
       // Start schedule checker job
       startScheduleChecker();
+
+      // Start metrics updater job
+      startMetricsUpdater();
     });
 
     // Graceful shutdown handlers
@@ -73,6 +85,14 @@ async function startServer(): Promise<void> {
         // Disconnect all Socket.io clients
         await disconnectAll();
         log.info('Socket.io disconnected');
+
+        // Cleanup sync service
+        syncService.cleanupSyncService();
+        log.info('Sync service cleaned up');
+
+        // Stop metrics updater
+        stopMetricsUpdater();
+        log.info('Metrics updater stopped');
 
         // Disconnect from database
         try {

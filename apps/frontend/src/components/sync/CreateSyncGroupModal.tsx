@@ -95,9 +95,9 @@ export function CreateSyncGroupModal({ open, onOpenChange }: CreateSyncGroupModa
             await createMutation.mutateAsync({
                 name: name.trim(),
                 displayIds: selectedDisplays,
-                hotelId,
-                contentId: contentType === 'single' ? contentId : undefined,
-                playlistItems: contentType === 'playlist' ? playlistItems : undefined,
+                hotelId: hotelId || undefined,
+                contentId: contentType === 'single' && contentId ? contentId : undefined,
+                playlistItems: contentType === 'playlist' && playlistItems.length > 0 ? playlistItems : undefined,
                 scheduleEnabled,
                 scheduleStart: scheduleEnabled && scheduleStartDate ? new Date(scheduleStartDate).toISOString() : undefined,
                 scheduleEnd: scheduleEnabled && scheduleEndDate ? new Date(scheduleEndDate).toISOString() : undefined,

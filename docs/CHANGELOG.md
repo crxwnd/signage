@@ -4,6 +4,40 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-02] Migración SyncGroups a Prisma
+
+### Problema
+SyncGroups usaba `Map<string, SyncGroup>` en memoria, perdiendo todos los datos al reiniciar el servidor. Además, `contentResolver.ts` buscaba en PostgreSQL vía Prisma pero no encontraba nada porque los grupos estaban solo en memoria.
+
+### Solución
+Migración completa del servicio de sincronización para usar Prisma como almacenamiento principal:
+
+#### Backend Modificaciones
+- **`types/syncTypes.ts`** [NUEVO] - Interfaces separando runtime state de datos persistidos
+- **`services/syncService.ts`** [REESCRITO] - CRUD con Prisma, playback control, tick broadcasting cada 100ms, conductor election/failover, late join
+- **`routes/sync.ts`** [ACTUALIZADO] - Endpoints async con Prisma, validación de contenido requerido
+- **`socket/syncHandlers.ts`** [ACTUALIZADO] - Handlers async usando nuevo syncService
+- **`server.ts`** [ACTUALIZADO] - Inicialización de grupos PLAYING al arrancar, cleanup al cerrar
+
+#### Arquitectura
+```
+PERSISTENTE (Prisma)          RUNTIME (Map en memoria)
+─────────────────────         ────────────────────────
+• Grupos (name, hotelId)      • Posición actual (cada 100ms)
+• Displays miembros           • Sockets conectados
+• Contenido (single/playlist) • Conductor socket ID
+• Schedule config             • Tick interval reference
+• Estado base (STOPPED/PLAYING/PAUSED)
+• Posición guardada al pausar
+```
+
+#### Comportamiento
+- Los grupos **persisten** entre reinicios del servidor
+- La posición de reproducción se resetea al reiniciar (aceptable)
+- Los displays se reconectan y sincronizan automáticamente
+
+---
+
 ## [2026-01-01] Fase 7: Sistema de Prioridad de Contenido y Alertas
 
 ### Objetivo

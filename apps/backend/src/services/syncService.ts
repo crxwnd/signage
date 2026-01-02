@@ -1,274 +1,262 @@
 /**
- * Sync Service
- * Manages sync groups and playback state for display synchronization
- * Uses Conductor Pattern: one display is master, others follow
+ * Sync Service - Refactored
+ * 
+ * Manages sync groups using PRISMA for persistence and MAP for runtime state.
+ * 
+ * Architecture:
+ * - Prisma: CRUD, configuration, persisted state
+ * - Map: Runtime playback position, connected sockets, tick intervals
  */
 
+import { prisma } from '../utils/prisma';
 import { log } from '../middleware/logger';
 import { getIO } from '../socket/socketManager';
 import type {
-    SyncGroup,
-    SyncTick,
-    ConductorInfo,
-    SyncConductorChangedEvent,
-    SyncGroupUpdatedEvent
-} from '@shared-types';
+    SyncRuntimeState,
+    SyncGroupWithRelations,
+    CreateSyncGroupDTO,
+    UpdateSyncGroupDTO,
+    StartPlaybackDTO,
+    SeekDTO,
+    SyncTickPayload,
+    SyncStatePayload,
+    SyncConductorChangedPayload,
+} from '../types/syncTypes';
 
 // ==============================================
-// IN-MEMORY STATE
+// RUNTIME STATE (En memoria)
 // ==============================================
 
-/**
- * Map of sync groups by ID
- */
-const syncGroups = new Map<string, SyncGroup>();
+/** Runtime state for active sync groups */
+const runtimeStates = new Map<string, SyncRuntimeState>();
 
-/**
- * Map of displayId to groupId for quick lookup
- */
-const displayToGroup = new Map<string, string>();
+/** Tick intervals by groupId */
+const tickIntervals = new Map<string, NodeJS.Timeout>();
 
-/**
- * Map of socketId to displayId
- */
+/** Socket to display mapping */
 const socketToDisplay = new Map<string, string>();
 
-/**
- * Sync tick interval reference
- */
-let tickInterval: NodeJS.Timeout | null = null;
-const TICK_INTERVAL_MS = 100; // 100ms for <200ms sync precision
+/** Display to sync group mapping (for quick lookup) */
+const displayToGroup = new Map<string, string>();
+
+const TICK_INTERVAL_MS = 100;
 
 // ==============================================
-// GROUP MANAGEMENT
+// HELPER: Get Full URL for Content
 // ==============================================
 
-/**
- * Generate a unique group ID
- */
-function generateGroupId(): string {
-    return `sync-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+function getContentUrl(content: { hlsUrl?: string | null; originalUrl: string }): string {
+    return content.hlsUrl || content.originalUrl;
 }
+
+// ==============================================
+// INCLUDE CLAUSE FOR QUERIES
+// ==============================================
+
+const syncGroupInclude = {
+    content: true,
+    playlistItems: {
+        include: { content: true },
+        orderBy: { order: 'asc' as const },
+    },
+    displays: {
+        include: { display: true },
+    },
+    conductor: true,
+};
+
+// ==============================================
+// CRUD OPERATIONS (Prisma)
+// ==============================================
 
 /**
  * Create a new sync group
  */
-export function createSyncGroup(name: string, displayIds: string[]): SyncGroup {
-    const id = generateGroupId();
-    const now = Date.now();
+export async function createSyncGroup(data: CreateSyncGroupDTO): Promise<SyncGroupWithRelations> {
+    log.info('[SyncService] Creating sync group', { name: data.name, hotelId: data.hotelId });
 
-    const group: SyncGroup = {
-        id,
-        name,
-        displayIds,
-        conductorId: null,
-        conductorSocketId: null,
-        currentContentId: null,
-        playbackState: 'stopped',
-        currentTime: 0,
-        startedAt: null,
-        createdAt: now,
-        updatedAt: now,
+    // Validate displays exist and belong to hotel
+    const displays = await prisma.display.findMany({
+        where: {
+            id: { in: data.displayIds },
+            hotelId: data.hotelId,
+        },
+    });
+
+    if (displays.length !== data.displayIds.length) {
+        throw new Error('Some displays not found or do not belong to this hotel');
+    }
+
+    // Create sync group with relations
+    const group = await prisma.syncGroup.create({
+        data: {
+            name: data.name,
+            hotelId: data.hotelId,
+            contentId: data.contentId || null,
+            state: 'STOPPED',
+            position: 0,
+            currentItem: 0,
+            scheduleEnabled: data.scheduleEnabled || false,
+            scheduleStart: data.scheduleStart ? new Date(data.scheduleStart) : null,
+            scheduleEnd: data.scheduleEnd ? new Date(data.scheduleEnd) : null,
+            scheduleStartTime: data.scheduleStartTime || null,
+            scheduleEndTime: data.scheduleEndTime || null,
+            scheduleRecurrence: data.scheduleRecurrence || null,
+            // Create display memberships
+            displays: {
+                create: data.displayIds.map(displayId => ({
+                    displayId,
+                })),
+            },
+            // Create playlist items if provided
+            playlistItems: data.playlistItems ? {
+                create: data.playlistItems.map(item => ({
+                    contentId: item.contentId,
+                    duration: item.duration,
+                    order: item.order,
+                })),
+            } : undefined,
+        },
+        include: syncGroupInclude,
+    });
+
+    // Update display-to-group mapping
+    for (const displayId of data.displayIds) {
+        displayToGroup.set(displayId, group.id);
+    }
+
+    log.info('[SyncService] Sync group created', { groupId: group.id, displayCount: data.displayIds.length });
+
+    return group as SyncGroupWithRelations;
+}
+
+/**
+ * Get sync group by ID
+ */
+export async function getSyncGroup(groupId: string): Promise<SyncGroupWithRelations | null> {
+    const group = await prisma.syncGroup.findUnique({
+        where: { id: groupId },
+        include: syncGroupInclude,
+    });
+    return group as SyncGroupWithRelations | null;
+}
+
+/**
+ * Get all sync groups (for admin listing)
+ */
+export async function getAllSyncGroups(hotelId?: string): Promise<SyncGroupWithRelations[]> {
+    const groups = await prisma.syncGroup.findMany({
+        where: hotelId ? { hotelId } : undefined,
+        include: syncGroupInclude,
+        orderBy: { createdAt: 'desc' },
+    });
+    return groups as SyncGroupWithRelations[];
+}
+
+/**
+ * Update sync group
+ */
+export async function updateSyncGroup(
+    groupId: string,
+    data: UpdateSyncGroupDTO
+): Promise<SyncGroupWithRelations | null> {
+    const existing = await getSyncGroup(groupId);
+    if (!existing) return null;
+
+    // Build update data
+    const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
     };
 
-    syncGroups.set(id, group);
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.contentId !== undefined) updateData.contentId = data.contentId;
+    if (data.scheduleEnabled !== undefined) updateData.scheduleEnabled = data.scheduleEnabled;
+    if (data.scheduleStart !== undefined) updateData.scheduleStart = data.scheduleStart ? new Date(data.scheduleStart) : null;
+    if (data.scheduleEnd !== undefined) updateData.scheduleEnd = data.scheduleEnd ? new Date(data.scheduleEnd) : null;
+    if (data.scheduleStartTime !== undefined) updateData.scheduleStartTime = data.scheduleStartTime;
+    if (data.scheduleEndTime !== undefined) updateData.scheduleEndTime = data.scheduleEndTime;
+    if (data.scheduleRecurrence !== undefined) updateData.scheduleRecurrence = data.scheduleRecurrence;
 
-    // Map displays to this group
-    for (const displayId of displayIds) {
-        displayToGroup.set(displayId, id);
-    }
-
-    log.info('Sync group created', { id, name, displayCount: displayIds.length });
-
-    // Auto-elect conductor if displays are connected
-    electConductor(id);
-
-    // Start tick interval if not running
-    startTickInterval();
-
-    return group;
-}
-
-/**
- * Get a sync group by ID
- */
-export function getSyncGroup(groupId: string): SyncGroup | undefined {
-    return syncGroups.get(groupId);
-}
-
-/**
- * Get all sync groups
- */
-export function getAllSyncGroups(): SyncGroup[] {
-    return Array.from(syncGroups.values());
-}
-
-/**
- * Update a sync group
- */
-export function updateSyncGroup(groupId: string, updates: Partial<Pick<SyncGroup, 'name' | 'displayIds'>>): SyncGroup | null {
-    const group = syncGroups.get(groupId);
-    if (!group) return null;
-
-    if (updates.name) {
-        group.name = updates.name;
-    }
-
-    if (updates.displayIds) {
+    // Update displays if provided
+    if (data.displayIds) {
         // Remove old mappings
-        for (const oldId of group.displayIds) {
-            displayToGroup.delete(oldId);
+        for (const d of existing.displays) {
+            displayToGroup.delete(d.displayId);
         }
-        // Add new mappings
-        for (const newId of updates.displayIds) {
-            displayToGroup.set(newId, groupId);
-        }
-        group.displayIds = updates.displayIds;
 
-        // Re-elect conductor if current one is no longer in group
-        if (group.conductorId && !updates.displayIds.includes(group.conductorId)) {
-            electConductor(groupId);
+        // Delete existing and create new
+        await prisma.syncGroupDisplay.deleteMany({ where: { syncGroupId: groupId } });
+        await prisma.syncGroupDisplay.createMany({
+            data: data.displayIds.map(displayId => ({
+                syncGroupId: groupId,
+                displayId,
+            })),
+        });
+
+        // Update mappings
+        for (const displayId of data.displayIds) {
+            displayToGroup.set(displayId, groupId);
+        }
+
+        // Check if conductor was removed
+        if (existing.conductorId && !data.displayIds.includes(existing.conductorId)) {
+            updateData.conductorId = null;
         }
     }
 
-    group.updatedAt = Date.now();
-    emitGroupUpdated(group);
+    // Update playlist items if provided
+    if (data.playlistItems) {
+        await prisma.syncGroupContent.deleteMany({ where: { syncGroupId: groupId } });
+        await prisma.syncGroupContent.createMany({
+            data: data.playlistItems.map(item => ({
+                syncGroupId: groupId,
+                contentId: item.contentId,
+                duration: item.duration,
+                order: item.order,
+            })),
+        });
+    }
 
-    return group;
+    // Update the group
+    const updated = await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: updateData,
+        include: syncGroupInclude,
+    });
+
+    // Notify connected displays
+    broadcastGroupUpdate(updated as SyncGroupWithRelations);
+
+    return updated as SyncGroupWithRelations;
 }
 
 /**
- * Delete a sync group
+ * Delete sync group
  */
-export function deleteSyncGroup(groupId: string): boolean {
-    const group = syncGroups.get(groupId);
+export async function deleteSyncGroup(groupId: string): Promise<boolean> {
+    const group = await getSyncGroup(groupId);
     if (!group) return false;
 
+    // Stop playback if running
+    await stopPlayback(groupId);
+
+    // Remove from runtime
+    runtimeStates.delete(groupId);
+
     // Remove display mappings
-    for (const displayId of group.displayIds) {
-        displayToGroup.delete(displayId);
+    for (const d of group.displays) {
+        displayToGroup.delete(d.displayId);
     }
 
-    syncGroups.delete(groupId);
-    log.info('Sync group deleted', { groupId });
+    // Notify displays before deletion
+    broadcastToGroup(groupId, 'sync:group-deleted', { groupId });
 
-    // Stop tick interval if no more groups
-    if (syncGroups.size === 0) {
-        stopTickInterval();
-    }
+    // Delete from DB (cascades to displays and playlist items)
+    await prisma.syncGroup.delete({ where: { id: groupId } });
+
+    log.info('[SyncService] Sync group deleted', { groupId });
 
     return true;
-}
-
-// ==============================================
-// CONDUCTOR MANAGEMENT
-// ==============================================
-
-/**
- * Elect a conductor for a group
- * Chooses the first connected display
- */
-export function electConductor(groupId: string): ConductorInfo | null {
-    const group = syncGroups.get(groupId);
-    if (!group || group.displayIds.length === 0) return null;
-
-    // Find first connected display
-    for (const displayId of group.displayIds) {
-        const socketId = getSocketIdForDisplay(displayId);
-        if (socketId) {
-            return assignConductor(groupId, displayId, socketId, 'elected');
-        }
-    }
-
-    log.warn('No connected displays to elect as conductor', { groupId });
-    return null;
-}
-
-/**
- * Manually assign a conductor
- */
-export function assignConductor(
-    groupId: string,
-    displayId: string,
-    socketId: string,
-    reason: 'elected' | 'failover' | 'manual' = 'manual'
-): ConductorInfo | null {
-    const group = syncGroups.get(groupId);
-    if (!group) return null;
-
-    if (!group.displayIds.includes(displayId)) {
-        log.error('Display not in group', { groupId, displayId });
-        return null;
-    }
-
-    const oldConductorId = group.conductorId;
-    const now = Date.now();
-
-    group.conductorId = displayId;
-    group.conductorSocketId = socketId;
-    group.updatedAt = now;
-
-    const conductorInfo: ConductorInfo = {
-        displayId,
-        socketId,
-        assignedAt: now,
-        lastHeartbeat: now,
-    };
-
-    log.info('Conductor assigned', { groupId, displayId, reason });
-
-    // Emit conductor changed event
-    emitConductorChanged(groupId, oldConductorId, displayId, reason);
-
-    return conductorInfo;
-}
-
-/**
- * Handle conductor disconnect - elect new conductor
- */
-export function handleConductorDisconnect(socketId: string): void {
-    const displayId = socketToDisplay.get(socketId);
-    if (!displayId) return;
-
-    const groupId = displayToGroup.get(displayId);
-    if (!groupId) return;
-
-    const group = syncGroups.get(groupId);
-    if (!group || group.conductorId !== displayId) return;
-
-    log.info('Conductor disconnected, electing new conductor', { groupId, oldConductorId: displayId });
-
-    // Clear current conductor
-    group.conductorId = null;
-    group.conductorSocketId = null;
-
-    // Try to elect new conductor (failover)
-    const newConductor = electConductorFromConnected(groupId);
-    if (newConductor) {
-        assignConductor(groupId, newConductor.displayId, newConductor.socketId, 'failover');
-    } else {
-        // No connected displays, pause playback
-        group.playbackState = 'paused';
-        group.updatedAt = Date.now();
-        emitGroupUpdated(group);
-    }
-}
-
-/**
- * Find a connected display to be conductor
- */
-function electConductorFromConnected(groupId: string): { displayId: string; socketId: string } | null {
-    const group = syncGroups.get(groupId);
-    if (!group) return null;
-
-    for (const displayId of group.displayIds) {
-        if (displayId === group.conductorId) continue; // Skip old conductor
-        const socketId = getSocketIdForDisplay(displayId);
-        if (socketId) {
-            return { displayId, socketId };
-        }
-    }
-    return null;
 }
 
 // ==============================================
@@ -276,40 +264,108 @@ function electConductorFromConnected(groupId: string): { displayId: string; sock
 // ==============================================
 
 /**
- * Start playback in a sync group
+ * Start playback for a sync group
  */
-export function startPlayback(groupId: string, contentId: string, startPosition = 0): boolean {
-    const group = syncGroups.get(groupId);
-    if (!group) return false;
+export async function startPlayback(groupId: string, options?: StartPlaybackDTO): Promise<boolean> {
+    const group = await getSyncGroup(groupId);
+    if (!group) {
+        log.warn('[SyncService] Cannot start playback - group not found', { groupId });
+        return false;
+    }
+
+    // Validate group has content
+    const hasContent = group.contentId || group.playlistItems.length > 0;
+    if (!hasContent) {
+        log.warn('[SyncService] Cannot start playback - no content assigned', { groupId });
+        return false;
+    }
 
     const now = Date.now();
-    group.currentContentId = contentId;
-    group.playbackState = 'playing';
-    group.currentTime = startPosition;
-    group.startedAt = now - (startPosition * 1000); // Adjust for start position
-    group.updatedAt = now;
+    const startPosition = options?.startPosition || 0;
 
-    log.info('Playback started', { groupId, contentId, startPosition });
-    emitGroupUpdated(group);
+    // Update DB state
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: {
+            state: 'PLAYING',
+            position: startPosition,
+            currentItem: 0,
+        },
+    });
+
+    // Initialize or update runtime state
+    let runtime = runtimeStates.get(groupId);
+    if (!runtime) {
+        runtime = {
+            groupId,
+            isPlaying: true,
+            currentPosition: startPosition,
+            currentItemIndex: 0,
+            startedAt: now,
+            lastTickAt: now,
+            connectedSockets: new Map(),
+            conductorSocketId: null,
+        };
+        runtimeStates.set(groupId, runtime);
+    } else {
+        runtime.isPlaying = true;
+        runtime.currentPosition = startPosition;
+        runtime.currentItemIndex = 0;
+        runtime.startedAt = now;
+        runtime.lastTickAt = now;
+    }
+
+    // Start tick broadcasting
+    startTickBroadcast(groupId);
+
+    // Notify all displays
+    const statePayload = buildStatePayload(group, runtime);
+    broadcastToGroup(groupId, 'sync:started', statePayload);
+
+    log.info('[SyncService] Playback started', { groupId, startPosition });
 
     return true;
 }
 
 /**
- * Pause playback in a sync group
+ * Pause playback
  */
-export function pausePlayback(groupId: string): boolean {
-    const group = syncGroups.get(groupId);
-    if (!group) return false;
+export async function pausePlayback(groupId: string): Promise<boolean> {
+    const runtime = runtimeStates.get(groupId);
+    if (!runtime || !runtime.isPlaying) {
+        log.warn('[SyncService] Cannot pause - not playing', { groupId });
+        return false;
+    }
 
-    // Capture current time before pausing
-    group.currentTime = calculateCurrentTime(group);
-    group.playbackState = 'paused';
-    group.startedAt = null;
-    group.updatedAt = Date.now();
+    // Calculate current position
+    const currentPosition = calculateCurrentPosition(runtime);
 
-    log.info('Playback paused', { groupId, currentTime: group.currentTime });
-    emitGroupUpdated(group);
+    // Update DB
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: {
+            state: 'PAUSED',
+            position: currentPosition,
+            currentItem: runtime.currentItemIndex,
+        },
+    });
+
+    // Update runtime
+    runtime.isPlaying = false;
+    runtime.currentPosition = currentPosition;
+    runtime.startedAt = null;
+
+    // Stop tick broadcast
+    stopTickBroadcast(groupId);
+
+    // Notify displays
+    broadcastToGroup(groupId, 'sync:paused', {
+        groupId,
+        position: currentPosition,
+        currentItem: runtime.currentItemIndex,
+    });
+
+    log.info('[SyncService] Playback paused', { groupId, position: currentPosition });
 
     return true;
 }
@@ -317,37 +373,45 @@ export function pausePlayback(groupId: string): boolean {
 /**
  * Resume playback
  */
-export function resumePlayback(groupId: string): boolean {
-    const group = syncGroups.get(groupId);
-    if (!group || !group.currentContentId) return false;
-
-    const now = Date.now();
-    group.playbackState = 'playing';
-    group.startedAt = now - (group.currentTime * 1000);
-    group.updatedAt = now;
-
-    log.info('Playback resumed', { groupId, currentTime: group.currentTime });
-    emitGroupUpdated(group);
-
-    return true;
-}
-
-/**
- * Seek to position
- */
-export function seekPlayback(groupId: string, position: number): boolean {
-    const group = syncGroups.get(groupId);
+export async function resumePlayback(groupId: string): Promise<boolean> {
+    const group = await getSyncGroup(groupId);
     if (!group) return false;
 
-    const now = Date.now();
-    group.currentTime = position;
-    if (group.playbackState === 'playing') {
-        group.startedAt = now - (position * 1000);
+    const runtime = runtimeStates.get(groupId);
+    if (!runtime) {
+        // Create runtime from DB state
+        return startPlayback(groupId, { startPosition: group.position });
     }
-    group.updatedAt = now;
 
-    log.info('Playback seeked', { groupId, position });
-    emitGroupUpdated(group);
+    if (runtime.isPlaying) {
+        log.warn('[SyncService] Already playing', { groupId });
+        return true;
+    }
+
+    const now = Date.now();
+
+    // Update DB
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: { state: 'PLAYING' },
+    });
+
+    // Update runtime
+    runtime.isPlaying = true;
+    runtime.startedAt = now;
+    runtime.lastTickAt = now;
+
+    // Start tick broadcast
+    startTickBroadcast(groupId);
+
+    // Notify displays
+    broadcastToGroup(groupId, 'sync:resumed', {
+        groupId,
+        position: runtime.currentPosition,
+        currentItem: runtime.currentItemIndex,
+    });
+
+    log.info('[SyncService] Playback resumed', { groupId, position: runtime.currentPosition });
 
     return true;
 }
@@ -355,84 +419,210 @@ export function seekPlayback(groupId: string, position: number): boolean {
 /**
  * Stop playback
  */
-export function stopPlayback(groupId: string): boolean {
-    const group = syncGroups.get(groupId);
-    if (!group) return false;
+export async function stopPlayback(groupId: string): Promise<boolean> {
+    // Update DB
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: {
+            state: 'STOPPED',
+            position: 0,
+            currentItem: 0,
+        },
+    });
 
-    group.playbackState = 'stopped';
-    group.currentTime = 0;
-    group.startedAt = null;
-    group.updatedAt = Date.now();
+    // Update runtime
+    const runtime = runtimeStates.get(groupId);
+    if (runtime) {
+        runtime.isPlaying = false;
+        runtime.currentPosition = 0;
+        runtime.currentItemIndex = 0;
+        runtime.startedAt = null;
+    }
 
-    log.info('Playback stopped', { groupId });
-    emitGroupUpdated(group);
+    // Stop tick broadcast
+    stopTickBroadcast(groupId);
+
+    // Notify displays
+    broadcastToGroup(groupId, 'sync:stopped', { groupId });
+
+    log.info('[SyncService] Playback stopped', { groupId });
+
+    return true;
+}
+
+/**
+ * Seek to position
+ */
+export async function seekPlayback(groupId: string, data: SeekDTO): Promise<boolean> {
+    const runtime = runtimeStates.get(groupId);
+    if (!runtime) {
+        log.warn('[SyncService] Cannot seek - no runtime state', { groupId });
+        return false;
+    }
+
+    const now = Date.now();
+
+    // Update position
+    runtime.currentPosition = data.position;
+    runtime.startedAt = runtime.isPlaying ? now : null;
+    runtime.lastTickAt = now;
+
+    // Update DB
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: { position: data.position },
+    });
+
+    // Notify displays
+    broadcastToGroup(groupId, 'sync:seek', {
+        groupId,
+        position: data.position,
+        serverTime: now,
+    });
+
+    log.info('[SyncService] Seek', { groupId, position: data.position });
 
     return true;
 }
 
 // ==============================================
-// SYNC TICK BROADCASTING
+// TICK BROADCASTING
+// ==============================================
+
+function startTickBroadcast(groupId: string): void {
+    // Don't duplicate
+    if (tickIntervals.has(groupId)) return;
+
+    log.debug('[SyncService] Starting tick broadcast', { groupId });
+
+    const interval = setInterval(() => {
+        const runtime = runtimeStates.get(groupId);
+        if (!runtime || !runtime.isPlaying) {
+            stopTickBroadcast(groupId);
+            return;
+        }
+
+        const now = Date.now();
+        const position = calculateCurrentPosition(runtime);
+        runtime.lastTickAt = now;
+
+        const tick: SyncTickPayload = {
+            groupId,
+            position,
+            currentItem: runtime.currentItemIndex,
+            serverTime: now,
+            state: 'PLAYING',
+        };
+
+        broadcastToGroup(groupId, 'sync:tick', tick);
+    }, TICK_INTERVAL_MS);
+
+    tickIntervals.set(groupId, interval);
+}
+
+function stopTickBroadcast(groupId: string): void {
+    const interval = tickIntervals.get(groupId);
+    if (interval) {
+        clearInterval(interval);
+        tickIntervals.delete(groupId);
+        log.debug('[SyncService] Stopped tick broadcast', { groupId });
+    }
+}
+
+function calculateCurrentPosition(runtime: SyncRuntimeState): number {
+    if (!runtime.isPlaying || !runtime.startedAt) {
+        return runtime.currentPosition;
+    }
+    const elapsed = (Date.now() - runtime.startedAt) / 1000;
+    return runtime.currentPosition + elapsed;
+}
+
+// ==============================================
+// CONDUCTOR MANAGEMENT
 // ==============================================
 
 /**
- * Calculate current playback time for a group
+ * Elect conductor for a group (first connected display)
  */
-function calculateCurrentTime(group: SyncGroup): number {
-    if (group.playbackState !== 'playing' || !group.startedAt) {
-        return group.currentTime;
+async function electConductor(groupId: string): Promise<string | null> {
+    const runtime = runtimeStates.get(groupId);
+    if (!runtime || runtime.connectedSockets.size === 0) {
+        return null;
     }
-    return (Date.now() - group.startedAt) / 1000;
+
+    // Get first connected display
+    const entry = runtime.connectedSockets.entries().next();
+    if (entry.done) return null;
+
+    const [socketId, displayId] = entry.value;
+
+    await assignConductor(groupId, displayId, socketId, 'elected');
+
+    return displayId;
 }
 
 /**
- * Get all active (playing) groups
+ * Assign conductor
  */
-export function getActiveGroups(): SyncGroup[] {
-    return Array.from(syncGroups.values()).filter(g => g.playbackState === 'playing');
-}
+async function assignConductor(
+    groupId: string,
+    displayId: string,
+    socketId: string,
+    reason: 'elected' | 'failover' | 'manual'
+): Promise<void> {
+    const group = await getSyncGroup(groupId);
+    if (!group) return;
 
-/**
- * Broadcast sync ticks to all active groups
- */
-function broadcastSyncTicks(): void {
-    const io = getIO();
-    if (!io) return;
+    const oldConductorId = group.conductorId;
 
-    const activeGroups = getActiveGroups();
-    const now = Date.now();
+    // Update DB
+    await prisma.syncGroup.update({
+        where: { id: groupId },
+        data: { conductorId: displayId },
+    });
 
-    for (const group of activeGroups) {
-        const tick: SyncTick = {
-            groupId: group.id,
-            contentId: group.currentContentId || '',
-            currentTime: calculateCurrentTime(group),
-            serverTime: now,
-            playbackState: group.playbackState as 'playing' | 'paused',
-        };
-
-        // Emit to group room
-        io.to(`sync-${group.id}`).emit('sync:tick', tick);
+    // Update runtime
+    const runtime = runtimeStates.get(groupId);
+    if (runtime) {
+        runtime.conductorSocketId = socketId;
     }
+
+    // Notify
+    const payload: SyncConductorChangedPayload = {
+        groupId,
+        oldConductorId,
+        newConductorId: displayId,
+        reason,
+    };
+    broadcastToGroup(groupId, 'sync:conductor-changed', payload);
+
+    log.info('[SyncService] Conductor assigned', { groupId, displayId, reason });
 }
 
 /**
- * Start the tick interval
+ * Handle conductor disconnect - failover to next display
  */
-function startTickInterval(): void {
-    if (tickInterval) return;
+async function handleConductorFailover(groupId: string, disconnectedDisplayId: string): Promise<void> {
+    const group = await getSyncGroup(groupId);
+    if (!group || group.conductorId !== disconnectedDisplayId) return;
 
-    tickInterval = setInterval(broadcastSyncTicks, TICK_INTERVAL_MS);
-    log.info('Sync tick interval started');
-}
+    const runtime = runtimeStates.get(groupId);
+    if (!runtime || runtime.connectedSockets.size === 0) {
+        // No displays connected, clear conductor
+        await prisma.syncGroup.update({
+            where: { id: groupId },
+            data: { conductorId: null },
+        });
+        if (runtime) runtime.conductorSocketId = null;
+        return;
+    }
 
-/**
- * Stop the tick interval
- */
-function stopTickInterval(): void {
-    if (tickInterval) {
-        clearInterval(tickInterval);
-        tickInterval = null;
-        log.info('Sync tick interval stopped');
+    // Find next display
+    for (const [socketId, displayId] of runtime.connectedSockets) {
+        if (displayId !== disconnectedDisplayId) {
+            await assignConductor(groupId, displayId, socketId, 'failover');
+            return;
+        }
     }
 }
 
@@ -441,88 +631,245 @@ function stopTickInterval(): void {
 // ==============================================
 
 /**
- * Register a socket for a display
+ * Register display socket connection
  */
-export function registerDisplaySocket(socketId: string, displayId: string): void {
+export async function registerDisplaySocket(socketId: string, displayId: string): Promise<void> {
     socketToDisplay.set(socketId, displayId);
 
-    // Check if display should join a group
-    const groupId = displayToGroup.get(displayId);
-    if (groupId) {
-        const io = getIO();
-        if (io) {
-            const socket = io.sockets.sockets.get(socketId);
-            if (socket) {
-                socket.join(`sync-${groupId}`);
-                log.info('Display joined sync group room', { displayId, groupId });
-            }
-        }
+    // Find group for this display
+    const membership = await prisma.syncGroupDisplay.findFirst({
+        where: { displayId },
+        include: { syncGroup: true },
+    });
 
-        // If group has no conductor, elect this display
-        const group = syncGroups.get(groupId);
-        if (group && !group.conductorId) {
-            assignConductor(groupId, displayId, socketId, 'elected');
+    if (!membership) return;
+
+    const groupId = membership.syncGroupId;
+    displayToGroup.set(displayId, groupId);
+
+    // Add to runtime
+    let runtime = runtimeStates.get(groupId);
+    if (!runtime) {
+        runtime = {
+            groupId,
+            isPlaying: membership.syncGroup.state === 'PLAYING',
+            currentPosition: membership.syncGroup.position,
+            currentItemIndex: membership.syncGroup.currentItem,
+            startedAt: membership.syncGroup.state === 'PLAYING' ? Date.now() : null,
+            lastTickAt: Date.now(),
+            connectedSockets: new Map(),
+            conductorSocketId: null,
+        };
+        runtimeStates.set(groupId, runtime);
+
+        // Start tick if playing
+        if (runtime.isPlaying) {
+            startTickBroadcast(groupId);
         }
     }
+
+    runtime.connectedSockets.set(socketId, displayId);
+
+    // Join socket room
+    const io = getIO();
+    const socket = io?.sockets.sockets.get(socketId);
+    if (socket) {
+        socket.join(`sync:${groupId}`);
+    }
+
+    // Elect conductor if none
+    if (!membership.syncGroup.conductorId) {
+        await electConductor(groupId);
+    }
+
+    // Send current state to newly connected display (late join)
+    const group = await getSyncGroup(groupId);
+    if (group && socket) {
+        const statePayload = buildStatePayload(group, runtime);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socket.emit('sync:state' as any, statePayload);
+    }
+
+    log.info('[SyncService] Display connected', { socketId, displayId, groupId });
 }
 
 /**
- * Unregister a socket
+ * Unregister display socket
  */
-export function unregisterDisplaySocket(socketId: string): void {
+export async function unregisterDisplaySocket(socketId: string): Promise<void> {
     const displayId = socketToDisplay.get(socketId);
+    if (!displayId) return;
+
     socketToDisplay.delete(socketId);
 
-    if (displayId) {
+    const groupId = displayToGroup.get(displayId);
+    if (!groupId) return;
+
+    const runtime = runtimeStates.get(groupId);
+    if (runtime) {
+        runtime.connectedSockets.delete(socketId);
+
         // Handle conductor disconnect
-        handleConductorDisconnect(socketId);
+        if (runtime.conductorSocketId === socketId) {
+            await handleConductorFailover(groupId, displayId);
+        }
     }
+
+    // Leave socket room
+    const io = getIO();
+    const socket = io?.sockets.sockets.get(socketId);
+    if (socket) {
+        socket.leave(`sync:${groupId}`);
+    }
+
+    log.info('[SyncService] Display disconnected', { socketId, displayId, groupId });
+}
+
+// ==============================================
+// BROADCAST HELPERS
+// ==============================================
+
+function broadcastToGroup(groupId: string, event: string, data: unknown): void {
+    const io = getIO();
+    if (!io) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    io.to(`sync:${groupId}`).emit(event as any, data);
+}
+
+function broadcastGroupUpdate(group: SyncGroupWithRelations): void {
+    const runtime = runtimeStates.get(group.id);
+    const payload = buildStatePayload(group, runtime);
+    broadcastToGroup(group.id, 'sync:group-updated', payload);
+}
+
+function buildStatePayload(
+    group: SyncGroupWithRelations,
+    runtime: SyncRuntimeState | undefined
+): SyncStatePayload {
+    const position = runtime ? calculateCurrentPosition(runtime) : group.position;
+    const currentItem = runtime?.currentItemIndex ?? group.currentItem;
+
+    return {
+        groupId: group.id,
+        state: group.state,
+        position,
+        currentItem,
+        conductorId: group.conductorId,
+        content: group.content ? {
+            id: group.content.id,
+            name: group.content.name,
+            type: group.content.type,
+            url: getContentUrl(group.content),
+            duration: group.content.duration ?? undefined,
+        } : null,
+        playlistItems: group.playlistItems.map(item => ({
+            contentId: item.contentId,
+            name: item.content.name,
+            type: item.content.type,
+            url: getContentUrl(item.content),
+            duration: item.duration ?? item.content.duration ?? undefined,
+            order: item.order,
+        })),
+    };
+}
+
+// ==============================================
+// QUERIES FOR CONTENT RESOLVER
+// ==============================================
+
+/**
+ * Get active sync group for a display
+ * Used by contentResolver to determine if display should show sync content
+ */
+export async function getActiveSyncGroupForDisplay(displayId: string): Promise<{
+    group: SyncGroupWithRelations;
+    runtime: SyncRuntimeState | null;
+} | null> {
+    // Find membership
+    const membership = await prisma.syncGroupDisplay.findFirst({
+        where: { displayId },
+        include: {
+            syncGroup: {
+                include: syncGroupInclude,
+            },
+        },
+    });
+
+    if (!membership) return null;
+
+    const group = membership.syncGroup as SyncGroupWithRelations;
+
+    // Only return if PLAYING
+    if (group.state !== 'PLAYING') return null;
+
+    const runtime = runtimeStates.get(group.id) || null;
+
+    return { group, runtime };
+}
+
+// ==============================================
+// INITIALIZATION & CLEANUP
+// ==============================================
+
+/**
+ * Initialize sync service on server start
+ * Restores runtime state for PLAYING groups
+ */
+export async function initializeSyncService(): Promise<void> {
+    log.info('[SyncService] Initializing...');
+
+    // Find all PLAYING groups
+    const playingGroups = await prisma.syncGroup.findMany({
+        where: { state: 'PLAYING' },
+        include: {
+            displays: true,
+        },
+    });
+
+    for (const group of playingGroups) {
+        // Create runtime state
+        runtimeStates.set(group.id, {
+            groupId: group.id,
+            isPlaying: true,
+            currentPosition: group.position,
+            currentItemIndex: group.currentItem,
+            startedAt: Date.now(),
+            lastTickAt: Date.now(),
+            connectedSockets: new Map(),
+            conductorSocketId: null,
+        });
+
+        // Update display mappings
+        for (const d of group.displays) {
+            displayToGroup.set(d.displayId, group.id);
+        }
+
+        // Start tick broadcast
+        startTickBroadcast(group.id);
+    }
+
+    log.info('[SyncService] Initialized', { playingGroups: playingGroups.length });
 }
 
 /**
- * Get socket ID for a display
+ * Cleanup on server shutdown
  */
-function getSocketIdForDisplay(displayId: string): string | null {
-    for (const [socketId, dId] of socketToDisplay.entries()) {
-        if (dId === displayId) return socketId;
+export function cleanupSyncService(): void {
+    log.info('[SyncService] Cleaning up...');
+
+    // Stop all tick intervals
+    for (const interval of tickIntervals.values()) {
+        clearInterval(interval);
     }
-    return null;
-}
+    tickIntervals.clear();
 
-// ==============================================
-// EVENT EMISSION
-// ==============================================
+    // Clear runtime state
+    runtimeStates.clear();
+    socketToDisplay.clear();
+    displayToGroup.clear();
 
-function emitGroupUpdated(group: SyncGroup): void {
-    const io = getIO();
-    if (!io) return;
-
-    const event: SyncGroupUpdatedEvent = {
-        group,
-        timestamp: Date.now(),
-    };
-
-    io.to(`sync-${group.id}`).emit('sync:group-updated', event);
-}
-
-function emitConductorChanged(
-    groupId: string,
-    oldConductorId: string | null,
-    newConductorId: string,
-    reason: 'elected' | 'failover' | 'manual'
-): void {
-    const io = getIO();
-    if (!io) return;
-
-    const event: SyncConductorChangedEvent = {
-        groupId,
-        oldConductorId,
-        newConductorId,
-        reason,
-        timestamp: Date.now(),
-    };
-
-    io.to(`sync-${groupId}`).emit('sync:conductor-changed', event);
+    log.info('[SyncService] Cleanup complete');
 }
 
 // ==============================================
@@ -530,19 +877,28 @@ function emitConductorChanged(
 // ==============================================
 
 export default {
+    // CRUD
     createSyncGroup,
     getSyncGroup,
     getAllSyncGroups,
     updateSyncGroup,
     deleteSyncGroup,
-    electConductor,
-    assignConductor,
+
+    // Playback
     startPlayback,
     pausePlayback,
     resumePlayback,
-    seekPlayback,
     stopPlayback,
-    getActiveGroups,
+    seekPlayback,
+
+    // Socket tracking
     registerDisplaySocket,
     unregisterDisplaySocket,
+
+    // Queries
+    getActiveSyncGroupForDisplay,
+
+    // Lifecycle
+    initializeSyncService,
+    cleanupSyncService,
 };
