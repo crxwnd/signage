@@ -26,6 +26,8 @@ import dashboardRouter from './routes/dashboard';
 import analyticsRouter from './routes/analytics';
 import schedulesRouter from './routes/schedules';
 import alertsRouter from './routes/alerts';
+import metricsRouter from './routes/metrics';
+import { metricsMiddleware } from './middleware/metricsMiddleware';
 
 // ... otros imports ...
 
@@ -142,6 +144,9 @@ export function createApp(): Application {
   // Request logging
   app.use(logger);
 
+  // Metrics middleware for Prometheus
+  app.use(metricsMiddleware);
+
   // Note: Static files are served BEFORE rate limiter (see above)
 
   // ==============================================
@@ -165,6 +170,7 @@ export function createApp(): Application {
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/schedules', schedulesRouter);
   app.use('/api/alerts', alertsRouter);
+  app.use('/api/metrics', metricsRouter);
 
   // ==============================================
   // ERROR HANDLING
