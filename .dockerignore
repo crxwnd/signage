@@ -1,66 +1,34 @@
 # Dependencies
-node_modules/
-.pnpm-store/
-.npm/
-.yarn/
-npm-debug.log
-yarn-error.log
-pnpm-debug.log
+node_modules
+**/node_modules
 
 # Build outputs
-.next/
-dist/
-build/
-out/
-*.tsbuildinfo
+dist
+.next
+out
+build
 
-# Environment
-.env
-.env.local
+# Development
+.git
+.gitignore
+*.log
 .env*.local
 
-# Git
-.git/
-.gitignore
-
 # IDE
-.vscode/
-.idea/
+.idea
+.vscode
 *.swp
 *.swo
-
-# Turborepo
-.turbo/
-
-# Tests
-coverage/
-.nyc_output/
-playwright-report/
-test-results/
-
-# Logs
-logs/
-*.log
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Documentation
-docs/
+# Test
+coverage
+.nyc_output
+playwright-report
+
+# Misc
 *.md
 !README.md
-
-# CI/CD
-.github/
-.gitlab/
-.gitlab-ci.yml
-
-# Docker
-Dockerfile*
-docker-compose*.yml
-
-# Cache
-.cache/
-temp/
-tmp/

@@ -225,12 +225,25 @@ export default function PlayerPage() {
       {/* PRIORITY 1: Alert */}
       {isAlert && source.alert && (
         <AlertOverlay source={source}>
-          {source.content && (
+          {source.content ? (
             <VideoPlayer
               src={getFullUrl(source.content.hlsUrl || source.content.originalUrl)}
               autoPlay
               muted
             />
+          ) : (
+            /* Alert without media content - show message */
+            <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-red-900 to-red-700">
+              <div className="text-center text-white p-8">
+                <div className="text-8xl mb-6">⚠️</div>
+                <h1 className="text-5xl font-bold mb-4 uppercase tracking-wide">
+                  {source.alert.type || 'ALERTA'}
+                </h1>
+                <p className="text-2xl opacity-90">
+                  {source.alert.message || 'Alerta del sistema activa'}
+                </p>
+              </div>
+            </div>
           )}
         </AlertOverlay>
       )}

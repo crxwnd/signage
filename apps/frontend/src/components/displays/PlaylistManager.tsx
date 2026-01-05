@@ -6,6 +6,8 @@
 'use client';
 
 import { useState } from 'react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import {
   Dialog,
   DialogContent,
@@ -144,7 +146,7 @@ export function PlaylistManager({
                   <div className="h-12 w-16 rounded bg-muted flex items-center justify-center overflow-hidden">
                     {item.content.thumbnailUrl ? (
                       <img
-                        src={item.content.thumbnailUrl}
+                        src={`${API_URL}${item.content.thumbnailUrl}`}
                         alt={item.content.name}
                         className="h-full w-full object-cover"
                       />
@@ -250,7 +252,7 @@ export function PlaylistManager({
                       <div className="h-10 w-14 rounded bg-muted flex items-center justify-center overflow-hidden">
                         {content.thumbnailUrl ? (
                           <img
-                            src={content.thumbnailUrl}
+                            src={`${API_URL}${content.thumbnailUrl}`}
                             alt={content.name}
                             className="h-full w-full object-cover"
                           />

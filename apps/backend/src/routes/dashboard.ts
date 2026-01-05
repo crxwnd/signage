@@ -96,8 +96,8 @@ router.get('/stats', async (_req: Request, res: Response) => {
         });
 
         // Get sync groups stats
-        const syncGroups = syncService.getAllSyncGroups();
-        const activeGroups = syncGroups.filter(g => g.playbackState === 'playing');
+        const syncGroups = await syncService.getAllSyncGroups();
+        const activeGroups = syncGroups.filter(g => g.state === 'PLAYING');
 
         // Build recent activity from recent changes
         const recentActivity = [

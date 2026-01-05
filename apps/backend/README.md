@@ -79,6 +79,24 @@ pnpm db:studio --filter=backend
 
 Prisma Studio abrirá en `http://localhost:5555`
 
+### 7. Ejecutar Seed (Datos de Prueba)
+
+```bash
+pnpm db:seed --filter=backend
+```
+
+## 🔑 Credenciales de Desarrollo
+
+Después de ejecutar el seed (`pnpm db:seed`), las siguientes cuentas están disponibles:
+
+| Rol | Email | Password |
+|-----|-------|----------|
+| **Super Admin** | `admin@signage.com` | `Admin123!` |
+| **Hotel Admin** | `admin@hotel.com` | `Hotel123!` |
+| **Area Manager** | `manager@hotel.com` | `Manager123!` |
+
+> ⚠️ Estas credenciales son solo para desarrollo. **Cambiar en producción.**
+
 ## 🗄️ Schema de Base de Datos
 
 ### Modelos
