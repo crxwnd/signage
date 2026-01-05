@@ -1,7 +1,8 @@
-version: '3.9'
-
 services:
-  # PostgreSQL 15
+  # ==========================================
+  # INFRASTRUCTURE
+  # ==========================================
+
   postgres:
     image: postgres:15-alpine
     container_name: signage-postgres
@@ -15,12 +16,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U signage"]
+      test: [ "CMD-SHELL", "pg_isready -U signage" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - signage-network
 
-  # Redis 7
   redis:
     image: redis:7-alpine
     container_name: signage-redis
@@ -30,12 +32,13 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - signage-network
 
-  # MinIO (S3-compatible storage)
   minio:
     image: minio/minio:latest
     container_name: signage-minio
@@ -45,17 +48,34 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"  # API
-      - "9001:9001"  # Console
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - signage-network
 
-  # Backend Service
+  minio-setup:
+    image: minio/mc:latest
+    container_name: signage-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c " sleep 3; mc alias set myminio http://minio:9000 minioadmin minioadmin; mc mb --ignore-existing myminio/signage-uploads; mc mb --ignore-existing myminio/signage-hls; mc mb --ignore-existing myminio/signage-thumbnails; mc anonymous set download myminio/signage-hls; mc anonymous set download myminio/signage-thumbnails; echo 'Buckets created successfully'; exit 0; "
+    networks:
+      - signage-network
+
+  # ==========================================
+  # APPLICATIONS
+  # ==========================================
+
   backend:
     build:
       context: .
@@ -66,23 +86,41 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: development
+      PORT: 3001
+      # Database - use Docker service name
       DATABASE_URL: postgresql://signage:signage_dev@postgres:5432/signage
+      # Redis - use Docker service name
+      REDIS_URL: redis://redis:6379
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      PORT: 3001
-      CORS_ORIGIN: http://localhost:3000
+      # MinIO - use Docker service name
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: "false"
+      STORAGE_MODE: minio
+      # CORS
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3002
+      # JWT
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
     volumes:
-      - ./apps/backend/src:/app/apps/backend/src
-      - ./packages:/app/packages
+      # Mount source for hot-reload, but NOT node_modules
+      - ./apps/backend/src:/app/apps/backend/src:delegated
+      - ./packages/shared-types/src:/app/packages/shared-types/src:delegated
+      # Persist uploads in development
+      - ./apps/backend/storage:/app/apps/backend/storage
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     networks:
-      - default
+      - signage-network
 
-  # Frontend Service
   frontend:
     build:
       context: .
@@ -96,22 +134,42 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_WS_URL: http://localhost:3001
     volumes:
-      - ./apps/frontend/src:/app/apps/frontend/src
-      - ./apps/frontend/public:/app/apps/frontend/public
-      - ./packages:/app/packages
+      # Mount source for hot-reload
+      - ./apps/frontend/src:/app/apps/frontend/src:delegated
+      - ./apps/frontend/public:/app/apps/frontend/public:delegated
+      - ./packages/shared-types/src:/app/packages/shared-types/src:delegated
     depends_on:
       - backend
     networks:
-      - default
+      - signage-network
+
+  player:
+    build:
+      context: .
+      dockerfile: ./apps/player/Dockerfile.dev
+    container_name: signage-player
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_WS_URL: http://localhost:3001
+    volumes:
+      - ./apps/player/src:/app/apps/player/src:delegated
+      - ./apps/player/public:/app/apps/player/public:delegated
+      - ./packages/shared-types/src:/app/packages/shared-types/src:delegated
+    depends_on:
+      - backend
+    networks:
+      - signage-network
 
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
   minio_data:
-    driver: local
+
 
 networks:
-  default:
-    name: signage-network
+  signage-network:
+    driver: bridge

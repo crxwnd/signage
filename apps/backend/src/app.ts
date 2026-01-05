@@ -98,7 +98,7 @@ export function createApp(): Application {
     max: 200, // Increased from 100 to 200 requests per window
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for static files, auth session endpoints, and localhost
+    // Skip rate limiting for static files, auth session endpoints, player, and localhost
     skip: (req) => {
       // Skip for localhost/development (loopback addresses)
       const ip = req.ip || req.socket?.remoteAddress || '';
@@ -118,6 +118,14 @@ export function createApp(): Application {
       if (reqPath === '/api/auth/refresh' ||
         reqPath === '/api/auth/me' ||
         reqPath === '/api/auth/logout') {
+        return true;
+      }
+      // Player endpoints - skip rate limiting for polling
+      if (reqPath.includes('/current-source')) {
+        return true;
+      }
+      // Display registration and heartbeat
+      if (reqPath.startsWith('/api/displays') && req.method === 'GET') {
         return true;
       }
       return false;

@@ -4,6 +4,25 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-05] Fix: Issues de Pruebas Fase 0-4
+
+### Fixed
+- **Rate limiter bloqueaba player con 429** - Endpoints `/current-source` y `/api/displays` GET ahora excluidos del rate limiting
+- **Content delete sin mensaje de error claro** - Ahora muestra dependencias específicas (displays, schedules, alerts, sync groups)
+- **Player en loading infinito cuando alerta sin contenido** - Muestra mensaje visual con tipo y descripción de alerta
+- **Dashboard stats 500** - Corregido `await` faltante en `getAllSyncGroups()`
+
+### Changed
+- `app.ts`: Rate limiter skip incluye player endpoints
+- `contentController.ts`: Validación completa de dependencias antes de delete
+- `apps/player/src/app/page.tsx`: Fallback visual para alertas sin media
+- `dashboard.ts`: Corregido async/await en syncService
+
+### Documentation
+- Agregadas credenciales de desarrollo al README backend
+
+---
+
 ## [2026-01-02] Migración SyncGroups a Prisma
 
 ### Problema

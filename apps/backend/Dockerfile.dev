@@ -1,22 +1,36 @@
 # Backend Development Dockerfile
 FROM node:20-alpine
 
+# Install build dependencies for native modules AND OpenSSL 1.1 for Prisma
+RUN apk add --no-cache python3 make g++ openssl openssl-dev
+
 # Set working directory
 WORKDIR /app
 
 # Enable corepack for pnpm
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy workspace files
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY package.json ./
+# Copy workspace configuration files FIRST
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY tsconfig.json ./
 
-# Copy apps and packages
+# Copy package.json files for all workspaces (for dependency resolution)
+COPY apps/backend/package.json ./apps/backend/
+COPY packages/shared-types/package.json ./packages/shared-types/
+
+# Install ALL dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy Prisma schema first for generation
+COPY apps/backend/prisma ./apps/backend/prisma
+
+# Generate Prisma client with correct binary target for Alpine
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x
+RUN cd apps/backend && npx prisma generate
+
+# Copy rest of source code
 COPY apps/backend ./apps/backend
 COPY packages ./packages
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
 
 # Expose backend port
 EXPOSE 3001
@@ -24,5 +38,5 @@ EXPOSE 3001
 # Set working directory to backend
 WORKDIR /app/apps/backend
 
-# Start development server
+# Start development server with watch mode
 CMD ["pnpm", "dev"]
