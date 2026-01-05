@@ -443,18 +443,34 @@ export async function deleteContent(
       return;
     }
 
-    // Check if content is assigned to any displays
+    // Check for ALL dependencies before deletion
     const { prisma } = await import('../utils/prisma');
-    const assignments = await prisma.displayContent.findMany({
-      where: { contentId: id },
-    });
 
-    if (assignments.length > 0) {
+    const [displayAssignments, schedules, alerts, syncGroupContents] = await Promise.all([
+      prisma.displayContent.count({ where: { contentId: id } }),
+      prisma.schedule.count({ where: { contentId: id } }),
+      prisma.alert.count({ where: { contentId: id } }),
+      prisma.syncGroupContent.count({ where: { contentId: id } }),
+    ]);
+
+    const dependencies: string[] = [];
+    if (displayAssignments > 0) dependencies.push(`${displayAssignments} display(s)`);
+    if (schedules > 0) dependencies.push(`${schedules} schedule(s)`);
+    if (alerts > 0) dependencies.push(`${alerts} alert(s)`);
+    if (syncGroupContents > 0) dependencies.push(`${syncGroupContents} sync group(s)`);
+
+    if (dependencies.length > 0) {
       const errorResponse: ApiErrorResponse = {
         success: false,
         error: {
-          code: 'CONTENT_IN_USE',
-          message: `Content is assigned to ${assignments.length} display(s). Remove assignments first.`,
+          code: 'CONTENT_HAS_DEPENDENCIES',
+          message: `Cannot delete content. It is assigned to: ${dependencies.join(', ')}. Remove assignments first.`,
+          details: {
+            displayAssignments,
+            schedules,
+            alerts,
+            syncGroupContents,
+          },
         },
         timestamp: new Date().toISOString(),
       };
