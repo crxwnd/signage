@@ -2,87 +2,314 @@
 
 /**
  * Hotels Management Page
- * Placeholder - Only visible to SUPER_ADMIN
+ * CRUD interface for hotel management (SUPER_ADMIN only)
  */
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building2, Shield } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHotels, useHotelGlobalStats, useDeleteHotel } from '@/hooks/useHotels';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Building2,
+    Plus,
+    Loader2,
+    Monitor,
+    Users,
+    FileVideo,
+    MapPin,
+    MoreVertical,
+    Pencil,
+    Trash2,
+    AlertTriangle,
+} from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { CreateHotelModal } from '@/components/hotels/CreateHotelModal';
+import { EditHotelModal } from '@/components/hotels/EditHotelModal';
+import type { Hotel } from '@/lib/api/hotels';
 
 export default function HotelsPage() {
-    const router = useRouter();
-    const { user, isLoading } = useAuth();
+    const { user } = useAuth();
+    const { data: hotels, isLoading, error } = useHotels(true);
+    const { data: globalStats } = useHotelGlobalStats();
+    const deleteHotel = useDeleteHotel();
 
-    // Role protection: Only SUPER_ADMIN can access
-    useEffect(() => {
-        if (!isLoading && user && user.role !== 'SUPER_ADMIN') {
-            router.replace('/displays');
-        }
-    }, [user, isLoading, router]);
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [editingHotel, setEditingHotel] = useState<Hotel | null>(null);
+    const [deletingHotel, setDeletingHotel] = useState<Hotel | null>(null);
 
-    // Loading state
-    if (isLoading) {
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+    const handleDelete = async () => {
+        if (!deletingHotel) return;
+        await deleteHotel.mutateAsync(deletingHotel.id);
+        setDeletingHotel(null);
+    };
+
+    if (!isSuperAdmin) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <Skeleton className="h-8 w-32" />
+            <div className="container mx-auto py-6">
+                <Card className="glass">
+                    <CardContent className="py-12 text-center">
+                        <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
+                        <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+                        <p className="text-muted-foreground">
+                            Only Super Admins can manage hotels.
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
 
-    // Block non-SUPER_ADMIN (will redirect, show nothing while redirecting)
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (isLoading) {
         return (
-            <Card className="mx-auto max-w-md">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Shield className="mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">Acceso no autorizado</p>
-                </CardContent>
-            </Card>
+            <div className="container mx-auto py-6 flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="container mx-auto py-6">
+                <Card className="glass">
+                    <CardContent className="py-8 text-center text-destructive">
+                        Failed to load hotels
+                    </CardContent>
+                </Card>
+            </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            {/* Page Header */}
+        <div className="container mx-auto py-6 space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Hotels</h2>
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Building2 className="h-6 w-6 text-primary" />
+                        Hotels Management
+                    </h1>
                     <p className="text-muted-foreground">
                         Manage hotels in the signage network
                     </p>
                 </div>
+                <Button onClick={() => setCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Hotel
+                </Button>
             </div>
 
-            {/* Placeholder Content */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
-                        Hotels Management
-                    </CardTitle>
-                    <CardDescription>
-                        This section is under development
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <Building2 className="mb-4 h-16 w-16 text-muted-foreground/50" />
-                        <h3 className="mb-2 text-lg font-semibold">Coming Soon</h3>
-                        <p className="max-w-md text-sm text-muted-foreground">
-                            Esta sección está en desarrollo. Próximamente podrás:
-                        </p>
-                        <ul className="mt-4 text-sm text-muted-foreground text-left list-disc list-inside space-y-1">
-                            <li>Crear y gestionar hoteles</li>
-                            <li>Asignar administradores de hotel</li>
-                            <li>Ver estadísticas por hotel</li>
-                            <li>Configurar ajustes globales</li>
-                        </ul>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Global Stats */}
+            {globalStats && (
+                <div className="grid gap-4 md:grid-cols-4">
+                    <Card className="glass card-hover">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Hotels</p>
+                                    <p className="text-2xl font-bold">{globalStats.totalHotels}</p>
+                                </div>
+                                <Building2 className="h-8 w-8 text-primary opacity-50" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="glass card-hover">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Displays</p>
+                                    <p className="text-2xl font-bold">{globalStats.totalDisplays}</p>
+                                </div>
+                                <Monitor className="h-8 w-8 text-blue-500 opacity-50" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="glass card-hover">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Online Displays</p>
+                                    <p className="text-2xl font-bold text-green-600">{globalStats.onlineDisplays}</p>
+                                </div>
+                                <Monitor className="h-8 w-8 text-green-500 opacity-50" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="glass card-hover">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Users</p>
+                                    <p className="text-2xl font-bold">{globalStats.totalUsers}</p>
+                                </div>
+                                <Users className="h-8 w-8 text-purple-500 opacity-50" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Hotels Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {hotels?.map((hotel) => (
+                    <Card key={hotel.id} className="glass card-hover">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Building2 className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">{hotel.name}</CardTitle>
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                            <MapPin className="h-3 w-3" />
+                                            {hotel.address}
+                                        </p>
+                                    </div>
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setEditingHotel(hotel)}>
+                                            <Pencil className="h-4 w-4 mr-2" />
+                                            Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => setDeletingHotel(hotel)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {/* Stats */}
+                            {hotel.stats && (
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="p-2 rounded-lg bg-muted/50">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <Monitor className="h-3 w-3 text-muted-foreground" />
+                                            <span className="font-semibold">{hotel.stats.displayCount}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Displays</p>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                            <Badge variant="default" className="text-[10px] px-1 bg-green-500">
+                                                {hotel.stats.onlineDisplays}
+                                            </Badge>
+                                            <Badge variant="secondary" className="text-[10px] px-1">
+                                                {hotel.stats.offlineDisplays}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="p-2 rounded-lg bg-muted/50">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <Users className="h-3 w-3 text-muted-foreground" />
+                                            <span className="font-semibold">{hotel.stats.userCount}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Users</p>
+                                    </div>
+                                    <div className="p-2 rounded-lg bg-muted/50">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <FileVideo className="h-3 w-3 text-muted-foreground" />
+                                            <span className="font-semibold">{hotel.stats.contentCount}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Content</p>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                ))}
+
+                {/* Empty State */}
+                {hotels?.length === 0 && (
+                    <Card className="glass col-span-full">
+                        <CardContent className="py-12 text-center">
+                            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                            <h3 className="text-lg font-semibold mb-2">No Hotels Yet</h3>
+                            <p className="text-muted-foreground mb-4">
+                                Create your first hotel to get started
+                            </p>
+                            <Button onClick={() => setCreateModalOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Hotel
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+
+            {/* Modals */}
+            <CreateHotelModal
+                open={createModalOpen}
+                onOpenChange={setCreateModalOpen}
+            />
+
+            {editingHotel && (
+                <EditHotelModal
+                    hotel={editingHotel}
+                    open={!!editingHotel}
+                    onOpenChange={(open) => !open && setEditingHotel(null)}
+                />
+            )}
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!deletingHotel} onOpenChange={(open) => !open && setDeletingHotel(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Hotel</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete <strong>{deletingHotel?.name}</strong>?
+                            <br /><br />
+                            <span className="text-destructive font-medium">
+                                Warning: This will permanently delete all associated data including
+                                displays, content, users, schedules, and alerts.
+                            </span>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {deleteHotel.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                            )}
+                            Delete Hotel
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
