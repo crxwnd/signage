@@ -4,6 +4,43 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-07] Fix: Errores de Compilación y Estabilidad
+
+### Fixed
+- **MinIO TypeScript error** - Tipo `Record<string, string>` explícito para metaData
+- **Redis crash loop** - videoQueue ahora usa lazy initialization, no crashea sin Redis
+- **dateKey type errors** - Agregado type assertion `as string` en analyticsService
+
+### Added
+- `test/test-utils.tsx` - Wrapper con QueryClientProvider para tests frontend
+- Scripts `prebuild` y `postinstall` para automatizar `prisma generate`
+
+### Changed
+- `queue/videoQueue.ts`: Queue/Worker con lazy init, funciones retornan `null` si Redis no disponible
+- `services/minioService.ts`: Tipo explícito para evitar error de compilación
+- `backend/package.json`: Scripts de build automatizan prisma generate
+
+---
+
+## [2026-01-07] Auditoría Completa: Display Status y Analytics
+
+### Fixed
+- **Displays mostraban ONLINE sin estar conectados** - Job de health check marca displays stale como OFFLINE
+- **Analytics usaba Math.random()** - Reemplazado con datos reales de PlaybackLog
+- **Seed creaba displays ONLINE** - Ahora se crean como OFFLINE por defecto
+
+### Added
+- `jobs/displayHealthCheck.ts` - Verifica heartbeat cada minuto, marca OFFLINE si >5 min sin actividad
+- `services/analyticsService.ts` - Consultas reales a PlaybackLog para todas las métricas
+- Funciones `recordPlaybackStart()` y `recordPlaybackEnd()` para tracking de reproducción
+
+### Changed
+- `server.ts`: Inicia displayHealthCheck al arrancar
+- `routes/analytics.ts`: Usa analyticsService en lugar de datos mock
+- `prisma/seed.ts`: Displays creados con `DisplayStatus.OFFLINE`
+
+---
+
 ## [2026-01-05] Fix: Issues de Pruebas Fase 0-4
 
 ### Fixed

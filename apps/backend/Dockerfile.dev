@@ -18,13 +18,13 @@ COPY tsconfig.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
-# Install ALL dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy Prisma schema first for generation
+# Copy Prisma schema BEFORE install (needed for postinstall script)
 COPY apps/backend/prisma ./apps/backend/prisma
 
-# Generate Prisma client with correct binary target for Alpine
+# Install ALL dependencies (includes postinstall: prisma generate)
+RUN pnpm install --frozen-lockfile
+
+# Generate Prisma client with correct binary target for Alpine (redundant but ensures correct target)
 ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x
 RUN cd apps/backend && npx prisma generate
 

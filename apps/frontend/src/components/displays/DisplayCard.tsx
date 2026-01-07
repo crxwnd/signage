@@ -71,7 +71,7 @@ export function DisplayCard({ display }: DisplayCardProps) {
             </div>
             <Badge variant={getStatusVariant(display.status)}>
               <div className={`mr-1.5 h-2 w-2 rounded-full ${display.status === DisplayStatus.ONLINE ? 'bg-green-500 animate-pulse-soft' :
-                  display.status === DisplayStatus.ERROR ? 'bg-red-500' : 'bg-gray-500'
+                display.status === DisplayStatus.ERROR ? 'bg-red-500' : 'bg-gray-500'
                 }`} />
               {display.status}
             </Badge>

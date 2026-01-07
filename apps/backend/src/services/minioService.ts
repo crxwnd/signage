@@ -107,7 +107,9 @@ export async function uploadFile(
 ): Promise<string> {
     const client = getMinioClient();
 
-    const metaData = contentType ? { 'Content-Type': contentType } : {};
+    const metaData: Record<string, string> = contentType
+        ? { 'Content-Type': contentType }
+        : {};
 
     await client.fPutObject(bucket, objectName, filePath, metaData);
 

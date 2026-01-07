@@ -74,13 +74,39 @@ const JOB_OPTIONS = {
 };
 
 // ============================================================================
-// QUEUE INSTANCE
+// QUEUE INSTANCE (LAZY INITIALIZATION)
 // ============================================================================
 
-export const videoQueue = new Queue<VideoTranscodeJobData, VideoTranscodeJobResult>(
-  QUEUE_NAME,
-  QUEUE_OPTIONS
-);
+let _videoQueue: Queue<VideoTranscodeJobData, VideoTranscodeJobResult> | null = null;
+let _isQueueAvailable = true;
+
+/**
+ * Get or create the video queue (lazy initialization)
+ * Returns null if Redis is not available
+ */
+function getVideoQueue(): Queue<VideoTranscodeJobData, VideoTranscodeJobResult> | null {
+  if (!_isQueueAvailable) {
+    return null;
+  }
+
+  if (!_videoQueue) {
+    try {
+      _videoQueue = new Queue<VideoTranscodeJobData, VideoTranscodeJobResult>(
+        QUEUE_NAME,
+        QUEUE_OPTIONS
+      );
+      log.info('[VideoQueue] Queue initialized');
+    } catch (error) {
+      log.error('[VideoQueue] Failed to initialize queue - Redis may not be available', { error });
+      _isQueueAvailable = false;
+      return null;
+    }
+  }
+  return _videoQueue;
+}
+
+// Export for backwards compatibility (may be null)
+export const videoQueue = getVideoQueue();
 
 // ============================================================================
 // QUEUE METHODS
@@ -94,7 +120,13 @@ export const videoQueue = new Queue<VideoTranscodeJobData, VideoTranscodeJobResu
  */
 export async function addVideoTranscodeJob(
   data: VideoTranscodeJobData
-): Promise<string> {
+): Promise<string | null> {
+  const queue = getVideoQueue();
+  if (!queue) {
+    log.warn('[VideoQueue] Cannot add job - Redis not available');
+    return null;
+  }
+
   log.info('📥 Adding video transcode job to queue', {
     contentId: data.contentId,
     inputPath: data.inputPath,
@@ -106,7 +138,7 @@ export async function addVideoTranscodeJob(
     data: { status: 'PENDING' },
   });
 
-  const job = await videoQueue.add(
+  const job = await queue.add(
     'transcode',
     data,
     JOB_OPTIONS
@@ -124,8 +156,14 @@ export async function getJobStatus(jobId: string): Promise<{
   progress: number;
   result?: VideoTranscodeJobResult;
   error?: string;
-}> {
-  const job = await videoQueue.getJob(jobId);
+} | null> {
+  const queue = getVideoQueue();
+  if (!queue) {
+    log.warn('[VideoQueue] Cannot get job status - Redis not available');
+    return null;
+  }
+
+  const job = await queue.getJob(jobId);
 
   if (!job) {
     throw new Error(`Job ${jobId} not found`);
@@ -151,13 +189,19 @@ export async function getQueueStats(): Promise<{
   completed: number;
   failed: number;
   delayed: number;
-}> {
+} | null> {
+  const queue = getVideoQueue();
+  if (!queue) {
+    log.warn('[VideoQueue] Cannot get stats - Redis not available');
+    return null;
+  }
+
   const [waiting, active, completed, failed, delayed] = await Promise.all([
-    videoQueue.getWaitingCount(),
-    videoQueue.getActiveCount(),
-    videoQueue.getCompletedCount(),
-    videoQueue.getFailedCount(),
-    videoQueue.getDelayedCount(),
+    queue.getWaitingCount(),
+    queue.getActiveCount(),
+    queue.getCompletedCount(),
+    queue.getFailedCount(),
+    queue.getDelayedCount(),
   ]);
 
   return { waiting, active, completed, failed, delayed };
@@ -294,11 +338,18 @@ videoWorker.on('active', (job) => {
 export async function closeVideoQueue(): Promise<void> {
   log.info('Closing video queue and worker...');
 
-  await Promise.all([
-    videoWorker.close(),
-    videoQueue.close(),
-    prisma.$disconnect(),
-  ]);
+  const closeTasks: Promise<void>[] = [prisma.$disconnect()];
+
+  if (videoWorker) {
+    closeTasks.push(videoWorker.close());
+  }
+
+  const queue = getVideoQueue();
+  if (queue) {
+    closeTasks.push(queue.close());
+  }
+
+  await Promise.all(closeTasks);
 
   log.info('✓ Video queue closed');
 }
@@ -311,13 +362,17 @@ process.on('SIGINT', closeVideoQueue);
 // QUEUE EVENTS (for monitoring)
 // ============================================================================
 
-videoQueue.on('waiting', (job) => {
-  log.info(`⏸️  Job waiting: ${JSON.stringify(job)}`);
-});
+// Only attach event handlers if queue is available
+const queueForEvents = getVideoQueue();
+if (queueForEvents) {
+  queueForEvents.on('waiting', (job) => {
+    log.info(`⏸️  Job waiting: ${JSON.stringify(job)}`);
+  });
 
-videoQueue.on('removed', (job) => {
-  log.info(`🗑️  Job removed: ${JSON.stringify(job)}`);
-});
+  queueForEvents.on('removed', (job) => {
+    log.info(`🗑️  Job removed: ${JSON.stringify(job)}`);
+  });
+}
 
 // ============================================================================
 // EXPORTS
