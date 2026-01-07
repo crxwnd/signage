@@ -7,7 +7,7 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Monitor, Plus, AlertCircle } from 'lucide-react';
+import { Monitor, Plus, AlertCircle, Link2 } from 'lucide-react';
 import {
   Button,
   Card,
@@ -19,6 +19,7 @@ import {
 import { DisplaysList } from '@/components/displays/DisplaysList';
 import { DisplaysFilters } from '@/components/displays/DisplaysFilters';
 import { CreateDisplayModal } from '@/components/displays/CreateDisplayModal';
+import { PairingModal } from '@/components/displays/PairingModal';
 import { DisplayCardSkeleton } from '@/components/displays/DisplayCardSkeleton';
 import { StatsCardSkeleton } from '@/components/displays/StatsCardSkeleton';
 import { useDisplays } from '@/hooks/useDisplays';
@@ -28,6 +29,7 @@ import type { DisplayFilter } from '@shared-types';
 function DisplaysContent() {
   const searchParams = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
 
   // Build filter from URL params
   const filter = useMemo<DisplayFilter>(() => {
@@ -72,10 +74,16 @@ function DisplaysContent() {
             Manage your digital signage displays
           </p>
         </div>
-        <Button onClick={handleOpenModal}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Display
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsPairingModalOpen(true)}>
+            <Link2 className="mr-2 h-4 w-4" />
+            Pair Display
+          </Button>
+          <Button onClick={handleOpenModal}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Display
+          </Button>
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -222,6 +230,14 @@ function DisplaysContent() {
       <CreateDisplayModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onSuccess={handleSuccess}
+      />
+
+      {/* Pairing Modal */}
+      <PairingModal
+        open={isPairingModalOpen}
+        onOpenChange={setIsPairingModalOpen}
+        displays={displays}
         onSuccess={handleSuccess}
       />
     </div>

@@ -1,28 +1,88 @@
 /**
- * Hotels Hook
- * React Query hook for fetching hotels
+ * useHotels Hooks
+ * React Query hooks for hotel management
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { authenticatedFetch } from '@/lib/api/auth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import * as hotelsApi from '@/lib/api/hotels';
+import { toast } from 'sonner';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export function useHotels(includeStats = false) {
+    const { user, isLoading: authLoading } = useAuth();
 
-export interface Hotel {
-    id: string;
-    name: string;
-    address: string;
-    createdAt: string;
+    return useQuery({
+        queryKey: ['hotels', { includeStats }],
+        queryFn: () => hotelsApi.getHotels(includeStats),
+        enabled: !!user && !authLoading,
+        staleTime: 30000,
+    });
 }
 
-export function useHotels() {
+export function useHotel(id: string) {
+    const { user, isLoading: authLoading } = useAuth();
+
     return useQuery({
-        queryKey: ['hotels'],
-        queryFn: async (): Promise<Hotel[]> => {
-            const response = await authenticatedFetch(`${API_URL}/api/hotels`);
-            const data = await response.json();
-            return data.data?.hotels || data.hotels || [];
+        queryKey: ['hotels', id],
+        queryFn: () => hotelsApi.getHotelById(id),
+        enabled: !!user && !authLoading && !!id,
+        staleTime: 30000,
+    });
+}
+
+export function useHotelGlobalStats() {
+    const { user, isLoading: authLoading } = useAuth();
+
+    return useQuery({
+        queryKey: ['hotels', 'stats'],
+        queryFn: () => hotelsApi.getHotelGlobalStats(),
+        enabled: !!user && !authLoading && user.role === 'SUPER_ADMIN',
+        staleTime: 60000,
+    });
+}
+
+export function useCreateHotel() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: hotelsApi.createHotel,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hotels'] });
+            toast.success('Hotel created successfully');
         },
-        staleTime: 60 * 1000, // 1 minute
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to create hotel');
+        },
+    });
+}
+
+export function useUpdateHotel() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: hotelsApi.UpdateHotelInput }) =>
+            hotelsApi.updateHotel(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hotels'] });
+            toast.success('Hotel updated successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to update hotel');
+        },
+    });
+}
+
+export function useDeleteHotel() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: hotelsApi.deleteHotel,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hotels'] });
+            toast.success('Hotel deleted successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to delete hotel');
+        },
     });
 }
