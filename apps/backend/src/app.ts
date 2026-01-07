@@ -105,6 +105,11 @@ export function createApp(): Application {
       if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
         return true;
       }
+      // Skip for Docker internal networks (172.x.x.x, 192.168.x.x)
+      if (ip.startsWith('172.') || ip.startsWith('192.168.') ||
+        ip.includes('::ffff:172.') || ip.includes('::ffff:192.168.')) {
+        return true;
+      }
 
       const reqPath = req.path;
       // Static files (already served above, but skip anyway)

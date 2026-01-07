@@ -99,7 +99,7 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_USE_SSL: "false"
-      STORAGE_MODE: minio
+      STORAGE_MODE: local # Use local storage in dev; minio requires additional middleware changes
       # CORS
       CORS_ORIGINS: http://localhost:3000,http://localhost:3002
       # JWT

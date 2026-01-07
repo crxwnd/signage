@@ -23,6 +23,37 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-06] Fix: Player VIDEO vs IMAGE Rendering (CRÍTICO)
+
+### Fixed
+- **Player usaba VideoPlayer para IMÁGENES** - HLS.js fallaba al intentar parsear imágenes como playlists
+- Player ahora distingue `type === 'VIDEO'` (VideoPlayer/HLS) vs `type === 'IMAGE'` (img tag)
+- `getPlaylistItems()` ahora usa URL correcta según tipo de contenido
+
+### Changed
+- `apps/player/src/app/page.tsx`: Lógica condicional VIDEO/IMAGE en Alert rendering y getPlaylistItems
+
+---
+
+## [2026-01-05] Fix: Storage System y Content Management
+
+### Fixed
+- **STORAGE_MODE=local** en Docker dev para consistencia (minio requiere cambios en middleware)
+- **Next.js Image 500 errors** - Agregados remotePatterns para localhost:3001 y MinIO
+- **Thumbnails 404 en PlaylistManager** - Agregado API_URL prefix a URLs de imágenes
+- **Rate limiter 429 en Docker** - IPs de redes internas Docker (172.x, 192.168.x) excluidas
+
+### Changed
+- `docker-compose.yml`: STORAGE_MODE=local para desarrollo
+- `apps/frontend/next.config.js`: remotePatterns expandidos, unoptimized en dev
+- `apps/player/next.config.js`: Creado con remotePatterns y unoptimized
+- `apps/frontend/src/components/displays/PlaylistManager.tsx`: API_URL en thumbnails
+- `apps/frontend/src/components/content/DeleteContentModal.tsx`: Muestra lista de dependencias
+- `apps/backend/src/app.ts`: Rate limiter skip para Docker networks
+- `apps/backend/Dockerfile.dev`: Creación de directorios storage
+
+---
+
 ## [2026-01-02] Migración SyncGroups a Prisma
 
 ### Problema
