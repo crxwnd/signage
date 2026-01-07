@@ -20,19 +20,32 @@ const nextConfig = {
   swcMinify: true,
   poweredByHeader: false,
 
-  // === 🔑 AQUÍ ESTÁ EL ARREGLO ===
-  // Autorizamos a Next.js para cargar imágenes desde nuestro backend
+  // Backend image configuration
   images: {
     remotePatterns: [
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '3001',
-        pathname: '/**', // Permitir cualquier ruta de imagen
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '3001',
+        pathname: '/**',
+      },
+      // MinIO direct access
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+        pathname: '/**',
       },
     ],
+    // Disable optimization in development for faster loading
+    unoptimized: process.env.NODE_ENV === 'development',
   },
-  // ===============================
 
   // Environment variables
   env: {
