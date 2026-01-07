@@ -322,6 +322,12 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
     if (!refreshToken) {
+      // Clear cookie just in case it exists but is empty/invalid
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+        ...COOKIE_OPTIONS,
+        maxAge: 0,
+      });
+
       const errorResponse: ApiErrorResponse = {
         success: false,
         error: {
@@ -339,6 +345,12 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     try {
       decoded = verifyRefreshToken(refreshToken);
     } catch (error) {
+      // Clear invalid cookie
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+        ...COOKIE_OPTIONS,
+        maxAge: 0,
+      });
+
       const errorResponse: ApiErrorResponse = {
         success: false,
         error: {
@@ -366,6 +378,12 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     });
 
     if (!user) {
+      // Clear cookie for non-existent user
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+        ...COOKIE_OPTIONS,
+        maxAge: 0,
+      });
+
       const errorResponse: ApiErrorResponse = {
         success: false,
         error: {

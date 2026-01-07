@@ -12,6 +12,7 @@ import { prisma } from './utils/prisma';
 import { initializeSocketIO, disconnectAll } from './socket/socketManager';
 import { startScheduleChecker } from './jobs/scheduleChecker';
 import { startMetricsUpdater, stopMetricsUpdater } from './jobs/metricsUpdater';
+import { startDisplayHealthCheck, stopDisplayHealthCheck } from './jobs/displayHealthCheck';
 import syncService from './services/syncService';
 import storageService from './services/storageService';
 
@@ -72,6 +73,9 @@ async function startServer(): Promise<void> {
 
       // Start metrics updater job
       startMetricsUpdater();
+
+      // Start display health check job (marks stale displays as OFFLINE)
+      startDisplayHealthCheck();
     });
 
     // Graceful shutdown handlers
@@ -89,6 +93,10 @@ async function startServer(): Promise<void> {
         // Cleanup sync service
         syncService.cleanupSyncService();
         log.info('Sync service cleaned up');
+
+        // Stop display health check
+        stopDisplayHealthCheck();
+        log.info('Display health check stopped');
 
         // Stop metrics updater
         stopMetricsUpdater();

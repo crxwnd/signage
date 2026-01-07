@@ -83,6 +83,7 @@ model User {
   // Relationships
   createdSchedules Schedule[]
   createdAlerts    Alert[]
+  activityLogs     UserActivityLog[]
 
   @@index([email])
   @@index([hotelId])
@@ -475,4 +476,32 @@ model ContentSourceChange {
 
   @@index([displayId, timestamp])
   @@map("content_source_changes")
+}
+
+// ==============================================
+// USER ACTIVITY LOG
+// ==============================================
+
+model UserActivityLog {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Activity type
+  action     String   // 'LOGIN', 'LOGOUT', 'CREATE_CONTENT', etc.
+  resource   String?  // 'content', 'display', 'schedule', etc.
+  resourceId String?
+
+  // Metadata
+  details   Json?
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+  @@map("user_activity_logs")
 }
