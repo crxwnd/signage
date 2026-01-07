@@ -199,7 +199,12 @@ export default function PlayerPage() {
       return source.syncGroup.playlistItems.map(item => ({
         id: item.content.id,
         type: item.content.type,
-        url: getFullUrl(item.content.hlsUrl || item.content.originalUrl),
+        // For VIDEO use hlsUrl, for IMAGE use originalUrl
+        url: getFullUrl(
+          item.content.type === 'VIDEO'
+            ? (item.content.hlsUrl || item.content.originalUrl)
+            : (item.content.originalUrl || item.content.thumbnailUrl)
+        ),
         duration: item.duration || item.content.duration || 10,
         name: item.content.name,
       }));
@@ -208,7 +213,11 @@ export default function PlayerPage() {
       return [{
         id: source.content.id,
         type: source.content.type,
-        url: getFullUrl(source.content.hlsUrl || source.content.originalUrl),
+        url: getFullUrl(
+          source.content.type === 'VIDEO'
+            ? (source.content.hlsUrl || source.content.originalUrl)
+            : (source.content.originalUrl || source.content.thumbnailUrl)
+        ),
         duration: source.content.duration || 10,
         name: source.content.name,
       }];
@@ -226,11 +235,25 @@ export default function PlayerPage() {
       {isAlert && source.alert && (
         <AlertOverlay source={source}>
           {source.content ? (
-            <VideoPlayer
-              src={getFullUrl(source.content.hlsUrl || source.content.originalUrl)}
-              autoPlay
-              muted
-            />
+            // Distinguish VIDEO vs IMAGE rendering
+            source.content.type === 'VIDEO' ? (
+              <VideoPlayer
+                src={getFullUrl(source.content.hlsUrl || source.content.originalUrl)}
+                autoPlay
+                muted
+              />
+            ) : source.content.type === 'IMAGE' ? (
+              <img
+                src={getFullUrl(source.content.originalUrl || source.content.thumbnailUrl)}
+                alt={source.content.name || 'Alert content'}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              // HTML or other unsupported type
+              <div className="flex items-center justify-center h-full w-full bg-gray-900">
+                <p className="text-white text-2xl">Contenido no soportado: {source.content.type}</p>
+              </div>
+            )
           ) : (
             /* Alert without media content - show message */
             <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-red-900 to-red-700">
