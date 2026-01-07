@@ -32,6 +32,12 @@ RUN cd apps/backend && npx prisma generate
 COPY apps/backend ./apps/backend
 COPY packages ./packages
 
+# Ensure storage directories exist with correct permissions
+RUN mkdir -p /app/apps/backend/storage/uploads \
+    && mkdir -p /app/apps/backend/storage/hls \
+    && mkdir -p /app/apps/backend/storage/thumbnails \
+    && chmod -R 755 /app/apps/backend/storage
+
 # Expose backend port
 EXPOSE 3001
 
