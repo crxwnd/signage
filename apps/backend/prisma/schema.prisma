@@ -160,6 +160,12 @@ model Display {
   pairingCode String?   @unique
   pairedAt    DateTime?
 
+  // Error tracking
+  lastError     String?   // Error message
+  lastErrorCode String?   // Error code (CONNECTION_LOST, CONTENT_FAILED, etc.)
+  lastErrorAt   DateTime? // When error occurred
+  errorCount    Int       @default(0) // Error counter
+
   // Fallback content when no other content is available
   fallbackContentId String?
   fallbackContent   Content? @relation("DisplayFallback", fields: [fallbackContentId], references: [id], onDelete: SetNull)
