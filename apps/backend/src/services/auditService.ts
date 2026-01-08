@@ -83,6 +83,26 @@ interface SessionParams {
     req?: Request;
 }
 
+interface DisplayConfigChangeParams {
+    displayId: string;
+    field: string;
+    oldValue: string | null;
+    newValue: string | null;
+    changedBy?: string;
+    changedByName?: string;
+    hotelId: string;
+}
+
+interface ContentAccessParams {
+    contentId: string;
+    userId?: string;
+    actorType: 'USER' | 'SYSTEM' | 'PLAYER';
+    action: 'VIEW' | 'DOWNLOAD' | 'MODIFY' | 'DELETE' | 'STREAM';
+    details?: object;
+    hotelId: string;
+    ipAddress?: string;
+}
+
 // ==============================================
 // HELPER FUNCTIONS
 // ==============================================
@@ -494,14 +514,92 @@ export async function getAuditSummary(hotelId?: string, from?: Date, to?: Date) 
     };
 }
 
+/**
+ * Log display configuration change
+ */
+export async function logDisplayConfigChange(params: DisplayConfigChangeParams): Promise<void> {
+    try {
+        await prisma.displayConfigHistory.create({
+            data: {
+                displayId: params.displayId,
+                field: params.field,
+                oldValue: params.oldValue,
+                newValue: params.newValue,
+                changedBy: params.changedBy,
+                changedByName: params.changedByName,
+                hotelId: params.hotelId,
+            },
+        });
+
+        log.debug('[Audit] Display config change logged', {
+            displayId: params.displayId,
+            field: params.field,
+        });
+    } catch (error) {
+        log.error('[Audit] Failed to log display config change', { error, params });
+    }
+}
+
+/**
+ * Get display configuration history
+ */
+export async function getDisplayConfigHistory(displayId: string, limit = 100) {
+    return prisma.displayConfigHistory.findMany({
+        where: { displayId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+    });
+}
+
+/**
+ * Log content access
+ */
+export async function logContentAccess(params: ContentAccessParams): Promise<void> {
+    try {
+        await prisma.contentAccessLog.create({
+            data: {
+                contentId: params.contentId,
+                userId: params.userId,
+                actorType: params.actorType,
+                action: params.action,
+                details: params.details,
+                hotelId: params.hotelId,
+                ipAddress: params.ipAddress,
+            },
+        });
+
+        log.debug('[Audit] Content access logged', {
+            contentId: params.contentId,
+            action: params.action,
+        });
+    } catch (error) {
+        log.error('[Audit] Failed to log content access', { error, params });
+    }
+}
+
+/**
+ * Get content access logs
+ */
+export async function getContentAccessLogs(contentId: string, limit = 100) {
+    return prisma.contentAccessLog.findMany({
+        where: { contentId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+    });
+}
+
 export default {
     createAuditLog,
     logDisplayStateChange,
+    logDisplayConfigChange,
+    logContentAccess,
     createSession,
     endSession,
     updateSessionActivity,
     getAuditLogs,
     getDisplayStateHistory,
+    getDisplayConfigHistory,
+    getContentAccessLogs,
     getActiveSessions,
     getDisplayTimeline,
     getUserTimeline,
