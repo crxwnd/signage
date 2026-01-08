@@ -1,8 +1,8 @@
-# 🎬 Sistema de Señalización Digital para Hoteles
+# Sistema de Senalizacion Digital para Hoteles
 
-Sistema completo de señalización digital para gestionar 100+ pantallas SmartTV en hoteles con sincronización en tiempo real, streaming HLS, y gestión jerárquica de usuarios.
+Sistema completo de senalizacion digital para gestionar 100+ pantallas SmartTV en hoteles con sincronizacion en tiempo real, streaming HLS, y gestion jerarquica de usuarios.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Instalar dependencias
@@ -22,14 +22,14 @@ pnpm dev:frontend       # Solo frontend (localhost:3000)
 pnpm dev:backend        # Solo backend (localhost:3001)
 ```
 
-## 📋 Prerequisitos
+## Prerequisitos
 
 - **Node.js**: 20 LTS o superior
 - **pnpm**: 8.x o superior (`npm install -g pnpm`)
 - **Docker**: Para servicios (PostgreSQL, Redis, MinIO)
 - **Git**: Para control de versiones
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ### Stack Tecnológico
 
@@ -84,7 +84,7 @@ signage/
 └── README.md               # Este archivo
 ```
 
-## 🎯 Features Principales
+## Features Principales
 
 ### Gestión de Pantallas
 
@@ -127,9 +127,17 @@ signage/
 - 🔄 Alertas automáticas
 - 🔄 Métricas de rendimiento
 
-**Leyenda**: ✅ Completado | 🔄 En desarrollo | ⏸️ Pendiente
+### Reports and Audit (NEW)
 
-## 🔧 Comandos Disponibles
+- [DONE] Display Reports - KPI cards, graficos, exportacion Excel
+- [DONE] User Reports - Actividad, logins, acciones por usuario
+- [DONE] System Audit - Visor de logs con filtros y paginacion
+- [DONE] Compliance Reports - Metricas de seguridad (SUPER_ADMIN)
+- [DONE] Report Builder - Constructor de reportes personalizados
+
+**Leyenda**: [DONE] Completado | [WIP] En desarrollo | [TODO] Pendiente
+
+## Comandos Disponibles
 
 ### Desarrollo
 
@@ -179,7 +187,7 @@ pnpm docker:logs      # Ver logs
 pnpm docker:clean     # Limpiar volúmenes
 ```
 
-## 🌍 Variables de Entorno
+## Variables de Entorno
 
 Crea un archivo `.env` en la raíz y en `apps/backend/.env` con:
 
@@ -208,7 +216,7 @@ FRONTEND_URL=http://localhost:3000
 
 Ver `.env.example` para lista completa.
 
-## 📚 Documentación
+## Documentacion
 
 - **[ARQUITECTURA.md](./docs/ARQUITECTURA.md)**: Decisiones técnicas y arquitectura del sistema
 - **[CLAUDE.md](./CLAUDE.md)**: Contexto completo para Claude Code
@@ -216,7 +224,7 @@ Ver `.env.example` para lista completa.
 - **[PROGRESS.md](./docs/PROGRESS.md)**: Tracking de avance del proyecto
 - **[API.md](./docs/API.md)**: Documentación de API REST
 
-## 🚧 Estado del Proyecto
+## Estado del Proyecto
 
 ### Fase Actual: Semana 1 - Fundación
 
@@ -240,7 +248,7 @@ Ver `.env.example` para lista completa.
 
 **Próximos pasos**: Ver [PROGRESS.md](./docs/PROGRESS.md)
 
-## 🧪 Testing
+## Testing
 
 El proyecto mantiene 70%+ de coverage de código con tests en tres niveles:
 
@@ -274,7 +282,7 @@ pnpm test:e2e:ui
 pnpm test:e2e tests/e2e/displays.spec.ts
 ```
 
-## 🔒 Seguridad
+## Seguridad
 
 - **JWT Tokens**: Access tokens con expiración corta (15 min)
 - **Refresh Tokens**: En httpOnly cookies
@@ -287,7 +295,7 @@ pnpm test:e2e tests/e2e/displays.spec.ts
 - **XSS**: Prevenido con sanitización
 - **Passwords**: Hasheados con bcrypt (12 rounds)
 
-## 📊 Monitoreo
+## Monitoreo
 
 ### Métricas Clave (Prometheus)
 
@@ -305,7 +313,7 @@ pnpm test:e2e tests/e2e/displays.spec.ts
 - Video Processing
 - API Performance
 
-## 🤝 Desarrollo con Claude Code
+## Desarrollo con Claude Code
 
 Este proyecto está optimizado para desarrollo asistido por IA con Claude Code.
 
@@ -323,7 +331,7 @@ Este proyecto está optimizado para desarrollo asistido por IA con Claude Code.
 4. Validar (tests + manual)
 5. Commit
 
-## 📦 Deployment
+## Deployment
 
 ### Desarrollo Local
 
@@ -347,11 +355,11 @@ pm2 start ecosystem.config.js
 
 Ver [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) para guía completa.
 
-## 🐛 Issues Conocidos
+## Issues Conocidos
 
 Ver [PROGRESS.md](./docs/PROGRESS.md) sección "Issues Encontrados".
 
-## 📝 Convenciones de Código
+## Convenciones de Codigo
 
 ### Git Commits
 
@@ -393,17 +401,17 @@ Closes #123
 
 Ver [CLAUDE.md](./CLAUDE.md) para guía completa.
 
-## 📄 Licencia
+## Licencia
 
 Propietario - Hotel XYZ
 
-## 👥 Equipo
+## Equipo
 
 - **Arquitectura**: Basada en investigación exhaustiva de mejores prácticas
 - **Desarrollo**: Asistido por Claude Code
 - **Documentación**: Generada automáticamente
 
-## 🆘 Soporte
+## Soporte
 
 Para reportar bugs o solicitar features:
 
@@ -413,6 +421,6 @@ Para reportar bugs o solicitar features:
 
 ---
 
-**Última actualización**: 2024-11-20  
-**Versión**: 1.0.0  
-**Estado**: En desarrollo activo 🚀
+**Ultima actualizacion**: 2026-01-08  
+**Version**: 2.2.0  
+**Estado**: En desarrollo activo
