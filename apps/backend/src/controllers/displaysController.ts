@@ -20,6 +20,7 @@ import {
   canAccessDisplay,
   type RBACUser,
 } from '../middleware/permissions';
+import * as userAnalyticsService from '../services/userAnalyticsService';
 
 // ==============================================
 // ZOD VALIDATION SCHEMAS
@@ -323,6 +324,17 @@ export async function createDisplay(
       timestamp: new Date().toISOString(),
     };
 
+    // Log activity
+    await userAnalyticsService.logActivity({
+      userId: user.userId,
+      action: userAnalyticsService.ActivityActions.DISPLAY_CREATE,
+      resource: 'display',
+      resourceId: display.id,
+      details: { name: display.name, location: display.location },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { });
+
     res.status(201).json(response);
   } catch (error) {
     log.error('Failed to create display', error);
@@ -461,6 +473,16 @@ export async function updateDisplay(
       timestamp: new Date().toISOString(),
     };
 
+    // Log activity
+    await userAnalyticsService.logActivity({
+      userId: user.userId,
+      action: userAnalyticsService.ActivityActions.DISPLAY_UPDATE,
+      resource: 'display',
+      resourceId: display.id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { });
+
     res.status(200).json(response);
   } catch (error) {
     log.error('Failed to update display', error);
@@ -571,6 +593,16 @@ export async function deleteDisplay(
       message: 'Display deleted successfully',
       timestamp: new Date().toISOString(),
     };
+
+    // Log activity
+    await userAnalyticsService.logActivity({
+      userId: user.userId,
+      action: userAnalyticsService.ActivityActions.DISPLAY_DELETE,
+      resource: 'display',
+      resourceId: id,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { });
 
     res.status(200).json(response);
   } catch (error) {
