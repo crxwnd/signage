@@ -77,6 +77,7 @@ const navSections = {
     items: [
       { name: 'Overview', href: '/analytics', icon: BarChart3, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Display Activity', href: '/analytics/displays', icon: Monitor, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Display History', href: '/analytics/displays/history', icon: Clock, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'AREA_MANAGER'] as UserRole[] },
       { name: 'Bandwidth', href: '/analytics/bandwidth', icon: Wifi, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Content Stats', href: '/analytics/content', icon: Film, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
     ],

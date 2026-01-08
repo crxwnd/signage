@@ -172,4 +172,40 @@ router.post('/sessions/:token/revoke', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN'
     }
 });
 
+/**
+ * GET /api/audit/displays/:id/config-history
+ * Get configuration change history for a display
+ */
+router.get('/displays/:id/config-history', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN', 'AREA_MANAGER']), async (req: Request, res: Response) => {
+    try {
+        const displayId = req.params.id as string;
+        const limit = parseInt(req.query.limit as string) || 100;
+
+        const history = await auditService.getDisplayConfigHistory(displayId, limit);
+
+        res.json({ success: true, data: { history } });
+    } catch (error) {
+        log.error('Failed to get display config history', { error });
+        res.status(500).json({ success: false, error: 'Failed to get display config history' });
+    }
+});
+
+/**
+ * GET /api/audit/content/:id/access
+ * Get access logs for a content item
+ */
+router.get('/content/:id/access', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
+    try {
+        const contentId = req.params.id as string;
+        const limit = parseInt(req.query.limit as string) || 100;
+
+        const logs = await auditService.getContentAccessLogs(contentId, limit);
+
+        res.json({ success: true, data: { logs } });
+    } catch (error) {
+        log.error('Failed to get content access logs', { error });
+        res.status(500).json({ success: false, error: 'Failed to get content access logs' });
+    }
+});
+
 export default router;
