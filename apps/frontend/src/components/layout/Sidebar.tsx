@@ -28,8 +28,9 @@ import {
   Clock,
   Shield,
   UserCheck,
-  FileText,
-  Laptop,
+  FileBarChart,
+  ClipboardList,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -90,8 +91,16 @@ const navSections = {
       { name: 'Login History', href: '/monitoring/users/logins', icon: Clock, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'User Performance', href: '/monitoring/users/performance', icon: UserCheck, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Access & Permissions', href: '/monitoring/users/access', icon: Shield, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
-      { name: 'Audit Trail', href: '/monitoring/audit', icon: FileText, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
-      { name: 'Active Sessions', href: '/monitoring/sessions', icon: Laptop, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+    ],
+  },
+  reportsAudit: {
+    title: 'Reports & Audit',
+    items: [
+      { name: 'Report Builder', href: '/reports/builder', icon: FileBarChart, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Display Reports', href: '/reports/displays', icon: Monitor, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'AREA_MANAGER'] as UserRole[] },
+      { name: 'User Reports', href: '/reports/users', icon: Users, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'System Audit', href: '/reports/audit', icon: ClipboardList, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Compliance', href: '/reports/compliance', icon: ShieldCheck, requiredRoles: ['SUPER_ADMIN'] as UserRole[] },
     ],
   },
   settings: {
@@ -204,6 +213,15 @@ export function Sidebar() {
         {filterItems(navSections.userMonitoring.items).length > 0 && (
           <SidebarSection title={navSections.userMonitoring.title}>
             {filterItems(navSections.userMonitoring.items).map((item) => (
+              <NavLink key={item.name} item={item} />
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* Reports & Audit Section */}
+        {filterItems(navSections.reportsAudit.items).length > 0 && (
+          <SidebarSection title={navSections.reportsAudit.title}>
+            {filterItems(navSections.reportsAudit.items).map((item) => (
               <NavLink key={item.name} item={item} />
             ))}
           </SidebarSection>
