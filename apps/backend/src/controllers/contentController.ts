@@ -20,6 +20,7 @@ import {
   getHotelFilter,
   type RBACUser,
 } from '../middleware/permissions';
+import * as userAnalyticsService from '../services/userAnalyticsService';
 
 // ============================================================================
 // TYPES
@@ -516,6 +517,17 @@ export async function deleteContent(
       timestamp: new Date().toISOString(),
     };
 
+    // Log activity
+    await userAnalyticsService.logActivity({
+      userId: user.userId,
+      action: userAnalyticsService.ActivityActions.CONTENT_DELETE,
+      resource: 'content',
+      resourceId: id,
+      details: { name: content.name, type: content.type },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { });
+
     res.status(200).json(response);
   } catch (error) {
     log.error('Failed to delete content', error);
@@ -744,6 +756,20 @@ export async function uploadContentFile(
         }`,
       timestamp: new Date().toISOString(),
     };
+
+    // Log activity
+    const reqUser = req.user as RBACUser | undefined;
+    if (reqUser) {
+      await userAnalyticsService.logActivity({
+        userId: reqUser.userId,
+        action: userAnalyticsService.ActivityActions.CONTENT_UPLOAD,
+        resource: 'content',
+        resourceId: content.id,
+        details: { name: content.name, type: content.type, size: content.fileSize },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      }).catch(() => { });
+    }
 
     res.status(201).json(response);
   } catch (error) {

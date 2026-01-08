@@ -24,6 +24,12 @@ import {
   Film,
   Calendar,
   Bell,
+  Activity,
+  Clock,
+  Shield,
+  UserCheck,
+  FileText,
+  Laptop,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -71,9 +77,20 @@ const navSections = {
     items: [
       { name: 'Overview', href: '/analytics', icon: BarChart3, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Display Activity', href: '/analytics/displays', icon: Monitor, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
-      { name: 'User Activity', href: '/analytics/users', icon: Users, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Bandwidth', href: '/analytics/bandwidth', icon: Wifi, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
       { name: 'Content Stats', href: '/analytics/content', icon: Film, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+    ],
+  },
+  userMonitoring: {
+    title: 'User Monitoring',
+    items: [
+      { name: 'Overview', href: '/monitoring/users', icon: Users, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Activity Feed', href: '/monitoring/users/activity', icon: Activity, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Login History', href: '/monitoring/users/logins', icon: Clock, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'User Performance', href: '/monitoring/users/performance', icon: UserCheck, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Access & Permissions', href: '/monitoring/users/access', icon: Shield, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Audit Trail', href: '/monitoring/audit', icon: FileText, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
+      { name: 'Active Sessions', href: '/monitoring/sessions', icon: Laptop, requiredRoles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] as UserRole[] },
     ],
   },
   settings: {
@@ -177,6 +194,15 @@ export function Sidebar() {
         {filterItems(navSections.analytics.items).length > 0 && (
           <SidebarSection title={navSections.analytics.title}>
             {filterItems(navSections.analytics.items).map((item) => (
+              <NavLink key={item.name} item={item} />
+            ))}
+          </SidebarSection>
+        )}
+
+        {/* User Monitoring Section */}
+        {filterItems(navSections.userMonitoring.items).length > 0 && (
+          <SidebarSection title={navSections.userMonitoring.title}>
+            {filterItems(navSections.userMonitoring.items).map((item) => (
               <NavLink key={item.name} item={item} />
             ))}
           </SidebarSection>

@@ -3,7 +3,10 @@
  * HTTP routes for display management
  *
  * SECURITY: Most routes are protected by authentication middleware
- * EXCEPTION: /:id/playlist is PUBLIC for SmartTV displays
+ * EXCEPTION: /:id/playlist and /:id/current-source are PUBLIC for SmartTV displays
+ * 
+ * ROUTE ORDER: Static paths MUST come before dynamic /:id paths
+ * Otherwise Express will interpret "confirm-pairing" as an :id value
  */
 
 import { Router, type Router as ExpressRouter, type Request, type Response, type NextFunction } from 'express';
@@ -16,7 +19,91 @@ import { contentResolver } from '../services/contentResolver';
 const router: ExpressRouter = Router();
 
 // ==============================================
-// PUBLIC ROUTES (No authentication required)
+// AUTHENTICATED STATIC ROUTES (BEFORE :id routes)
+// confirm-pairing MUST be here, NOT after /:id routes
+// ==============================================
+
+/**
+ * POST /api/displays/confirm-pairing
+ * Admin confirms pairing code to link display to a displayId
+ * 
+ * CRITICAL: This route MUST be defined BEFORE any /:id routes
+ * Otherwise "confirm-pairing" gets interpreted as an :id value
+ */
+router.post('/confirm-pairing', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { code, displayId } = req.body;
+
+        log.info('[Pairing] Confirm pairing request', { code, displayId });
+
+        if (!code || !displayId) {
+            res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Code and displayId are required' }
+            });
+            return;
+        }
+
+        // Import socket manager functions
+        const socketManager = await import('../socket/socketManager');
+
+        // Get pairing data
+        const pairingData = socketManager.getPairingData(code);
+
+        if (!pairingData) {
+            log.warn('[Pairing] Invalid or expired code', { code });
+            res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Invalid or expired pairing code' }
+            });
+            return;
+        }
+
+        // Verify display exists
+        const display = await prisma.display.findUnique({
+            where: { id: displayId },
+        });
+
+        if (!display) {
+            res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Display not found' }
+            });
+            return;
+        }
+
+        // Update display
+        await prisma.display.update({
+            where: { id: displayId },
+            data: {
+                pairedAt: new Date(),
+                pairingCode: null,
+                status: 'ONLINE',
+            },
+        });
+
+        // Notify the display via socket
+        const io = socketManager.getIO();
+        if (io) {
+            io.to(pairingData.socketId).emit('pairing:confirmed' as any, { displayId });
+            log.info('[Pairing] Confirmed successfully', { displayId, socketId: pairingData.socketId });
+        }
+
+        // Clean up pairing code
+        socketManager.deletePairingCode(code);
+
+        res.json({
+            success: true,
+            data: { displayId, message: 'Display paired successfully' }
+        });
+    } catch (error) {
+        log.error('[Pairing] Error confirming pairing', { error });
+        next(error);
+    }
+});
+
+// ==============================================
+// PUBLIC ROUTES WITH :id (No authentication)
 // These are for SmartTV displays that don't have user sessions
 // ==============================================
 
@@ -138,79 +225,6 @@ router.get('/:id/playlist', async (req: Request, res: Response, next: NextFuncti
 router.use(authenticate);
 
 /**
- * POST /api/displays/confirm-pairing
- * Admin confirms pairing code to link display to a displayId
- */
-router.post('/confirm-pairing', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { code, displayId } = req.body;
-
-        if (!code || !displayId) {
-            res.status(400).json({
-                success: false,
-                error: { code: 'VALIDATION_ERROR', message: 'Code and displayId are required' }
-            });
-            return;
-        }
-
-        // Import socket manager functions
-        const socketManager = await import('../socket/socketManager');
-
-        // Get pairing data
-        const pairingData = socketManager.getPairingData(code);
-
-        if (!pairingData) {
-            res.status(404).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Invalid or expired pairing code' }
-            });
-            return;
-        }
-
-        // Verify display exists
-        const display = await prisma.display.findUnique({
-            where: { id: displayId },
-        });
-
-        if (!display) {
-            res.status(404).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Display not found' }
-            });
-            return;
-        }
-
-        // Update display
-        await prisma.display.update({
-            where: { id: displayId },
-            data: {
-                pairedAt: new Date(),
-                pairingCode: null,
-                status: 'ONLINE',
-            },
-        });
-
-        // Notify the display via socket
-        const io = socketManager.getIO();
-        if (io) {
-            io.to(pairingData.socketId).emit('pairing:confirmed' as any, { displayId });
-            log.info('Pairing confirmed', { displayId, socketId: pairingData.socketId });
-        }
-
-        // Clean up pairing code
-        socketManager.deletePairingCode(code);
-
-        res.json({
-            success: true,
-            data: { displayId, message: 'Display paired successfully' }
-        });
-    } catch (error) {
-        log.error('Error confirming pairing', { error });
-        next(error);
-    }
-});
-
-/**
  * GET /api/displays/stats
  * Get display statistics
  */
@@ -247,3 +261,4 @@ router.patch('/:id', displaysController.updateDisplay);
 router.delete('/:id', displaysController.deleteDisplay);
 
 export default router;
+
