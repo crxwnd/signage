@@ -1,6 +1,6 @@
-# PROYECTO: Sistema de Señalización Digital para Hoteles
+# PROYECTO: Sistema de Senalizacion Digital para Hoteles
 
-## 🎯 OBJETIVO DEL PROYECTO
+## OBJETIVO DEL PROYECTO
 
 Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hoteles con:
 
@@ -11,7 +11,7 @@ Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hotel
 - Gestión jerárquica de usuarios (Super Admin → Admin Hotel → Area Manager)
 - Sistema de autenticación triple con 2FA
 
-## 🛠️ TECH STACK (OBLIGATORIO)
+## TECH STACK (OBLIGATORIO)
 
 ### Frontend
 
@@ -45,7 +45,7 @@ Sistema de señalización digital para gestionar 100+ pantallas SmartTV en hotel
 - **Prometheus + Grafana** para monitoring
 - **Winston** para logging
 
-## 📂 ESTRUCTURA DEL PROYECTO
+## ESTRUCTURA DEL PROYECTO
 
 ```
 signage/
@@ -66,7 +66,7 @@ signage/
 └── README.md
 ```
 
-## 🎨 CONVENCIONES DE CÓDIGO
+## CONVENCIONES DE CODIGO
 
 ### TypeScript
 
@@ -179,7 +179,7 @@ interface ApiResponse<T> {
 // 500: Internal Server Error
 ```
 
-## 🔄 PATRONES DE ARQUITECTURA
+## PATRONES DE ARQUITECTURA
 
 ### Gestión de Estado con Socket.io
 
@@ -553,7 +553,7 @@ Closes #123
 5. **TYPECHECK antes de cada commit**: `pnpm typecheck`
 6. **Tests para lógica de negocio** - mínimo para funciones críticas
 
-## 🎓 CONTEXTO DEL NEGOCIO
+## CONTEXTO DEL NEGOCIO
 
 - Sistema maneja **100+ pantallas SmartTV** simultáneamente en hoteles
 - **Crítico**: Sincronización de estado en tiempo real
@@ -564,7 +564,7 @@ Closes #123
 - Videos muy pesados (3GB+) requieren estrategia híbrida: streaming + caché local
 - Budget estimado: $43-58 por pantalla mensual
 
-## 📚 RECURSOS
+## RECURSOS
 
 - [Documentación Arquitectura](./docs/ARQUITECTURA.md)
 - [API Reference](./docs/API.md)
@@ -573,6 +573,6 @@ Closes #123
 
 ---
 
-**Última actualización**: 2024-11-20
+**Ultima actualizacion**: 2026-01-08
 
-**Versión del documento**: 1.0.0
+**Version del documento**: 2.2.0

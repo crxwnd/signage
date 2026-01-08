@@ -4,6 +4,46 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2026-01-08] Reports and Audit Enterprise System
+
+### Added
+- **reportService.ts** - Nuevo servicio para generacion de reportes
+  - `generateDisplayReport()` - Metricas de displays, uptime, playback
+  - `generateUserReport()` - Actividad de usuarios, logins, acciones
+  - `generateComplianceReport()` - Metricas de seguridad, 2FA, audit summary
+  - `generateDisplayReportExcel()` - Exportacion Excel multi-sheet con estilos
+  - `generateUserReportExcel()` - Exportacion Excel de reportes de usuario
+
+- **routes/reports.ts** - 6 nuevos endpoints API
+  - `GET /api/reports/displays` - Datos de reporte de displays
+  - `GET /api/reports/displays/export` - Exportacion Excel
+  - `GET /api/reports/users` - Datos de reporte de usuarios
+  - `GET /api/reports/users/export` - Exportacion Excel
+  - `GET /api/reports/compliance` - Reporte de compliance (SUPER_ADMIN)
+  - `GET /api/reports/audit` - Logs de auditoria con filtros
+
+- **Frontend Pages** - 5 nuevas paginas en `/reports`
+  - `/reports/displays` - KPI cards, graficos Recharts (Pie, Line, Bar), tabla de metricas
+  - `/reports/users` - Actividad de usuarios, breakdown de acciones
+  - `/reports/audit` - Visor de logs de auditoria con paginacion
+  - `/reports/compliance` - Metricas de seguridad (solo SUPER_ADMIN)
+  - `/reports/builder` - Constructor de reportes personalizados
+
+- **Sidebar.tsx** - Nueva seccion "Reports and Audit"
+  - 5 items de navegacion con iconos
+  - Control de acceso por rol
+  - Removidos "Audit Trail" y "Active Sessions" de User Monitoring
+
+### Dependencies
+- Backend: `exceljs` (exportacion Excel profesional)
+- Frontend: `recharts` (graficos interactivos)
+
+### Changed
+- `app.ts` - Registrado router de reports
+- `navSections` - Reestructurado con nueva seccion reportsAudit
+
+---
+
 ## [2026-01-07] Fix: Errores de Compilación y Estabilidad
 
 ### Fixed
