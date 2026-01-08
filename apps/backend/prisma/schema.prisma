@@ -185,6 +185,7 @@ model Display {
   playbackLogs         PlaybackLog[]
   contentSourceChanges ContentSourceChange[]
   stateHistory         DisplayStateHistory[]
+  configHistory        DisplayConfigHistory[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -637,4 +638,62 @@ model SessionLog {
   @@index([hotelId, startedAt])
   @@index([status])
   @@map("session_logs")
+}
+
+// ==============================================
+// DISPLAY CONFIG HISTORY
+// Track configuration changes for displays
+// ==============================================
+
+model DisplayConfigHistory {
+  id String @id @default(cuid())
+
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // What changed
+  field     String  // 'name', 'location', 'fallbackContentId', 'areaId', etc.
+  oldValue  String?
+  newValue  String?
+
+  // Who changed it
+  changedBy     String?
+  changedByName String?
+
+  hotelId   String
+  createdAt DateTime @default(now())
+
+  @@index([displayId, createdAt])
+  @@index([hotelId, createdAt])
+  @@map("display_config_history")
+}
+
+// ==============================================
+// CONTENT ACCESS LOG
+// Track who accessed/modified content
+// ==============================================
+
+model ContentAccessLog {
+  id String @id @default(cuid())
+
+  contentId String
+
+  // Actor
+  userId    String?
+  actorType String  // 'USER', 'SYSTEM', 'PLAYER'
+
+  // Action
+  action    String  // 'VIEW', 'DOWNLOAD', 'MODIFY', 'DELETE', 'STREAM'
+
+  // Details
+  details   Json?
+  ipAddress String?
+
+  hotelId   String
+  createdAt DateTime @default(now())
+
+  @@index([contentId, createdAt])
+  @@index([userId, createdAt])
+  @@index([hotelId, createdAt])
+  @@map("content_access_logs")
 }
