@@ -24,6 +24,7 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   // REFRESH_TOKEN_COOKIE_OPTIONS, // Ya no lo importamos para definirlo localmente y asegurar configuración dev
 } from '../config/auth';
+import * as userAnalyticsService from '../services/userAnalyticsService';
 
 // ==============================================
 // COOKIE CONFIGURATION
@@ -222,6 +223,15 @@ export async function login(req: Request, res: Response): Promise<void> {
     const isPasswordValid = await comparePassword(data.password, user.password);
 
     if (!isPasswordValid) {
+      // Log failed login attempt
+      await userAnalyticsService.logActivity({
+        userId: user.id,
+        action: userAnalyticsService.ActivityActions.LOGIN_FAILED,
+        ipAddress: req.ip || req.socket?.remoteAddress,
+        userAgent: req.get('user-agent'),
+        details: { reason: 'Invalid password' },
+      }).catch(() => { }); // Don't fail login on logging error
+
       const errorResponse: ApiErrorResponse = {
         success: false,
         error: {
@@ -281,6 +291,14 @@ export async function login(req: Request, res: Response): Promise<void> {
       message: 'Login successful',
       timestamp: new Date().toISOString(),
     };
+
+    // Log successful login
+    await userAnalyticsService.logActivity({
+      userId: user.id,
+      action: userAnalyticsService.ActivityActions.LOGIN,
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { }); // Don't fail login on logging error
 
     res.status(200).json(response);
   } catch (error) {
@@ -444,8 +462,19 @@ export async function refresh(req: Request, res: Response): Promise<void> {
  * POST /api/auth/logout
  * Logout user by clearing refresh token cookie
  */
-export function logout(_req: Request, res: Response): void {
+export async function logout(req: Request, res: Response): Promise<void> {
   try {
+    // Log logout activity if we have user info from token
+    const userId = (req as any).user?.userId;
+    if (userId) {
+      await userAnalyticsService.logActivity({
+        userId,
+        action: userAnalyticsService.ActivityActions.LOGOUT,
+        ipAddress: req.ip || req.socket?.remoteAddress,
+        userAgent: req.get('user-agent'),
+      }).catch(() => { }); // Don't fail logout on logging error
+    }
+
     // Clear refresh token cookie
     res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
       ...COOKIE_OPTIONS,

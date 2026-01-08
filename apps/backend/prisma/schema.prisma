@@ -85,6 +85,10 @@ model User {
   createdAlerts    Alert[]
   activityLogs     UserActivityLog[]
 
+  // Audit relations
+  auditLogs        AuditLog[]
+  sessions         SessionLog[]
+
   @@index([email])
   @@index([hotelId])
   @@index([areaId])
@@ -180,6 +184,7 @@ model Display {
   // Audit logs
   playbackLogs         PlaybackLog[]
   contentSourceChanges ContentSourceChange[]
+  stateHistory         DisplayStateHistory[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -510,4 +515,126 @@ model UserActivityLog {
   @@index([action])
   @@index([createdAt])
   @@map("user_activity_logs")
+}
+
+// ==============================================
+// DISPLAY STATE HISTORY
+// Tracks every status change of displays
+// ==============================================
+
+model DisplayStateHistory {
+  id String @id @default(cuid())
+
+  displayId String
+  display   Display @relation(fields: [displayId], references: [id], onDelete: Cascade)
+
+  // State change
+  fromStatus  String?
+  toStatus    String
+  
+  // Error details
+  errorCode    String?
+  errorMessage String?
+
+  // What triggered the change
+  trigger     String
+  triggeredBy String?
+
+  // Metadata
+  ipAddress  String?
+  hotelId    String
+  
+  createdAt DateTime @default(now())
+
+  @@index([displayId, createdAt])
+  @@index([hotelId, createdAt])
+  @@index([toStatus])
+  @@map("display_state_history")
+}
+
+// ==============================================
+// AUDIT LOG
+// General audit trail for compliance
+// ==============================================
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  // Actor
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorType String
+
+  // Action
+  action      String
+  category    String
+  severity    String
+  
+  // Target
+  resource    String?
+  resourceId  String?
+  resourceName String?
+
+  // Details
+  description String
+  oldData     Json?
+  newData     Json?
+  metadata    Json?
+
+  // Request info
+  ipAddress   String?
+  userAgent   String?
+
+  // Scope
+  hotelId     String?
+  areaId      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([hotelId, createdAt])
+  @@index([category, createdAt])
+  @@index([action])
+  @@index([severity])
+  @@map("audit_logs")
+}
+
+// ==============================================
+// SESSION LOG
+// Track user sessions
+// ==============================================
+
+model SessionLog {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Session info
+  sessionToken String    @unique
+  status       String
+  
+  // Device/Location
+  ipAddress    String?
+  userAgent    String?
+  deviceType   String?
+  browser      String?
+  os           String?
+
+  // Timing
+  startedAt   DateTime  @default(now())
+  lastActiveAt DateTime @default(now())
+  expiresAt   DateTime
+  endedAt     DateTime?
+  
+  // End reason
+  endReason   String?
+
+  // Scope
+  hotelId     String?
+
+  @@index([userId, status])
+  @@index([hotelId, startedAt])
+  @@index([status])
+  @@map("session_logs")
 }

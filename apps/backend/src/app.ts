@@ -28,6 +28,7 @@ import userAnalyticsRouter from './routes/userAnalytics';
 import schedulesRouter from './routes/schedules';
 import alertsRouter from './routes/alerts';
 import metricsRouter from './routes/metrics';
+import auditRouter from './routes/audit';
 import { metricsMiddleware } from './middleware/metricsMiddleware';
 
 // ... otros imports ...
@@ -186,6 +187,7 @@ export function createApp(): Application {
   app.use('/api/schedules', schedulesRouter);
   app.use('/api/alerts', alertsRouter);
   app.use('/api/metrics', metricsRouter);
+  app.use('/api/audit', auditRouter);
 
   // ==============================================
   // ERROR HANDLING
