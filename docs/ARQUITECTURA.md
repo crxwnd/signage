@@ -1,4 +1,4 @@
-# Sistema de señalización digital para hoteles: arquitectura completa para 100+ pantallas
+# Sistema de senalizacion digital para hoteles: arquitectura completa para 100+ pantallas
 
 La arquitectura óptima para tu sistema de señalización digital combina **HLS como protocolo principal de streaming**, **IndexedDB con Service Workers para caché local**, **arquitectura de conductor centralizado para sincronización exacta** (precisión de 50-200ms), y **monolito modular con capacidades event-driven** para escalabilidad. Esta combinación ha demostrado manejar eficientemente 100+ pantallas SmartTV con videos de 3GB+, actualizaciones en menos de 10 segundos, y failover automático sin intervención manual. El stack propuesto mantiene 99.9% de uptime, cuesta aproximadamente $43-58 por pantalla mensual en infraestructura, y proporciona un camino claro hacia microservicios cuando se superen las 500 pantallas.
 
