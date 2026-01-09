@@ -5,26 +5,38 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 /**
  * QueryProvider
- * Provides React Query client to the application with optimized settings
+ * Optimized React Query client for fast navigation and caching
  */
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  // Create query client with stable reference
   const [queryClient] = React.useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Increased stale time to reduce network requests
-            staleTime: 30 * 1000, // 30 seconds
-            // Cache time before garbage collection
-            gcTime: 5 * 60 * 1000, // 5 minutes
-            // Only refetch on window focus in production
-            refetchOnWindowFocus: process.env.NODE_ENV === 'production',
-            // Retry failed requests once with delay
+            // CRITICAL: Keep data fresh for 60 seconds
+            staleTime: 60 * 1000,
+
+            // CRITICAL: Cache data for 10 minutes before GC
+            gcTime: 10 * 60 * 1000,
+
+            // NO automatic refetch on window focus (prevents unnecessary requests)
+            refetchOnWindowFocus: false,
+
+            // NO refetch on reconnect (we handle via sockets)
+            refetchOnReconnect: false,
+
+            // Don't refetch on mount if data exists
+            refetchOnMount: false,
+
+            // Only 1 retry on error
             retry: 1,
             retryDelay: 1000,
-            // Don't refetch on mount if data is fresh
-            refetchOnMount: false,
+
+            // Use previous data while loading new (instant render)
+            placeholderData: (previousData: unknown) => previousData,
+          },
+          mutations: {
+            retry: 1,
           },
         },
       })
@@ -34,4 +46,3 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }
-
