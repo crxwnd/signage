@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '@/test/test-utils';
 import { DisplayCard } from './DisplayCard';
 import { DisplayStatus } from '@shared-types';
 import type { Display } from '@shared-types';
@@ -15,12 +15,19 @@ describe('DisplayCard', () => {
     name: 'Lobby Display',
     location: 'Main Lobby',
     status: DisplayStatus.ONLINE,
+    orientation: 'horizontal',
+    resolution: '1920x1080',
     hotelId: 'hotel-1',
     areaId: null,
     lastSeen: new Date(),
     deviceInfo: null,
     pairingCode: null,
     pairedAt: null,
+    lastError: null,
+    lastErrorCode: null,
+    lastErrorAt: null,
+    errorCount: 0,
+    fallbackContentId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

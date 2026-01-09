@@ -1,14 +1,13 @@
 /**
  * Dashboard Layout
- * Layout for authenticated dashboard pages
+ * Layout for authenticated dashboard pages with collapsible sidebar support
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
-import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({
   children,
@@ -16,9 +15,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Listen for sidebar collapsed state changes
+  useEffect(() => {
+    const checkCollapsed = () => {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      setSidebarCollapsed(saved ? JSON.parse(saved) : false);
+    };
+
+    checkCollapsed();
+    window.addEventListener('storage', checkCollapsed);
+
+    return () => {
+      window.removeEventListener('storage', checkCollapsed);
+    };
+  }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -27,23 +42,20 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
-      <div
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 transition-transform duration-300 md:relative md:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <Sidebar />
-      </div>
+      {/* Sidebar - Always visible on desktop */}
+      <Sidebar />
 
-      {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Main content area with dynamic margin */}
+      <div
+        className="flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ marginLeft: sidebarCollapsed ? '80px' : '280px' }}
+      >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-y-auto bg-background p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
     </div>
   );
 }
+

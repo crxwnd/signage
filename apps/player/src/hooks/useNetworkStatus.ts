@@ -3,6 +3,7 @@
  * Detects online/offline network state
  */
 
+import { playerLog } from '@/lib/logger';
 import { useState, useEffect, useCallback } from 'react';
 
 interface NetworkStatus {
@@ -21,7 +22,7 @@ export function useNetworkStatus() {
     });
 
     const handleOnline = useCallback(() => {
-        console.log('[Network] Connection restored');
+        playerLog.log('[Network] Connection restored');
         setStatus(prev => ({
             ...prev,
             isOnline: true,
@@ -31,7 +32,7 @@ export function useNetworkStatus() {
     }, []);
 
     const handleOffline = useCallback(() => {
-        console.log('[Network] Connection lost');
+        playerLog.log('[Network] Connection lost');
         setStatus(prev => ({
             ...prev,
             isOnline: false,

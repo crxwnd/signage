@@ -3,6 +3,7 @@
  * Handles caching logic for offline content storage
  */
 
+import { playerLog } from '../logger';
 import { cacheDb, type CachedContent } from '../db/cacheDb';
 
 const MAX_CACHE_SIZE = 500 * 1024 * 1024; // 500MB default
@@ -74,7 +75,7 @@ export const cacheService = {
                 priority: 1
             });
 
-            console.log(`[Cache] Image cached: ${name} (${(blob.size / 1024).toFixed(1)}KB)`);
+            playerLog.log(`[Cache] Image cached: ${name} (${(blob.size / 1024).toFixed(1)}KB)`);
         } catch (error) {
             console.error(`[Cache] Failed to cache image:`, error);
         }
@@ -132,7 +133,7 @@ export const cacheService = {
                 size: blob.size
             });
 
-            console.log(`[Cache] Segment cached: ${quality}/segment_${segmentNum}`);
+            playerLog.log(`[Cache] Segment cached: ${quality}/segment_${segmentNum}`);
         } catch (error) {
             console.error(`[Cache] Failed to cache segment:`, error);
         }
@@ -193,7 +194,7 @@ export const cacheService = {
             const threshold = quota * CACHE_THRESHOLD;
 
             if (currentSize + requiredBytes > threshold) {
-                console.log('[Cache] Running LRU eviction...');
+                playerLog.log('[Cache] Running LRU eviction...');
                 await this.evictLRU(requiredBytes);
             }
         } catch (error) {
@@ -231,7 +232,7 @@ export const cacheService = {
                 }
 
                 freedBytes += content.size;
-                console.log(`[Cache] Evicted: ${content.name}`);
+                playerLog.log(`[Cache] Evicted: ${content.name}`);
             }
         } catch (error) {
             console.error('[Cache] Failed to evict:', error);
@@ -246,7 +247,7 @@ export const cacheService = {
             await cacheDb.contents.clear();
             await cacheDb.segments.clear();
             await cacheDb.metadata.clear();
-            console.log('[Cache] All cache cleared');
+            playerLog.log('[Cache] All cache cleared');
         } catch (error) {
             console.error('[Cache] Failed to clear cache:', error);
         }
@@ -272,7 +273,7 @@ export const cacheService = {
         name: string;
         url: string;
     }>): Promise<void> {
-        console.log(`[Cache] Pre-caching ${items.length} items...`);
+        playerLog.log(`[Cache] Pre-caching ${items.length} items...`);
 
         for (const item of items) {
             if (item.type === 'IMAGE') {

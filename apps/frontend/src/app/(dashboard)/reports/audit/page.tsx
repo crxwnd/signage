@@ -25,6 +25,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const DEFAULT_SEVERITY_CONFIG = { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: Info };
+
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; icon: typeof Info }> = {
     INFO: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: Info },
     WARNING: { bg: 'bg-amber-500/10', text: 'text-amber-600', icon: AlertTriangle },
@@ -245,7 +247,7 @@ export default function SystemAuditPage() {
                                     </thead>
                                     <tbody>
                                         {data.logs.map((log) => {
-                                            const severityConfig = SEVERITY_COLORS[log.severity] || SEVERITY_COLORS.INFO;
+                                            const severityConfig = SEVERITY_COLORS[log.severity] ?? DEFAULT_SEVERITY_CONFIG;
                                             const SeverityIcon = severityConfig.icon;
                                             return (
                                                 <tr key={log.id} className="border-b hover:bg-muted/50">
