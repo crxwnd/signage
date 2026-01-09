@@ -1,6 +1,6 @@
 /**
  * Frontend Root Layout
- * Next.js 14 App Router
+ * Next.js 14 App Router with Dark Mode Support
  */
 
 import type { Metadata } from 'next';
@@ -10,6 +10,7 @@ import { Toaster } from 'sonner';
 import { SocketProvider } from '@/providers/SocketProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
 // Space Grotesk - Modern, distinctive font
 const spaceGrotesk = Space_Grotesk({
@@ -29,26 +30,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={spaceGrotesk.variable}>
+    <html lang="es" className={spaceGrotesk.variable} suppressHydrationWarning>
       <body className="font-sans">
-        <QueryProvider>
-          <AuthProvider>
-            <SocketProvider>
-              {children}
-              <Toaster
-                position="bottom-right"
-                toastOptions={{
-                  classNames: {
-                    toast: 'glass rounded-xl',
-                    title: 'font-medium',
-                    description: 'text-muted-foreground',
-                  },
-                }}
-              />
-            </SocketProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <SocketProvider>
+                {children}
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    classNames: {
+                      toast: 'glass rounded-xl',
+                      title: 'font-medium',
+                      description: 'text-muted-foreground',
+                    },
+                  }}
+                />
+              </SocketProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+
