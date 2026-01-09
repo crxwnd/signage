@@ -29,6 +29,7 @@ import {
   type RegisterPayload,
   ApiError,
 } from '@/lib/api/auth';
+import { debugLog, debugWarn } from '@/lib/debug';
 
 /**
  * Auth context state
@@ -78,19 +79,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = useCallback(async () => {
     // Prevent concurrent checks
     if (isCheckingAuth.current) {
-      console.log('[Auth] Already checking auth, skipping...');
+      debugLog('Auth', 'Already checking auth, skipping...');
       return;
     }
 
     // Don't check on login page
     if (pathname === '/login' || pathname === '/register') {
-      console.log('[Auth] On auth page, skipping check');
+      debugLog('Auth', 'On auth page, skipping check');
       setIsLoading(false);
       return;
     }
 
     isCheckingAuth.current = true;
-    console.log('[Auth] Starting auth check...');
+    debugLog('Auth', 'Starting auth check...');
 
     try {
       // First check if we have a token at all
@@ -98,11 +99,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (!existingToken) {
         // No token, try to refresh from cookie
-        console.log('[Auth] No access token, trying refresh...');
+        debugLog('Auth', 'No access token, trying refresh...');
         const newToken = await refreshToken();
 
         if (!newToken) {
-          console.log('[Auth] No valid session');
+          debugLog('Auth', 'No valid session');
           if (mountedRef.current) {
             setUser(null);
             setIsLoading(false);
@@ -113,16 +114,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Fetch current user data
-      console.log('[Auth] Fetching user data...');
+      debugLog('Auth', 'Fetching user data...');
       const userData = await getMe();
 
       if (mountedRef.current) {
         setUser(userData);
-        console.log('[Auth] User loaded:', userData.email);
+        debugLog('Auth', 'User loaded:', userData.email);
       }
     } catch (error) {
       // Not authenticated or token expired
-      console.warn('[Auth] Check auth failed:', error);
+      debugWarn('Auth', 'Check auth failed:', error);
       if (mountedRef.current) {
         setUser(null);
         clearAccessToken();
@@ -200,7 +201,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Clears state immediately and redirects to login
    */
   const logout = useCallback(async () => {
-    console.log('[Auth] Logging out...');
+    debugLog('Auth', 'Logging out...');
 
     // Reset initialization flag
     hasInitialized.current = false;
@@ -212,7 +213,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Call logout API in background (don't wait for response)
     apiLogout().catch((err) => {
       // Ignore errors - we're logging out anyway
-      console.log('[Auth] Logout API error (ignored):', err);
+      debugLog('Auth', 'Logout API error (ignored):', err);
     });
 
     // Use window.location for clean redirect (avoids Next.js router issues)
@@ -230,7 +231,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(userData);
       }
     } catch (error) {
-      console.warn('[Auth] Failed to refresh user:', error);
+      debugWarn('Auth', 'Failed to refresh user:', error);
     }
   }, []);
 
@@ -242,7 +243,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Only initialize once
     if (hasInitialized.current) {
-      console.log('[Auth] Already initialized, skipping...');
+      debugLog('Auth', 'Already initialized, skipping...');
       setIsLoading(false);
       return;
     }
@@ -268,11 +269,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (isCheckingAuth.current) return;
 
         try {
-          console.log('[Auth] Auto-refreshing token...');
+          debugLog('Auth', 'Auto-refreshing token...');
           const token = await refreshToken();
           if (!token && mountedRef.current) {
             // Token refresh failed silently, log out user
-            console.warn('[Auth] Auto-refresh failed, logging out...');
+            debugWarn('Auth', 'Auto-refresh failed, logging out...');
             setUser(null);
             clearAccessToken();
             hasInitialized.current = false;
@@ -280,7 +281,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } catch (error) {
           // Token refresh failed, log out user
-          console.error('[Auth] Auto-refresh error:', error);
+          debugWarn('Auth', 'Auto-refresh error:', error);
           if (mountedRef.current) {
             setUser(null);
             clearAccessToken();

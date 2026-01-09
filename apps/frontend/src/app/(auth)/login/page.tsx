@@ -14,6 +14,55 @@ import {
   Input,
   Label,
 } from '@/components/ui';
+import { debugLog, debugWarn } from '@/lib/debug';
+
+/**
+ * Rutas permitidas para redirección post-login
+ * Solo rutas internas de la aplicación
+ */
+const ALLOWED_REDIRECT_PATHS = [
+  '/home',
+  '/displays',
+  '/content',
+  '/alerts',
+  '/schedules',
+  '/areas',
+  '/sync-groups',
+  '/analytics',
+  '/reports',
+  '/monitoring',
+  '/settings',
+  '/users',
+];
+
+/**
+ * Sanitiza el parámetro redirect para prevenir Open Redirect attacks
+ * @param url - URL del parámetro redirect
+ * @returns URL sanitizada o '/home' si es inválida
+ */
+function sanitizeRedirect(url: string | null): string {
+  // Default a home si no hay URL
+  if (!url) return '/home';
+
+  // Debe ser ruta relativa (empieza con /)
+  if (!url.startsWith('/')) return '/home';
+
+  // No debe ser protocol-relative (//evil.com)
+  if (url.startsWith('//')) return '/home';
+
+  // No debe contener protocol (javascript:, data:, https:)
+  if (url.includes(':')) return '/home';
+
+  // No debe tener caracteres de escape
+  if (url.includes('\\')) return '/home';
+
+  // Verificar contra allowlist de rutas
+  const isAllowed = ALLOWED_REDIRECT_PATHS.some(
+    (path) => url === path || url.startsWith(path + '/')
+  );
+
+  return isAllowed ? url : '/home';
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +75,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectUrl = searchParams.get('redirect') || '/home';
+  const redirectUrl = sanitizeRedirect(searchParams.get('redirect'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     // 🛑 SEGURIDAD: Prevenir envío por GET y recarga
@@ -37,15 +86,15 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log('🔵 Iniciando login...');
+      debugLog('Login', 'Iniciando login...');
 
       // CORRECCIÓN: Se pasa un objeto { email, password } en lugar de dos argumentos separados
       await login({ email, password });
 
-      console.log('🟢 Login exitoso, redirigiendo a:', redirectUrl);
+      debugLog('Login', 'Login exitoso, redirigiendo a:', redirectUrl);
       router.push(redirectUrl);
     } catch (err: any) {
-      console.error('🔴 Error de login:', err);
+      debugWarn('Login', 'Error de login:', err);
       setError(err.message || 'Credenciales incorrectas o error de servidor');
     } finally {
       setIsLoading(false);

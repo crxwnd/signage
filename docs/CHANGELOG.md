@@ -4,6 +4,57 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2.4.0] - 2026-01-09 (Security P1)
+
+### Security
+- **SEC-05 FIXED**: Socket.io JWT authentication
+  - Client sends token in `auth` option on connection
+  - Backend middleware validates JWT and attaches user data to socket
+  - Handles token expiry with automatic reconnect using fresh token
+  - Player connections continue to use pairing authentication
+- **SEC-02 IMPROVED**: Server-side authentication utilities
+  - Added `lib/auth-server.ts` with `getUserFromRefreshToken()` and `hasAllowedRole()`
+  - Enables Server Components to validate sessions
+- **SEC-03 FIXED**: Server-side role guards for admin routes
+  - `/settings/**` requires HOTEL_ADMIN or SUPER_ADMIN
+  - `/settings/users/**` requires HOTEL_ADMIN or SUPER_ADMIN
+  - `/settings/hotels/**` requires SUPER_ADMIN only
+  - `/reports/**` requires HOTEL_ADMIN or SUPER_ADMIN
+  - Unauthorized access redirects to `/home?error=unauthorized` with toast
+
+### Added
+- `apps/frontend/src/lib/auth-server.ts` - Server-side auth utilities
+- `apps/frontend/src/app/(dashboard)/settings/layout.tsx` - Protected layout
+- `apps/frontend/src/app/(dashboard)/settings/users/layout.tsx` - Protected layout
+- `apps/frontend/src/app/(dashboard)/settings/hotels/layout.tsx` - Protected layout
+- `apps/frontend/src/app/(dashboard)/reports/layout.tsx` - Protected layout
+- `apps/backend/src/socket/authMiddleware.ts` - Socket.io auth middleware
+
+### Changed
+- `apps/frontend/src/lib/socket.ts` - JWT auth on connection
+- `apps/backend/src/socket/socketManager.ts` - Apply auth middleware
+- `apps/frontend/src/app/(dashboard)/page.tsx` - Toast for unauthorized redirect
+
+---
+
+## [2.3.0] - 2026-01-09 (Security P0)
+
+### Security
+- **SEC-01 FIXED**: Open Redirect vulnerability in login page
+  - Added `sanitizeRedirect()` with allowlist validation
+  - Prevents redirection to external/malicious URLs
+- **SEC-06 FIXED**: Added security headers to Next.js
+  - X-Frame-Options: DENY, X-Content-Type-Options: nosniff
+  - X-XSS-Protection, Referrer-Policy, Permissions-Policy
+- **SEC-07 FIXED**: Removed debug logs from production
+  - Created `lib/debug.ts` with development-only helpers
+  - Replaced console.log with debugLog/debugWarn in auth code
+
+### Added
+- `apps/frontend/src/lib/debug.ts` - Development-only logging utilities
+
+---
+
 ## [2026-01-08] Reports and Audit Enterprise System
 
 ### Added

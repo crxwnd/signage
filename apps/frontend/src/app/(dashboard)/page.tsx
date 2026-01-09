@@ -5,7 +5,9 @@
  * Complete dashboard with real metrics, charts, and action items
  */
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +37,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { authenticatedFetch } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -84,6 +87,17 @@ interface ActivityItem {
 
 export default function HomePage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+
+    // Show error toast if user was redirected due to unauthorized access
+    useEffect(() => {
+        const error = searchParams.get('error');
+        if (error === 'unauthorized') {
+            toast.error('No tienes permisos para acceder a esa sección');
+            // Clean the URL without refresh
+            window.history.replaceState({}, '', '/');
+        }
+    }, [searchParams]);
 
     // Fetch dashboard stats
     const { data: stats, isLoading: statsLoading } = useQuery({

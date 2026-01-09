@@ -18,6 +18,7 @@ import { log } from '../middleware/logger';
 import { prisma } from '../utils/prisma';
 import * as conductorManager from './conductorManager';
 import { setupSyncHandlers } from './syncHandlers';
+import { socketAuthMiddleware } from './authMiddleware';
 
 /**
  * Typed Socket type for convenience
@@ -79,15 +80,23 @@ export function initializeSocketIO(
   // Setup Redis adapter for clustering
   setupRedisAdapter();
 
+  // Apply authentication middleware
+  io.use(socketAuthMiddleware);
+
   // Connection handler
   io.on('connection', (socket) => {
     log.info(`Socket connected: ${socket.id}`, {
       transport: socket.conn.transport.name,
       address: socket.handshake.address,
+      authenticated: socket.data.authenticated,
+      userId: socket.data.userId,
+      role: socket.data.role,
     });
 
-    // Initialize socket data
-    socket.data.authenticated = false;
+    // Initialize socket data if not set by auth middleware
+    if (socket.data.authenticated === undefined) {
+      socket.data.authenticated = false;
+    }
 
     // Automatically join 'displays' room for real-time updates
     socket.join('displays');
