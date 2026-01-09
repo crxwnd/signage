@@ -5,7 +5,7 @@
 
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { log } from '../middleware/logger'; // Nota: asegúrate que tu logger exporte 'log' o ajusta el import si es 'logger'
+import { log } from '../middleware/logger';
 import { prisma } from '../utils/prisma';
 import type { ApiSuccessResponse, ApiErrorResponse } from '@shared-types';
 import {
@@ -22,26 +22,9 @@ import {
 } from '../services/authService';
 import {
   REFRESH_TOKEN_COOKIE_NAME,
-  // REFRESH_TOKEN_COOKIE_OPTIONS, // Ya no lo importamos para definirlo localmente y asegurar configuración dev
+  REFRESH_TOKEN_COOKIE_OPTIONS,
 } from '../config/auth';
 import * as userAnalyticsService from '../services/userAnalyticsService';
-
-// ==============================================
-// COOKIE CONFIGURATION
-// ==============================================
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-// Definimos opciones de cookie explícitas para asegurar funcionamiento en localhost
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  // En producción (HTTPS) secure: true. En desarrollo (HTTP) secure: false.
-  secure: isProduction,
-  // 'lax' es más permisivo para desarrollo local que 'strict'
-  sameSite: 'lax' as const,
-  path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
-};
 
 // ==============================================
 // ZOD VALIDATION SCHEMAS
@@ -139,7 +122,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const refreshToken = generateRefreshToken(payload);
 
     // Set refresh token in httpOnly cookie with DEV-FRIENDLY options
-    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     const response: ApiSuccessResponse = {
       success: true,
@@ -277,7 +260,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     const refreshToken = generateRefreshToken(payload);
 
     // Set refresh token in httpOnly cookie with DEV-FRIENDLY options
-    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -342,7 +325,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     if (!refreshToken) {
       // Clear cookie just in case it exists but is empty/invalid
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-        ...COOKIE_OPTIONS,
+        ...REFRESH_TOKEN_COOKIE_OPTIONS,
         maxAge: 0,
       });
 
@@ -365,7 +348,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     } catch (error) {
       // Clear invalid cookie
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-        ...COOKIE_OPTIONS,
+        ...REFRESH_TOKEN_COOKIE_OPTIONS,
         maxAge: 0,
       });
 
@@ -398,7 +381,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     if (!user) {
       // Clear cookie for non-existent user
       res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-        ...COOKIE_OPTIONS,
+        ...REFRESH_TOKEN_COOKIE_OPTIONS,
         maxAge: 0,
       });
 
@@ -430,7 +413,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     // Por simplicidad y evitar problemas de concurrencia, podemos mantener el mismo hasta que expire
     // O renovarlo aquí:
     // const newRefreshToken = generateRefreshToken(payload);
-    // res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, COOKIE_OPTIONS);
+    // res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     const response: ApiSuccessResponse = {
       success: true,
@@ -477,7 +460,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
 
     // Clear refresh token cookie
     res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-      ...COOKIE_OPTIONS,
+      ...REFRESH_TOKEN_COOKIE_OPTIONS,
       maxAge: 0,
     });
 
@@ -1110,7 +1093,7 @@ export async function login2FA(req: Request, res: Response): Promise<void> {
     const refreshToken = generateRefreshToken(payload);
 
     // Set refresh token in httpOnly cookie with DEV-FRIENDLY options
-    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     // Remove password and secret from response
     const { password: _, twoFactorSecret: __, ...userWithoutSensitiveData } = user;

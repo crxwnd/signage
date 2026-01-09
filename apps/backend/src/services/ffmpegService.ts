@@ -20,10 +20,44 @@ export interface VideoMetadata {
   width: number;
   height: number;
   resolution: string; // e.g., "1920x1080"
+  aspectRatio: string; // e.g., "16:9", "9:16"
+  orientation: 'horizontal' | 'vertical' | 'square';
   codec: string;
   bitrate: number; // in kbps
   fps: number;
   fileSize: number; // in bytes
+}
+
+/**
+ * Calculate aspect ratio from dimensions
+ */
+export function calculateAspectRatio(width: number, height: number): string {
+  if (width === 0 || height === 0) return 'unknown';
+
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const divisor = gcd(width, height);
+  const ratioWidth = width / divisor;
+  const ratioHeight = height / divisor;
+
+  // Check for common ratios
+  const ratio = width / height;
+  if (Math.abs(ratio - 16 / 9) < 0.01) return '16:9';
+  if (Math.abs(ratio - 9 / 16) < 0.01) return '9:16';
+  if (Math.abs(ratio - 4 / 3) < 0.01) return '4:3';
+  if (Math.abs(ratio - 3 / 4) < 0.01) return '3:4';
+  if (Math.abs(ratio - 1) < 0.01) return '1:1';
+  if (Math.abs(ratio - 21 / 9) < 0.01) return '21:9';
+
+  return `${ratioWidth}:${ratioHeight}`;
+}
+
+/**
+ * Determine orientation from dimensions
+ */
+export function getOrientation(width: number, height: number): 'horizontal' | 'vertical' | 'square' {
+  if (width > height) return 'horizontal';
+  if (height > width) return 'vertical';
+  return 'square';
 }
 
 /**
@@ -77,6 +111,8 @@ export function getVideoInfo(filePath: string): Promise<VideoMetadata> {
         const width = videoStream.width || 0;
         const height = videoStream.height || 0;
         const resolution = `${width}x${height}`;
+        const aspectRatio = calculateAspectRatio(width, height);
+        const orientation = getOrientation(width, height);
 
         // Get codec
         const codec = videoStream.codec_name || 'unknown';
@@ -99,6 +135,8 @@ export function getVideoInfo(filePath: string): Promise<VideoMetadata> {
           width,
           height,
           resolution,
+          aspectRatio,
+          orientation,
           codec,
           bitrate,
           fps,
@@ -109,6 +147,8 @@ export function getVideoInfo(filePath: string): Promise<VideoMetadata> {
           filePath,
           duration,
           resolution,
+          aspectRatio,
+          orientation,
           codec,
           fileSize,
         });

@@ -73,12 +73,13 @@ export function VideoPlayer({
                         case Hls.ErrorTypes.MEDIA_ERROR:
                             hls.recoverMediaError();
                             break;
-                        default:
+                        default: {
                             const errorMsg = `Fatal HLS error: ${data.type}`;
                             setError(errorMsg);
                             onError?.(errorMsg);
                             hls.destroy();
                             break;
+                        }
                     }
                 }
             });
