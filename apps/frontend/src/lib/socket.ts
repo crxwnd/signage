@@ -8,6 +8,8 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from '@shared-types';
+import { getAccessToken } from './api/auth';
+import { debugLog, debugWarn } from './debug';
 
 export const SOCKET_URL =
   process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
@@ -26,18 +28,24 @@ export function initializeSocket(): TypedSocket {
   connectionCount++;
 
   if (socket?.connected) {
-    console.log('[Socket] Reusing existing connection, consumers:', connectionCount);
+    debugLog('Socket', 'Reusing existing connection, consumers:', connectionCount);
     return socket;
   }
 
   if (socket) {
-    // Socket exists but disconnected - reconnect it
-    console.log('[Socket] Reconnecting existing socket');
+    // Socket exists but disconnected - update auth and reconnect
+    debugLog('Socket', 'Reconnecting existing socket with fresh token');
+    const token = getAccessToken();
+    if (token) {
+      socket.auth = { token };
+    }
     socket.connect();
     return socket;
   }
 
-  console.log('[Socket] Creating new connection to', SOCKET_URL);
+  debugLog('Socket', 'Creating new connection to', SOCKET_URL);
+
+  const token = getAccessToken();
 
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
@@ -47,19 +55,33 @@ export function initializeSocket(): TypedSocket {
     reconnectionDelayMax: 5000,
     timeout: 20000,
     autoConnect: true,
+    // JWT Authentication
+    auth: token ? { token } : {},
   }) as TypedSocket;
 
   socket.on('connect', () => {
-    console.log('[Socket] Connected:', socket?.id);
+    debugLog('Socket', 'Connected:', socket?.id);
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('[Socket] Disconnected:', reason);
+    debugLog('Socket', 'Disconnected:', reason);
     // Don't null the socket - let it reconnect automatically
   });
 
   socket.on('connect_error', (error) => {
-    console.error('[Socket] Connection error:', error.message);
+    debugWarn('Socket', 'Connection error:', error.message);
+
+    // Handle auth errors - try to reconnect with fresh token
+    if (error.message === 'Authentication error' || error.message === 'Token expired') {
+      debugWarn('Socket', 'Auth error, attempting reconnect with fresh token');
+      setTimeout(() => {
+        const newToken = getAccessToken();
+        if (newToken && socket) {
+          socket.auth = { token: newToken };
+          socket.connect();
+        }
+      }, 1000);
+    }
   });
 
   return socket;
