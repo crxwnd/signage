@@ -5,9 +5,25 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Minimal loading fallback for Suspense
+function PageSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-72" />
+      <div className="grid gap-4 md:grid-cols-4 mt-6">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({
   children,
@@ -52,10 +68,14 @@ export default function DashboardLayout({
       >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
+          {/* Suspense boundary for streaming and loading states */}
+          <Suspense fallback={<PageSkeleton />}>
+            {children}
+          </Suspense>
         </main>
       </div>
     </div>
   );
 }
+
 

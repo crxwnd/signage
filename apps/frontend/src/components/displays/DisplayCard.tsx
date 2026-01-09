@@ -7,10 +7,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card, Button, Badge } from '@/components/ui';
 import type { Display } from '@shared-types';
 import { DisplayStatus } from '@shared-types';
-import { Monitor, MapPin, Clock, ListVideo } from 'lucide-react';
+import { Monitor, MapPin, Clock, ListVideo, ExternalLink } from 'lucide-react';
 import { PlaylistManager } from './PlaylistManager';
 
 interface DisplayCardProps {
@@ -99,15 +100,26 @@ export function DisplayCard({ display }: DisplayCardProps) {
           )}
 
           {/* Actions */}
-          <div className="mt-4 pt-4 border-t border-border/50">
+          <div className="mt-4 pt-4 border-t border-border/50 flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1"
               onClick={() => setPlaylistOpen(true)}
             >
               <ListVideo className="h-4 w-4 mr-2" />
-              Manage Content
+              Content
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              asChild
+            >
+              <Link href={`/displays/${display.id}`}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Details
+              </Link>
             </Button>
           </div>
         </div>
@@ -123,3 +135,4 @@ export function DisplayCard({ display }: DisplayCardProps) {
     </>
   );
 }
+
