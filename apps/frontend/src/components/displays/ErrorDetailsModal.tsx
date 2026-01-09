@@ -155,9 +155,9 @@ Last Seen: ${display.lastSeen ? format(new Date(display.lastSeen), 'PPpp') : 'Ne
                         <h4 className="text-sm font-medium">Suggested Actions</h4>
                         <ul className="text-sm space-y-1 text-muted-foreground">
                             <li>• {ErrorCodeSolutions[display.lastErrorCode || 'UNKNOWN'] || 'Check the display and network connection'}</li>
-                            <li>• Check the display's network connection</li>
+                            <li>• Check the display&apos;s network connection</li>
                             <li>• Verify the display is powered on</li>
-                            <li>• Clear the display's cache and restart</li>
+                            <li>• Clear the display&apos;s cache and restart</li>
                         </ul>
                     </div>
 

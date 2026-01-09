@@ -196,7 +196,7 @@ export function TwoFactorModal({
                             {/* Manual Entry Option */}
                             <div className="w-full">
                                 <Label className="text-xs text-muted-foreground">
-                                    Can't scan? Enter this code manually:
+                                    Can&apos;t scan? Enter this code manually:
                                 </Label>
                                 <div className="mt-1 flex items-center gap-2">
                                     <code className="flex-1 rounded bg-muted px-2 py-1 text-xs font-mono break-all">

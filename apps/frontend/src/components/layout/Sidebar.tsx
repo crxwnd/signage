@@ -132,7 +132,9 @@ export function Sidebar() {
 
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', JSON.stringify(isCollapsed));
-    // Dispatch event for layout to update
+    // Dispatch specific event for layout to update immediately
+    window.dispatchEvent(new Event('sidebar-toggle'));
+    // Keep storage event for consistency (though it usually only fires on OTHER tabs)
     window.dispatchEvent(new Event('storage'));
   }, [isCollapsed]);
 
