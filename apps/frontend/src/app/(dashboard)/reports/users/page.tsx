@@ -24,14 +24,10 @@ import {
 import {
     BarChart,
     Bar,
-    PieChart,
-    Pie,
-    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer,
 } from 'recharts';
 import { format, subDays } from 'date-fns';

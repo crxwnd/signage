@@ -98,7 +98,7 @@ model User {
 
 model Hotel {
   id      String @id @default(cuid())
-  name    String
+  name    String @unique  // Hotel names must be globally unique
   address String
 
   // Relationships
@@ -137,6 +137,7 @@ model Area {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([hotelId, name])  // No duplicate area names within same hotel
   @@index([hotelId])
   @@index([name])
   @@map("areas")
@@ -147,6 +148,10 @@ model Display {
   name     String
   location String
   status   DisplayStatus @default(OFFLINE)
+
+  // Display configuration
+  orientation String @default("horizontal")  // 'horizontal' | 'vertical'
+  resolution  String @default("1920x1080")   // '1920x1080' | '3840x2160' | custom
 
   // Hotel relationship
   hotelId String
@@ -191,6 +196,7 @@ model Display {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([hotelId, name])  // No duplicate display names within same hotel
   @@index([hotelId])
   @@index([status])
   @@index([areaId])
@@ -209,10 +215,14 @@ model Content {
   hlsUrl       String?
   thumbnailUrl String?
 
-  // Metadata
-  duration   Int?
-  resolution String?
-  fileSize   BigInt?
+  // Media metadata
+  duration    Int?       // Duration in seconds (for video)
+  resolution  String?    // e.g., '1920x1080'
+  fileSize    BigInt?
+  width       Int?       // Original width in pixels
+  height      Int?       // Original height in pixels
+  aspectRatio String?    // '16:9', '9:16', '4:3', '1:1', etc.
+  orientation String?    // 'horizontal' | 'vertical' | 'square'
 
   // Hotel relationship
   hotelId String
@@ -230,6 +240,7 @@ model Content {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([hotelId, name])  // No duplicate content names within same hotel
   @@index([hotelId])
   @@index([type])
   @@index([status])

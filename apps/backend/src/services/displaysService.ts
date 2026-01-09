@@ -115,7 +115,7 @@ export async function getDisplayById(id: string): Promise<Display | null> {
 export async function createDisplay(
   payload: CreateDisplayPayload
 ): Promise<Display> {
-  const { name, location, hotelId, areaId } = payload;
+  const { name, location, hotelId, areaId, orientation, resolution } = payload;
 
   // Verify hotel exists, create default hotel if not
   let hotel = await prisma.hotel.findUnique({
@@ -145,6 +145,8 @@ export async function createDisplay(
       hotelId,
       areaId: areaId || null,
       status: DisplayStatus.OFFLINE,
+      orientation: orientation || 'horizontal',
+      resolution: resolution || '1920x1080',
     },
     include: {
       hotel: {

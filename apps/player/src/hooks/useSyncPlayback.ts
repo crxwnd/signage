@@ -6,6 +6,7 @@
  * Implements soft sync (playbackRate) and hard sync (seek)
  */
 
+import { playerLog } from '@/lib/logger';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useClockSync } from './useClockSync';
 
@@ -125,14 +126,14 @@ export function useSyncPlayback({
 
             if (absDrift > SYNC_CONFIG.HARD_SYNC_THRESHOLD) {
                 // Hard sync: seek directly
-                console.log(`[SyncPlayback] Hard sync: drift=${drift.toFixed(3)}s, seeking to ${expectedTime.toFixed(2)}s`);
+                playerLog.log(`[SyncPlayback] Hard sync: drift=${drift.toFixed(3)}s, seeking to ${expectedTime.toFixed(2)}s`);
                 video.currentTime = expectedTime;
                 video.playbackRate = 1.0;
                 newStatus = 'hard-syncing';
             } else if (absDrift > SYNC_CONFIG.SOFT_SYNC_THRESHOLD) {
                 // Soft sync: adjust playback rate significantly
                 const rate = drift > 0 ? SYNC_CONFIG.PLAYBACK_RATE_SLOW : SYNC_CONFIG.PLAYBACK_RATE_FAST;
-                console.log(`[SyncPlayback] Soft sync: drift=${drift.toFixed(3)}s, rate=${rate}`);
+                playerLog.log(`[SyncPlayback] Soft sync: drift=${drift.toFixed(3)}s, rate=${rate}`);
                 video.playbackRate = rate;
                 newStatus = 'soft-syncing';
             } else if (absDrift > SYNC_CONFIG.TOLERANCE) {
@@ -171,7 +172,7 @@ export function useSyncPlayback({
         currentTime: number,
         playbackState: 'playing' | 'paused'
     ) => {
-        console.log('[SyncPlayback] Late join:', { contentId, currentTime, playbackState });
+        playerLog.log('[SyncPlayback] Late join:', { contentId, currentTime, playbackState });
 
         setState(prev => ({
             ...prev,
@@ -201,7 +202,7 @@ export function useSyncPlayback({
         const video = videoRef.current;
         if (!video) return;
 
-        console.log('[SyncPlayback] Command:', command);
+        playerLog.log('[SyncPlayback] Command:', command);
 
         switch (command.type) {
             case 'play':

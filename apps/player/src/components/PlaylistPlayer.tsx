@@ -6,6 +6,7 @@
  * Supports offline caching via IndexedDB
  */
 
+import { playerLog } from '@/lib/logger';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { VideoPlayer } from './VideoPlayer';
 import { useCache } from '@/hooks/useCache';
@@ -164,7 +165,7 @@ function ImageDisplay({
         const loadImage = async () => {
             const cached = await getCachedImage(contentId);
             if (cached) {
-                console.log(`[Player] Using cached image: ${contentId}`);
+                playerLog.log(`[Player] Using cached image: ${contentId}`);
                 objectUrl = cached;
                 setImageUrl(cached);
                 setFromCache(true);
