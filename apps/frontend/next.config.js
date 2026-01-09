@@ -4,12 +4,21 @@ const nextConfig = {
   reactStrictMode: true,
 
   // Allow WebSocket connections for Socket.io
-  webpack: (config) => {
+  webpack: (config, { dev, isServer }) => {
     config.externals = config.externals || [];
     config.externals.push({
       bufferutil: 'bufferutil',
       'utf-8-validate': 'utf-8-validate',
     });
+
+    // Optimize for Docker dev mode
+    if (dev && !isServer) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
+
     return config;
   },
 

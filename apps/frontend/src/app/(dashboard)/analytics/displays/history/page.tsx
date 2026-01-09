@@ -70,9 +70,10 @@ const statusColors: Record<string, string> = {
 function TimelineItem({ event }: { event: TimelineEvent }) {
     const getIcon = () => {
         switch (event.type) {
-            case 'STATE_CHANGE':
+            case 'STATE_CHANGE': {
                 const StatusIcon = statusIcons[event.toStatus || 'OFFLINE'] || Monitor;
                 return <StatusIcon className="h-4 w-4" />;
+            }
             case 'CONFIG_CHANGE':
                 return <Settings className="h-4 w-4" />;
             case 'PLAYBACK':
