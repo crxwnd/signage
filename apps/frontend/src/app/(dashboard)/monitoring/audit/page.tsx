@@ -295,21 +295,21 @@ export default function AuditTrailPage() {
                                                     </div>
                                                 </div>
 
-                                                {(log.oldData || log.newData) && (
+                                                {(log.oldData !== null || log.newData !== null) && (
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        {log.oldData && (
+                                                        {log.oldData !== null && (
                                                             <div>
                                                                 <p className="text-xs text-muted-foreground mb-1">Previous State</p>
                                                                 <pre className="text-xs bg-red-500/5 p-2 rounded overflow-auto max-h-32">
-                                                                    {JSON.stringify(log.oldData, null, 2)}
+                                                                    {JSON.stringify(log.oldData as object, null, 2)}
                                                                 </pre>
                                                             </div>
                                                         )}
-                                                        {log.newData && (
+                                                        {log.newData !== null && (
                                                             <div>
                                                                 <p className="text-xs text-muted-foreground mb-1">New State</p>
                                                                 <pre className="text-xs bg-green-500/5 p-2 rounded overflow-auto max-h-32">
-                                                                    {JSON.stringify(log.newData, null, 2)}
+                                                                    {JSON.stringify(log.newData as object, null, 2)}
                                                                 </pre>
                                                             </div>
                                                         )}

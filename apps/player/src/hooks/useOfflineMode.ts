@@ -3,6 +3,7 @@
  * Manages offline mode behavior including queue processing
  */
 
+import { playerLog } from '@/lib/logger';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useNetworkStatus } from './useNetworkStatus';
 import { offlineQueue } from '@/lib/services/offlineQueue';
@@ -33,12 +34,12 @@ export function useOfflineMode(options: UseOfflineModeOptions = {}) {
     // Detect reconnection
     useEffect(() => {
         if (network.isOnline && wasOfflineRef.current) {
-            console.log('[OfflineMode] Reconnected - processing queue...');
+            playerLog.log('[OfflineMode] Reconnected - processing queue...');
 
             // Process queue of events
             if (socketSend) {
                 offlineQueue.processQueue(socketSend).then(({ processed, failed }) => {
-                    console.log(`[OfflineMode] Queue processed: ${processed} sent, ${failed} failed`);
+                    playerLog.log(`[OfflineMode] Queue processed: ${processed} sent, ${failed} failed`);
                     setPendingEvents(offlineQueue.getPendingCount());
                 });
             }

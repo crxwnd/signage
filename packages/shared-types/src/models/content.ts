@@ -25,6 +25,11 @@ export enum ContentStatus {
 }
 
 /**
+ * Content orientation type
+ */
+export type ContentOrientation = 'horizontal' | 'vertical' | 'square';
+
+/**
  * Content interface
  * Represents a piece of media content (video, image, or HTML)
  */
@@ -39,6 +44,11 @@ export interface Content {
   duration: number | null;
   resolution: string | null;
   fileSize: bigint | null;
+  // Media metadata
+  width: number | null;
+  height: number | null;
+  aspectRatio: string | null;  // '16:9', '9:16', '4:3', '1:1'
+  orientation: ContentOrientation | null;
   hotelId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -59,6 +69,11 @@ export interface ContentDTO {
   resolution: string | null;
   fileSize: number | null; // In bytes, converted from BigInt
   fileSizeFormatted?: string; // Human-readable format (e.g., "3.2 GB")
+  // Media metadata
+  width: number | null;
+  height: number | null;
+  aspectRatio: string | null;
+  orientation: ContentOrientation | null;
   hotelId: string;
   createdAt: string | Date;
   updatedAt: string | Date;

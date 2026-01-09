@@ -228,7 +228,7 @@ export default function CompliancePage() {
                                                 outerRadius={100}
                                                 dataKey="count"
                                                 nameKey="role"
-                                                label={({ role, count }) => `${role.replace('_', ' ')}: ${count}`}
+                                                label={({ name, value }) => `${String(name ?? '').replace('_', ' ')}: ${value ?? 0}`}
                                             >
                                                 {report.accessControl.roleDistribution.map((entry, index) => (
                                                     <Cell

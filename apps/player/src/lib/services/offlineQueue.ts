@@ -3,6 +3,8 @@
  * Queues events to sync when connection is restored
  */
 
+import { playerLog } from '../logger';
+
 interface QueuedEvent {
     id: string;
     type: string;
@@ -31,7 +33,7 @@ export const offlineQueue = {
 
         try {
             localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-            console.log(`[OfflineQueue] Event queued: ${type}`);
+            playerLog.log(`[OfflineQueue] Event queued: ${type}`);
         } catch (error) {
             console.error('[OfflineQueue] Failed to queue event:', error);
         }
@@ -69,7 +71,7 @@ export const offlineQueue = {
             return { processed: 0, failed: 0 };
         }
 
-        console.log(`[OfflineQueue] Processing ${queue.length} queued events...`);
+        playerLog.log(`[OfflineQueue] Processing ${queue.length} queued events...`);
 
         let processed = 0;
         let failed = 0;
@@ -80,7 +82,7 @@ export const offlineQueue = {
                 const success = await sendEvent(event.type, event.payload);
                 if (success) {
                     processed++;
-                    console.log(`[OfflineQueue] Event processed: ${event.type}`);
+                    playerLog.log(`[OfflineQueue] Event processed: ${event.type}`);
                 } else {
                     throw new Error('Send failed');
                 }
@@ -101,7 +103,7 @@ export const offlineQueue = {
             // Ignore storage errors
         }
 
-        console.log(`[OfflineQueue] Complete: ${processed} processed, ${failed} failed, ${remaining.length} remaining`);
+        playerLog.log(`[OfflineQueue] Complete: ${processed} processed, ${failed} failed, ${remaining.length} remaining`);
         return { processed, failed };
     },
 
@@ -111,7 +113,7 @@ export const offlineQueue = {
     clear(): void {
         try {
             localStorage.removeItem(QUEUE_KEY);
-            console.log('[OfflineQueue] Queue cleared');
+            playerLog.log('[OfflineQueue] Queue cleared');
         } catch {
             // Ignore
         }

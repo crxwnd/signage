@@ -4,6 +4,7 @@
  * Fetches from /current-source API and listens for Socket.io updates.
  */
 
+import { playerLog } from '@/lib/logger';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -143,14 +144,14 @@ export function useContentSource({
         });
 
         contentSocket.on('connect', () => {
-            console.log('[useContentSource] Socket connected');
+            playerLog.log('[useContentSource] Socket connected');
             // Join display room
             contentSocket?.emit('display:register', { displayId });
         });
 
         // Alert handlers
         contentSocket.on('alert:activated', (data: { alertId: string; alert: any }) => {
-            console.log('[useContentSource] Alert activated:', data.alertId);
+            playerLog.log('[useContentSource] Alert activated:', data.alertId);
             // Immediately set alert as source (highest priority)
             setSource({
                 type: 'alert',
@@ -164,14 +165,14 @@ export function useContentSource({
         });
 
         contentSocket.on('alert:deactivated', (data: { alertId: string }) => {
-            console.log('[useContentSource] Alert deactivated:', data.alertId);
+            playerLog.log('[useContentSource] Alert deactivated:', data.alertId);
             // Re-fetch to get next priority content
             fetchSource();
         });
 
         // Schedule handlers
         contentSocket.on('schedule:activated', (data: { scheduleId: string; schedule: any }) => {
-            console.log('[useContentSource] Schedule activated:', data.scheduleId);
+            playerLog.log('[useContentSource] Schedule activated:', data.scheduleId);
             // Only update if not currently showing an alert
             setSource((prev) => {
                 if (prev?.type === 'alert') {
@@ -190,20 +191,20 @@ export function useContentSource({
         });
 
         contentSocket.on('schedule:ended', (data: { scheduleId: string }) => {
-            console.log('[useContentSource] Schedule ended:', data.scheduleId);
+            playerLog.log('[useContentSource] Schedule ended:', data.scheduleId);
             // Re-fetch to get next priority content
             fetchSource();
         });
 
         // Playlist update handler
         contentSocket.on('playlist:updated', () => {
-            console.log('[useContentSource] Playlist updated');
+            playerLog.log('[useContentSource] Playlist updated');
             fetchSource();
         });
 
         // General content refresh
         contentSocket.on('content:refresh', () => {
-            console.log('[useContentSource] Content refresh requested');
+            playerLog.log('[useContentSource] Content refresh requested');
             fetchSource();
         });
 

@@ -14,6 +14,11 @@ export enum DisplayStatus {
 }
 
 /**
+ * Display orientation type
+ */
+export type DisplayOrientation = 'horizontal' | 'vertical';
+
+/**
  * Display interface
  * Represents a SmartTV display device in the signage system
  */
@@ -22,12 +27,21 @@ export interface Display {
   name: string;
   location: string;
   status: DisplayStatus;
+  orientation: DisplayOrientation;
+  resolution: string;
   hotelId: string;
   areaId: string | null;
   lastSeen: Date | null;
   deviceInfo: Record<string, unknown> | null;
   pairingCode: string | null;
   pairedAt: Date | null;
+  // Error tracking
+  lastError: string | null;
+  lastErrorCode: string | null;
+  lastErrorAt: Date | null;
+  errorCount: number;
+  // Fallback content
+  fallbackContentId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +64,8 @@ export interface CreateDisplayPayload {
   location: string;
   hotelId: string;
   areaId?: string | null;
+  orientation?: DisplayOrientation;
+  resolution?: string;
 }
 
 /**
@@ -60,6 +76,9 @@ export interface UpdateDisplayPayload {
   location?: string;
   areaId?: string | null;
   status?: DisplayStatus;
+  orientation?: DisplayOrientation;
+  resolution?: string;
+  fallbackContentId?: string | null;
 }
 
 /**
@@ -70,5 +89,10 @@ export interface DisplayWithRelations extends Display {
     id: string;
     name: string;
   };
+  area?: {
+    id: string;
+    name: string;
+  };
   contentCount?: number;
 }
+
