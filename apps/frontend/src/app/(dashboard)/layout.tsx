@@ -37,13 +37,22 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkCollapsed = () => {
       const saved = localStorage.getItem('sidebar-collapsed');
-      setSidebarCollapsed(saved ? JSON.parse(saved) : false);
+      // Only update if value exists to prevent hydration mismatch default flicker
+      if (saved) {
+        setSidebarCollapsed(JSON.parse(saved));
+      }
     };
 
+    // Initial check
     checkCollapsed();
+
+    // Listen for custom event from Sidebar component
+    const handleSidebarToggle = () => checkCollapsed();
+    window.addEventListener('sidebar-toggle', handleSidebarToggle);
     window.addEventListener('storage', checkCollapsed);
 
     return () => {
+      window.removeEventListener('sidebar-toggle', handleSidebarToggle);
       window.removeEventListener('storage', checkCollapsed);
     };
   }, []);
@@ -63,8 +72,9 @@ export default function DashboardLayout({
 
       {/* Main content area with dynamic margin */}
       <div
-        className="flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ marginLeft: sidebarCollapsed ? '80px' : '280px' }}
+        className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out pl-0 md:pl-[280px] ${
+          sidebarCollapsed ? 'md:pl-[80px]' : ''
+        }`}
       >
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
