@@ -208,4 +208,115 @@ router.get('/content/:id/access', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), a
     }
 });
 
+/**
+ * GET /api/audit/displays/:id/stats
+ * Get statistics for a display
+ */
+router.get('/displays/:id/stats', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN', 'AREA_MANAGER']), async (req: Request, res: Response) => {
+    try {
+        const displayId = req.params.id as string;
+
+        // Get uptime from state history (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const stateHistory = await auditService.getDisplayStateHistory(displayId, 1000);
+
+        // Calculate uptime percentage (simplified)
+        let onlineTime = 0;
+        let lastOnlineAt: Date | null = null;
+        const now = new Date();
+
+        for (const change of stateHistory) {
+            if (new Date(change.createdAt) < sevenDaysAgo) continue;
+
+            if (change.toStatus === 'ONLINE') {
+                lastOnlineAt = new Date(change.createdAt);
+            } else if (lastOnlineAt && change.fromStatus === 'ONLINE') {
+                onlineTime += new Date(change.createdAt).getTime() - lastOnlineAt.getTime();
+                lastOnlineAt = null;
+            }
+        }
+
+        // If still online, count time until now
+        if (lastOnlineAt) {
+            onlineTime += now.getTime() - lastOnlineAt.getTime();
+        }
+
+        const totalTime = 7 * 24 * 60 * 60 * 1000;
+        const uptimePercent = Math.min(100, Math.round((onlineTime / totalTime) * 100));
+
+        // Count errors in last 24h
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+        const errorsLast24h = stateHistory.filter(
+            (h) => h.toStatus === 'ERROR' && new Date(h.createdAt) >= oneDayAgo
+        ).length;
+
+        // Get playback count
+        const timeline = await auditService.getDisplayTimeline(displayId);
+        const totalPlaybacks = timeline.filter((e: { type: string }) => e.type === 'PLAYBACK').length;
+
+        res.json({
+            success: true,
+            data: {
+                uptimePercent,
+                errorsLast24h,
+                totalPlaybacks,
+            },
+        });
+    } catch (error) {
+        log.error('Failed to get display stats', { error });
+        res.status(500).json({ success: false, error: 'Failed to get display stats' });
+    }
+});
+
+/**
+ * GET /api/audit/users/:id/stats
+ * Get statistics for a user
+ */
+router.get('/users/:id/stats', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
+    try {
+        const userId = req.params.id as string;
+
+        const timeline = await auditService.getUserTimeline(userId);
+
+        const totalLogins = timeline.activityLogs?.filter(
+            (l: { action: string }) => l.action === 'LOGIN'
+        ).length || 0;
+
+        const lastLogin = timeline.activityLogs?.find(
+            (l: { action: string }) => l.action === 'LOGIN'
+        );
+
+        const contentUploaded = timeline.activityLogs?.filter(
+            (l: { action: string }) => l.action === 'CONTENT_UPLOAD'
+        ).length || 0;
+
+        const schedulesCreated = timeline.activityLogs?.filter(
+            (l: { action: string }) => l.action === 'SCHEDULE_CREATE'
+        ).length || 0;
+
+        const alertsCreated = timeline.activityLogs?.filter(
+            (l: { action: string }) => l.action === 'ALERT_CREATE'
+        ).length || 0;
+
+        res.json({
+            success: true,
+            data: {
+                totalLogins,
+                lastLogin: lastLogin?.createdAt,
+                contentUploaded,
+                schedulesCreated,
+                alertsCreated,
+            },
+        });
+    } catch (error) {
+        log.error('Failed to get user stats', { error });
+        res.status(500).json({ success: false, error: 'Failed to get user stats' });
+    }
+});
+
 export default router;
+

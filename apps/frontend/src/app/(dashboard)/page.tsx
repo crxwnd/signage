@@ -2,153 +2,210 @@
 
 /**
  * Home Dashboard
- * Main dashboard with real metrics and modern design
+ * Complete dashboard with real metrics, charts, and action items
  */
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link';
 import {
     Monitor,
     Wifi,
-    WifiOff,
     AlertTriangle,
     Film,
     Calendar,
     Bell,
-    TrendingUp,
-    TrendingDown,
     Activity,
+    Users,
     ArrowRight,
     Clock,
-    Zap,
+    Plus,
+    Upload,
+    Layers,
+    Radio,
+    Server,
+    Database,
+    HardDrive,
+    CheckCircle,
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { authenticatedFetch } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const COLORS = {
+const STATUS_COLORS = {
     online: '#22c55e',
     offline: '#9ca3af',
     error: '#ef4444',
-    primary: '#254D6E',
-    secondary: '#B88F69',
 };
+
+interface DashboardStats {
+    displays: { total: number; online: number; offline: number; error: number };
+    content: { total: number; videos: number; images: number; html: number };
+    alerts: { active: number };
+    schedules: { active: number };
+    syncGroups: number;
+    areas: number;
+    users: { total: number };
+    storage: { used: string; total: string; percentage: number };
+}
+
+interface DisplayAttention {
+    id: string;
+    name: string;
+    location: string;
+    status: string;
+    lastSeen: string;
+    lastError: string | null;
+}
+
+interface Alert {
+    id: string;
+    name: string;
+    message: string;
+    type: string;
+}
+
+interface ActivityItem {
+    id: string;
+    action: string;
+    description: string;
+    userName: string;
+    createdAt: string;
+}
 
 export default function HomePage() {
     const { user } = useAuth();
 
-    // Fetch display stats
-    const { data: displayStats, isLoading: statsLoading } = useQuery({
-        queryKey: ['displayStats'],
+    // Fetch dashboard stats
+    const { data: stats, isLoading: statsLoading } = useQuery({
+        queryKey: ['dashboardStats'],
         queryFn: async () => {
-            const res = await authenticatedFetch(`${API_URL}/api/displays/stats`);
-            if (!res.ok) return { total: 0, online: 0, offline: 0, error: 0 };
-            return res.json();
-        },
-        staleTime: 30000,
-    });
-
-    // Fetch content stats  
-    const { data: contentStats } = useQuery({
-        queryKey: ['contentStats'],
-        queryFn: async () => {
-            const res = await authenticatedFetch(`${API_URL}/api/content?limit=1`);
-            if (!res.ok) return { meta: { total: 0 } };
-            return res.json();
-        },
-        staleTime: 30000,
-    });
-
-    // Fetch recent displays
-    const { data: recentDisplays } = useQuery({
-        queryKey: ['recentDisplays'],
-        queryFn: async () => {
-            const res = await authenticatedFetch(`${API_URL}/api/displays?limit=5&sortBy=updatedAt&sortOrder=desc`);
-            if (!res.ok) return { items: [] };
-            return res.json();
+            const res = await authenticatedFetch(`${API_URL}/api/dashboard/stats`);
+            if (!res.ok) throw new Error('Failed to fetch stats');
+            const json = await res.json();
+            return json.data as DashboardStats;
         },
     });
 
-    // Fetch alerts
-    const { data: alertsData } = useQuery({
+    // Fetch displays needing attention
+    const { data: displaysAttention } = useQuery({
+        queryKey: ['displaysAttention'],
+        queryFn: async () => {
+            const res = await authenticatedFetch(`${API_URL}/api/dashboard/displays-attention`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return (json.data || []) as DisplayAttention[];
+        },
+    });
+
+    // Fetch active alerts
+    const { data: activeAlerts } = useQuery({
         queryKey: ['activeAlerts'],
         queryFn: async () => {
-            const res = await authenticatedFetch(`${API_URL}/api/alerts?limit=5`);
-            if (!res.ok) return { items: [] };
-            return res.json();
+            const res = await authenticatedFetch(`${API_URL}/api/alerts?active=true&limit=5`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return (json.data || json.items || []) as Alert[];
         },
     });
 
-    const stats = displayStats || { total: 0, online: 0, offline: 0, error: 0 };
-    const contentTotal = contentStats?.meta?.total || 0;
-    const displays = recentDisplays?.items || [];
-    const alerts = alertsData?.items || [];
+    // Fetch recent activity
+    const { data: recentActivity } = useQuery({
+        queryKey: ['recentActivity'],
+        queryFn: async () => {
+            const res = await authenticatedFetch(`${API_URL}/api/analytics/activity?limit=8`);
+            if (!res.ok) return [];
+            const json = await res.json();
+            return (json.data || []) as ActivityItem[];
+        },
+    });
 
     if (statsLoading) {
-        return <DashboardSkeleton />;
+        return <HomeSkeleton />;
     }
+
+    // Data for pie chart
+    const pieData = [
+        { name: 'Online', value: stats?.displays?.online || 0, color: STATUS_COLORS.online },
+        { name: 'Offline', value: stats?.displays?.offline || 0, color: STATUS_COLORS.offline },
+        { name: 'Error', value: stats?.displays?.error || 0, color: STATUS_COLORS.error },
+    ];
 
     return (
         <div className="space-y-6">
             {/* Welcome Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">
-                        Welcome back, {user?.name?.split(' ')[0] || 'User'}
+                        Welcome back, {user?.name?.split(' ')[0] || 'Admin'}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Here&apos;s what&apos;s happening with your signage network today.
+                        Here&apos;s what&apos;s happening with your signage network
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="gap-1">
-                        <Clock className="h-3 w-3" />
-                        {format(new Date(), 'PPp')}
-                    </Badge>
-                </div>
+                <Badge variant="outline" className="w-fit text-sm">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {format(new Date(), 'PPp', { locale: es })}
+                </Badge>
             </div>
 
-            {/* KPI Cards */}
+            {/* Primary KPIs */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <KPICard
                     title="Total Displays"
-                    value={stats.total}
+                    value={stats?.displays?.total || 0}
+                    subtitle={`${stats?.displays?.offline || 0} offline`}
                     icon={Monitor}
-                    color="primary"
+                    href="/displays"
                 />
                 <KPICard
                     title="Online Now"
-                    value={stats.online}
+                    value={stats?.displays?.online || 0}
+                    subtitle={`${stats?.displays?.total ? Math.round((stats.displays.online / stats.displays.total) * 100) : 0}% active`}
                     icon={Wifi}
-                    subtitle={`${stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0}% of total`}
-                    color="success"
-                />
-                <KPICard
-                    title="Offline"
-                    value={stats.offline}
-                    icon={WifiOff}
-                    color="tertiary"
+                    iconColor="text-green-500"
+                    href="/displays?status=ONLINE"
                 />
                 <KPICard
                     title="Content Items"
-                    value={contentTotal}
+                    value={stats?.content?.total || 0}
+                    subtitle={`${stats?.content?.videos || 0} videos, ${stats?.content?.images || 0} images`}
                     icon={Film}
-                    color="secondary"
+                    href="/content"
                 />
+                <KPICard
+                    title="Active Alerts"
+                    value={stats?.alerts?.active || 0}
+                    subtitle={(stats?.alerts?.active || 0) > 0 ? 'Action required' : 'All clear'}
+                    icon={Bell}
+                    iconColor={(stats?.alerts?.active || 0) > 0 ? 'text-amber-500' : 'text-green-500'}
+                    href="/alerts"
+                />
+            </div>
+
+            {/* Secondary Stats */}
+            <div className="grid gap-4 md:grid-cols-4">
+                <MiniStat icon={Calendar} label="Active Schedules" value={stats?.schedules?.active || 0} href="/schedules" />
+                <MiniStat icon={Radio} label="Sync Groups" value={stats?.syncGroups || 0} href="/sync-groups" />
+                <MiniStat icon={Layers} label="Areas" value={stats?.areas || 0} href="/areas" />
+                <MiniStat icon={Users} label="Users" value={stats?.users?.total || 0} href="/settings/users" />
             </div>
 
             {/* Main Grid */}
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Display Status Overview */}
+                {/* Display Status Chart */}
                 <Card className="lg:col-span-2">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Display Status Overview</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg">Display Status</CardTitle>
                         <Link href="/displays">
                             <Button variant="ghost" size="sm">
                                 View All <ArrowRight className="h-4 w-4 ml-1" />
@@ -157,44 +214,37 @@ export default function HomePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-6">
-                            {/* Status Distribution */}
-                            <div className="space-y-4">
-                                {[
-                                    { name: 'Online', value: stats.online, color: COLORS.online },
-                                    { name: 'Offline', value: stats.offline, color: COLORS.offline },
-                                    { name: 'Error', value: stats.error, color: COLORS.error },
-                                ].map((item) => (
+                            {/* Pie Chart */}
+                            <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={50}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Legend */}
+                            <div className="flex flex-col justify-center space-y-4">
+                                {pieData.map((item) => (
                                     <div key={item.name} className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div
-                                                className="w-4 h-4 rounded-full"
-                                                style={{ backgroundColor: item.color }}
-                                            />
+                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
                                             <span className="font-medium">{item.name}</span>
                                         </div>
                                         <span className="text-2xl font-bold">{item.value}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Progress bars */}
-                            <div className="space-y-4">
-                                {[
-                                    { name: 'Online', value: stats.online, total: stats.total, color: 'bg-green-500' },
-                                    { name: 'Offline', value: stats.offline, total: stats.total, color: 'bg-gray-400' },
-                                    { name: 'Error', value: stats.error, total: stats.total, color: 'bg-red-500' },
-                                ].map((item) => (
-                                    <div key={item.name} className="space-y-1">
-                                        <div className="flex justify-between text-sm">
-                                            <span>{item.name}</span>
-                                            <span>{item.total > 0 ? Math.round((item.value / item.total) * 100) : 0}%</span>
-                                        </div>
-                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full ${item.color} transition-all duration-500`}
-                                                style={{ width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%` }}
-                                            />
-                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -205,80 +255,58 @@ export default function HomePage() {
                 {/* Quick Actions */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
+                        <CardTitle className="text-lg">Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <Link href="/content" className="block">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12">
-                                <Film className="h-5 w-5 text-[#B88F69]" />
-                                Upload Content
-                            </Button>
-                        </Link>
-                        <Link href="/displays" className="block">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12">
-                                <Monitor className="h-5 w-5 text-[#254D6E]" />
-                                Manage Displays
-                            </Button>
-                        </Link>
-                        <Link href="/alerts" className="block">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12">
-                                <Bell className="h-5 w-5 text-amber-500" />
-                                Create Alert
-                            </Button>
-                        </Link>
-                        <Link href="/schedules" className="block">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12">
-                                <Calendar className="h-5 w-5 text-green-600" />
-                                New Schedule
-                            </Button>
-                        </Link>
+                        <QuickAction href="/displays" icon={Plus} label="Add Display" />
+                        <QuickAction href="/content" icon={Upload} label="Upload Content" />
+                        <QuickAction href="/displays" icon={Monitor} label="View All Displays" />
+                        <QuickAction href="/alerts" icon={Bell} label="Create Alert" />
+                        <QuickAction href="/schedules" icon={Calendar} label="New Schedule" />
                     </CardContent>
                 </Card>
             </div>
 
             {/* Second Row */}
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* Recent Displays */}
+                {/* Displays Needing Attention */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <Activity className="h-5 w-5" />
-                            Recent Displays
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            Displays Requiring Attention
                         </CardTitle>
-                        <Link href="/displays">
-                            <Button variant="ghost" size="sm">
-                                View All <ArrowRight className="h-4 w-4 ml-1" />
-                            </Button>
-                        </Link>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {displays.length > 0 ? (
-                                displays.map((display: { id: string; name: string; location: string; status: string; lastSeen: string | null }) => (
-                                    <Link key={display.id} href={`/displays/${display.id}`} className="block">
+                        <div className="space-y-3">
+                            {displaysAttention && displaysAttention.length > 0 ? (
+                                displaysAttention.slice(0, 5).map((display) => (
+                                    <Link href={`/displays/${display.id}`} key={display.id}>
                                         <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-3 h-3 rounded-full ${display.status === 'ONLINE' ? 'bg-green-500' :
-                                                    display.status === 'ERROR' ? 'bg-red-500' : 'bg-gray-400'
-                                                    }`} />
+                                                <div className={cn(
+                                                    "w-2 h-2 rounded-full",
+                                                    display.status === 'ERROR' && "bg-red-500 animate-pulse",
+                                                    display.status === 'OFFLINE' && "bg-gray-400"
+                                                )} />
                                                 <div>
-                                                    <p className="font-medium">{display.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{display.location}</p>
+                                                    <p className="font-medium text-sm">{display.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {display.lastError || `Last seen ${formatDistanceToNow(new Date(display.lastSeen || Date.now()), { addSuffix: true })}`}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <Badge variant="outline" className="text-xs">
-                                                    {display.status}
-                                                </Badge>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    {display.lastSeen ? formatDistanceToNow(new Date(display.lastSeen), { addSuffix: true }) : 'Never'}
-                                                </p>
-                                            </div>
+                                            <Badge variant={display.status === 'ERROR' ? 'destructive' : 'secondary'}>
+                                                {display.status}
+                                            </Badge>
                                         </div>
                                     </Link>
                                 ))
                             ) : (
-                                <p className="text-center text-muted-foreground py-4">No displays found</p>
+                                <div className="text-center py-8">
+                                    <CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-2" />
+                                    <p className="text-sm text-muted-foreground">All displays are operational!</p>
+                                </div>
                             )}
                         </div>
                     </CardContent>
@@ -286,10 +314,10 @@ export default function HomePage() {
 
                 {/* Active Alerts */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
                             <Bell className="h-5 w-5" />
-                            Recent Alerts
+                            Active Alerts
                         </CardTitle>
                         <Link href="/alerts">
                             <Button variant="ghost" size="sm">
@@ -299,123 +327,234 @@ export default function HomePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {alerts.length > 0 ? (
-                                alerts.map((alert: { id: string; name?: string; title?: string; message?: string; type?: string; priority?: string }) => (
+                            {activeAlerts && activeAlerts.length > 0 ? (
+                                activeAlerts.slice(0, 5).map((alert) => (
                                     <div key={alert.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                                        <AlertTriangle className={`h-5 w-5 ${alert.type === 'EMERGENCY' || alert.priority === 'HIGH' ? 'text-red-500' :
-                                            alert.type === 'WARNING' || alert.priority === 'MEDIUM' ? 'text-amber-500' : 'text-blue-500'
-                                            }`} />
+                                        <AlertTriangle className={cn(
+                                            "h-5 w-5",
+                                            alert.type === 'EMERGENCY' && "text-red-500",
+                                            alert.type === 'WARNING' && "text-amber-500",
+                                            alert.type === 'INFO' && "text-blue-500"
+                                        )} />
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm truncate">{alert.name || alert.title || 'Alert'}</p>
+                                            <p className="font-medium text-sm truncate">{alert.name}</p>
                                             <p className="text-xs text-muted-foreground truncate">{alert.message}</p>
                                         </div>
-                                        <Badge variant={alert.type === 'EMERGENCY' || alert.priority === 'HIGH' ? 'destructive' : 'secondary'}>
-                                            {alert.type || alert.priority || 'INFO'}
+                                        <Badge variant={alert.type === 'EMERGENCY' ? 'destructive' : 'secondary'}>
+                                            {alert.type}
                                         </Badge>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-center text-muted-foreground py-4">No alerts found</p>
+                                <div className="text-center py-8">
+                                    <CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-2" />
+                                    <p className="text-sm text-muted-foreground">No active alerts</p>
+                                </div>
                             )}
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* System Overview (for admins) */}
-            {(user?.role === 'SUPER_ADMIN' || user?.role === 'HOTEL_ADMIN') && (
+            {/* Third Row */}
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Recent Activity */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>System Overview</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Activity className="h-5 w-5" />
+                            Recent User Activity
+                        </CardTitle>
+                        <Link href="/monitoring/users/activity">
+                            <Button variant="ghost" size="sm">
+                                View All <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </Link>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid md:grid-cols-4 gap-6">
-                            <SystemStat icon={Monitor} label="Total Displays" value={stats.total} />
-                            <SystemStat icon={Film} label="Content Items" value={contentTotal} />
-                            <SystemStat icon={Bell} label="Alerts" value={alerts.length} />
-                            <SystemStat icon={Zap} label="Online Rate" value={`${stats.total > 0 ? Math.round((stats.online / stats.total) * 100) : 0}%`} />
+                        <div className="space-y-4">
+                            {recentActivity && recentActivity.length > 0 ? (
+                                recentActivity.map((activity) => (
+                                    <div key={activity.id} className="flex items-start gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <Activity className="h-4 w-4 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm">
+                                                <span className="font-medium">{activity.userName}</span>
+                                                {' '}{activity.description}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: es })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-center text-muted-foreground py-4">No recent activity</p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
-            )}
+
+                {/* Content Summary */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Film className="h-5 w-5" />
+                            Content Summary
+                        </CardTitle>
+                        <Link href="/content">
+                            <Button variant="ghost" size="sm">
+                                Manage <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </Link>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                    <p className="text-3xl font-bold">{stats?.content?.videos || 0}</p>
+                                    <p className="text-sm text-muted-foreground">Videos</p>
+                                </div>
+                                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                    <p className="text-3xl font-bold">{stats?.content?.images || 0}</p>
+                                    <p className="text-sm text-muted-foreground">Images</p>
+                                </div>
+                            </div>
+                            <div className="pt-4 border-t">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Total Storage Used</span>
+                                    <span className="font-medium">{stats?.storage?.used || '0GB'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* System Status */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">System Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-wrap items-center gap-6">
+                        <StatusIndicator label="Server" status="online" icon={Server} />
+                        <StatusIndicator label="Database" status="connected" icon={Database} />
+                        <StatusIndicator label="Redis" status="connected" icon={Server} />
+                        <div className="flex items-center gap-2">
+                            <HardDrive className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">Storage:</span>
+                            <span className="text-sm font-medium">
+                                {stats?.storage?.used || '0GB'} / {stats?.storage?.total || '100GB'}
+                            </span>
+                            <Progress value={stats?.storage?.percentage || 0} className="w-24 h-2" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
 // Sub-components
-function KPICard({
-    title,
-    value,
-    icon: Icon,
-    trend,
-    subtitle,
-    color = 'primary'
-}: {
+function KPICard({ title, value, subtitle, icon: Icon, iconColor, href }: {
     title: string;
-    value: number | string;
+    value: number;
+    subtitle: string;
     icon: React.ElementType;
-    trend?: number;
-    subtitle?: string;
-    color?: 'primary' | 'secondary' | 'success' | 'tertiary';
+    iconColor?: string;
+    href: string;
 }) {
-    const colorClasses = {
-        primary: 'bg-[#254D6E]/10 text-[#254D6E]',
-        secondary: 'bg-[#B88F69]/10 text-[#B88F69]',
-        success: 'bg-green-500/10 text-green-600',
-        tertiary: 'bg-gray-500/10 text-gray-600',
-    };
-
     return (
-        <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-muted-foreground">{title}</p>
-                        <p className="text-3xl font-bold mt-1">{value}</p>
-                        {subtitle && (
-                            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-                        )}
-                        {trend !== undefined && (
-                            <div className={`flex items-center gap-1 mt-2 text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {trend >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                <span>{Math.abs(trend)}% vs last week</span>
-                            </div>
-                        )}
+        <Link href={href}>
+            <Card className="hover:shadow-md transition-all cursor-pointer group">
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">{title}</p>
+                            <p className="text-3xl font-bold mt-1">{value}</p>
+                            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+                        </div>
+                        <div className={cn("p-3 rounded-xl bg-primary/10 group-hover:scale-110 transition-transform", iconColor)}>
+                            <Icon className="h-6 w-6" />
+                        </div>
                     </div>
-                    <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
-                        <Icon className="h-6 w-6" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </Link>
     );
 }
 
-function SystemStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number | string }) {
+function MiniStat({ icon: Icon, label, value, href }: {
+    icon: React.ElementType;
+    label: string;
+    value: number;
+    href: string;
+}) {
     return (
-        <div className="text-center p-4 rounded-lg bg-muted/50">
-            <Icon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
+        <Link href={href}>
+            <Card className="hover:shadow-sm transition-all cursor-pointer">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-muted">
+                        <Icon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="text-2xl font-bold">{value}</p>
+                        <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </Link>
+    );
+}
+
+function QuickAction({ href, icon: Icon, label }: {
+    href: string;
+    icon: React.ElementType;
+    label: string;
+}) {
+    return (
+        <Link href={href}>
+            <Button variant="outline" className="w-full justify-start gap-3 h-11">
+                <Icon className="h-4 w-4" />
+                {label}
+            </Button>
+        </Link>
+    );
+}
+
+function StatusIndicator({ label, status, icon: Icon }: {
+    label: string;
+    status: string;
+    icon: React.ElementType;
+}) {
+    const isOnline = status === 'online' || status === 'connected';
+    return (
+        <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{label}:</span>
+            <Badge variant={isOnline ? 'default' : 'destructive'} className={cn(isOnline && "bg-green-500")}>
+                {status}
+            </Badge>
         </div>
     );
 }
 
-function DashboardSkeleton() {
+function HomeSkeleton() {
     return (
-        <div className="space-y-6">
-            <div>
-                <Skeleton className="h-9 w-64" />
-                <Skeleton className="h-5 w-96 mt-2" />
+        <div className="space-y-6 animate-pulse">
+            <div className="h-10 w-64 bg-muted rounded" />
+            <div className="grid gap-4 md:grid-cols-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
             </div>
             <div className="grid gap-4 md:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-32" />
-                ))}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
             </div>
             <div className="grid gap-6 lg:grid-cols-3">
-                <Skeleton className="h-[300px] lg:col-span-2" />
-                <Skeleton className="h-[300px]" />
+                <Skeleton className="h-[300px] rounded-xl lg:col-span-2" />
+                <Skeleton className="h-[300px] rounded-xl" />
             </div>
         </div>
     );

@@ -7,6 +7,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import analyticsService from '../services/analyticsService';
 import { log } from '../middleware/logger';
+import { prisma } from '../utils/prisma';
 
 const router: Router = Router();
 
@@ -77,4 +78,69 @@ router.get('/content', async (_req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/analytics/activity
+ * Returns recent user activity
+ */
+router.get('/activity', async (req: Request, res: Response) => {
+    try {
+        const { limit = 10 } = req.query;
+        const user = (req as any).user;
+
+        // Get recent user activity from UserActivityLog
+        const activity = await prisma.userActivityLog.findMany({
+            where: user?.role === 'SUPER_ADMIN' ? {} : { user: { hotelId: user?.hotelId } },
+            orderBy: { createdAt: 'desc' },
+            take: Number(limit),
+            include: {
+                user: {
+                    select: { name: true, email: true },
+                },
+            },
+        });
+
+        // Format for frontend
+        const formattedActivity = activity.map((a) => ({
+            id: a.id,
+            action: a.action,
+            description: formatActivityDescription(a.action, a.resource || undefined, a.resourceId || undefined),
+            userName: a.user?.name || 'System',
+            userEmail: a.user?.email,
+            resource: a.resource,
+            resourceId: a.resourceId,
+            createdAt: a.createdAt,
+        }));
+
+        res.json({ success: true, data: formattedActivity });
+    } catch (error) {
+        log.error('Failed to get activity', { error });
+        res.status(500).json({ success: false, error: 'Failed to get activity' });
+    }
+});
+
+function formatActivityDescription(action: string, _resource?: string, _resourceId?: string): string {
+    const descriptions: Record<string, string> = {
+        LOGIN: 'logged in',
+        LOGOUT: 'logged out',
+        LOGIN_FAILED: 'failed login attempt',
+        CONTENT_UPLOAD: 'uploaded content',
+        CONTENT_DELETE: 'deleted content',
+        SCHEDULE_CREATE: 'created a schedule',
+        SCHEDULE_UPDATE: 'updated a schedule',
+        SCHEDULE_DELETE: 'deleted a schedule',
+        ALERT_CREATE: 'created an alert',
+        ALERT_UPDATE: 'updated an alert',
+        ALERT_DEACTIVATE: 'deactivated an alert',
+        DISPLAY_CREATE: 'added a display',
+        DISPLAY_UPDATE: 'updated a display',
+        DISPLAY_DELETE: 'removed a display',
+        DISPLAY_PAIR: 'paired a display',
+        USER_CREATE: 'created a user',
+        USER_UPDATE: 'updated a user',
+    };
+
+    return descriptions[action] || action.toLowerCase().replace(/_/g, ' ');
+}
+
 export default router;
+
