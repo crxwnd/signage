@@ -42,6 +42,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface NavItem {
   name: string;
@@ -278,6 +279,14 @@ export function Sidebar() {
 
         {/* User Section */}
         <div className="p-4 border-t border-white/10">
+          {/* Theme Toggle Row */}
+          <div className={cn(
+            'flex items-center mb-3',
+            isCollapsed ? 'justify-center' : 'justify-end'
+          )}>
+            <ThemeToggle />
+          </div>
+
           <div className={cn(
             'flex items-center gap-3',
             isCollapsed && 'justify-center'
