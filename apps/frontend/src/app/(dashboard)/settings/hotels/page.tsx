@@ -68,19 +68,6 @@ export default function HotelsPage() {
     const [editingHotel, setEditingHotel] = useState<Hotel | null>(null);
     const [deleteHotel, setDeleteHotel] = useState<Hotel | null>(null);
 
-    // Only SUPER_ADMIN can access
-    if (user?.role !== 'SUPER_ADMIN') {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                    <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold">Access Denied</h2>
-                    <p className="text-muted-foreground">Only Super Admins can manage hotels.</p>
-                </div>
-            </div>
-        );
-    }
-
     // Fetch hotels
     const { data: hotelsData, isLoading } = useQuery({
         queryKey: ['hotels', search],
@@ -93,6 +80,8 @@ export default function HotelsPage() {
             if (!res.ok) throw new Error('Failed to fetch hotels');
             return res.json();
         },
+        // Only run query if user is super admin
+        enabled: user?.role === 'SUPER_ADMIN',
     });
 
     // Create hotel mutation
@@ -156,6 +145,19 @@ export default function HotelsPage() {
             toast.error('Failed to delete hotel');
         },
     });
+
+    // Only SUPER_ADMIN can access
+    if (user?.role !== 'SUPER_ADMIN') {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold">Access Denied</h2>
+                    <p className="text-muted-foreground">Only Super Admins can manage hotels.</p>
+                </div>
+            </div>
+        );
+    }
 
     const hotels = hotelsData?.data || [];
 
