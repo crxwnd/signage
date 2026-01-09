@@ -19,28 +19,73 @@ router.use(authenticate);
  * GET /api/dashboard/stats
  * Returns aggregated dashboard statistics
  */
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get('/stats', async (req: Request, res: Response) => {
     try {
+        const user = (req as any).user;
+        const hotelFilter = user?.role === 'SUPER_ADMIN' ? {} : { hotelId: user?.hotelId };
+
         // Parallel queries for better performance
         const [
             displayStats,
             contentStats,
+            contentSize,
+            alertsCount,
+            schedulesCount,
+            areasCount,
+            usersCount,
+            hotelsCount,
             recentDisplays,
             recentContent,
         ] = await Promise.all([
             // Display counts by status
             prisma.display.groupBy({
                 by: ['status'],
+                where: hotelFilter,
                 _count: { id: true },
             }),
             // Content counts by type and status
             prisma.content.groupBy({
                 by: ['type', 'status'],
+                where: hotelFilter,
                 _count: { id: true },
             }),
+            // Content storage size
+            prisma.content.aggregate({
+                where: hotelFilter,
+                _sum: { fileSize: true },
+            }),
+            // Active alerts count
+            prisma.alert.count({
+                where: {
+                    ...hotelFilter,
+                    isActive: true,
+                    OR: [
+                        { endAt: null },
+                        { endAt: { gte: new Date() } },
+                    ],
+                },
+            }),
+            // Active schedules
+            prisma.schedule.count({
+                where: {
+                    ...hotelFilter,
+                    isActive: true,
+                },
+            }),
+            // Areas count
+            prisma.area.count({
+                where: hotelFilter,
+            }),
+            // Users count
+            user?.role === 'SUPER_ADMIN'
+                ? prisma.user.count()
+                : prisma.user.count({ where: { hotelId: user?.hotelId } }),
+            // Hotels count (only for super admin)
+            user?.role === 'SUPER_ADMIN' ? prisma.hotel.count() : Promise.resolve(0),
             // Recent displays (last 10 updated)
             prisma.display.findMany({
                 take: 5,
+                where: hotelFilter,
                 orderBy: { updatedAt: 'desc' },
                 select: {
                     id: true,
@@ -52,6 +97,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
             // Recent content (last 5 uploaded)
             prisma.content.findMany({
                 take: 5,
+                where: hotelFilter,
                 orderBy: { createdAt: 'desc' },
                 select: {
                     id: true,
@@ -85,6 +131,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
             images: 0,
             html: 0,
             processing: 0,
+            totalSize: Number(contentSize._sum.fileSize || 0),
         };
 
         contentStats.forEach((stat) => {
@@ -97,7 +144,6 @@ router.get('/stats', async (_req: Request, res: Response) => {
 
         // Get sync groups stats
         const syncGroups = await syncService.getAllSyncGroups();
-        const activeGroups = syncGroups.filter(g => g.state === 'PLAYING');
 
         // Build recent activity from recent changes
         const recentActivity = [
@@ -121,14 +167,19 @@ router.get('/stats', async (_req: Request, res: Response) => {
         const io = getIO();
         const socketConnections = io?.engine?.clientsCount || 0;
 
-        // System status (simplified - in production would check actual connections)
+        // Calculate storage
+        const storageUsedBytes = Number(contentSize._sum.fileSize || 0);
+        const storageUsedGB = Math.round(storageUsedBytes / 1024 / 1024 / 1024);
+        const storageTotalGB = 100;
+
+        // System status
         const systemStatus = {
             server: 'online' as const,
             database: true,
             redis: true,
             socketConnections,
-            storageUsed: 0, // Would need MinIO integration
-            storageTotal: 100, // GB placeholder
+            storageUsed: storageUsedBytes,
+            storageTotal: storageTotalGB * 1024 * 1024 * 1024,
         };
 
         res.json({
@@ -136,9 +187,22 @@ router.get('/stats', async (_req: Request, res: Response) => {
             data: {
                 displays,
                 content,
-                syncGroups: {
-                    total: syncGroups.length,
-                    active: activeGroups.length,
+                alerts: {
+                    active: alertsCount,
+                },
+                schedules: {
+                    active: schedulesCount,
+                },
+                syncGroups: syncGroups.length,
+                areas: areasCount,
+                users: {
+                    total: usersCount,
+                },
+                hotels: hotelsCount,
+                storage: {
+                    used: `${storageUsedGB}GB`,
+                    total: `${storageTotalGB}GB`,
+                    percentage: Math.round((storageUsedBytes / (storageTotalGB * 1024 * 1024 * 1024)) * 100),
                 },
                 recentActivity,
                 systemStatus,
@@ -153,4 +217,47 @@ router.get('/stats', async (_req: Request, res: Response) => {
     }
 });
 
+/**
+ * GET /api/dashboard/displays-attention
+ * Returns displays that need attention (ERROR or OFFLINE)
+ */
+router.get('/displays-attention', async (req: Request, res: Response) => {
+    try {
+        const user = (req as any).user;
+        const hotelFilter = user?.role === 'SUPER_ADMIN' ? {} : { hotelId: user?.hotelId };
+
+        const displays = await prisma.display.findMany({
+            where: {
+                ...hotelFilter,
+                status: { in: ['ERROR', 'OFFLINE'] },
+            },
+            select: {
+                id: true,
+                name: true,
+                location: true,
+                status: true,
+                lastSeen: true,
+                lastError: true,
+                lastErrorCode: true,
+                lastErrorAt: true,
+                area: { select: { name: true } },
+            },
+            orderBy: [
+                { status: 'asc' }, // ERROR first
+                { lastSeen: 'desc' },
+            ],
+            take: 10,
+        });
+
+        res.json({ success: true, data: displays });
+    } catch (error) {
+        log.error('Failed to get displays attention', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get displays requiring attention',
+        });
+    }
+});
+
 export default router;
+
