@@ -26,7 +26,7 @@ import {
     AlertCircle,
     ArrowLeft,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, type Locale } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { authenticatedFetch } from '@/lib/api/auth';
 
@@ -143,7 +143,7 @@ export default function UserProfilePage() {
                                 <StatBox label="Audit Logs" value={timeline.auditLogs?.length || 0} />
                                 <StatBox
                                     label="Member Since"
-                                    value={format(new Date(user.createdAt), 'PP')}
+                                    value={safeFormat(user.createdAt, 'PP')}
                                 />
                             </div>
                         </div>
@@ -167,12 +167,12 @@ export default function UserProfilePage() {
                         <InfoRow
                             icon={Calendar}
                             label="Member Since"
-                            value={format(new Date(user.createdAt), 'PPP', { locale: es })}
+                            value={safeFormat(user.createdAt, 'PPP', { locale: es })}
                         />
                         <InfoRow
                             icon={Clock}
                             label="Last Updated"
-                            value={formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })}
+                            value={safeFormatDistance(user.updatedAt)}
                         />
                     </CardContent>
                 </Card>
@@ -265,7 +265,7 @@ function ActivityTimeline({ activities }: { activities: Array<{ id?: string; act
                             {activity.resourceId && `(${activity.resourceId.slice(0, 8)}...)`}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                            {safeFormatDistance(activity.createdAt)}
                         </p>
                     </div>
                 </div>
@@ -297,7 +297,7 @@ function SessionsHistory({ sessions }: { sessions: Array<{ id: string; deviceTyp
                             {session.status}
                         </Badge>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(session.startedAt), 'PPp')}
+                            {safeFormat(session.startedAt, 'PPp')}
                         </p>
                     </div>
                 </div>
@@ -321,7 +321,7 @@ function AuditHistory({ logs }: { logs: Array<{ id: string; action: string; desc
                     <div className="flex-1 min-w-0">
                         <p className="text-sm">{log.description || 'Action performed'}</p>
                         <p className="text-xs text-muted-foreground">
-                            {log.resource} • {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                            {log.resource} • {safeFormatDistance(log.createdAt)}
                         </p>
                     </div>
                 </div>
@@ -379,4 +379,27 @@ function formatActivityAction(action: string): string {
         USER_UPDATE: 'Updated user',
     };
     return actions[action] || action;
+}
+
+// Safe date formatting helpers
+function safeFormat(dateStr: string | null | undefined, formatStr: string, options?: { locale?: Locale }): string {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return 'Invalid date';
+        return format(date, formatStr, options);
+    } catch {
+        return 'N/A';
+    }
+}
+
+function safeFormatDistance(dateStr: string | null | undefined): string {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return 'Invalid date';
+        return formatDistanceToNow(date, { addSuffix: true });
+    } catch {
+        return 'N/A';
+    }
 }
