@@ -159,7 +159,14 @@ export default function HotelsPage() {
         );
     }
 
-    const hotels = hotelsData?.data || [];
+    // Handle different API response structures
+    const hotels = Array.isArray(hotelsData?.data)
+        ? hotelsData.data
+        : Array.isArray(hotelsData?.hotels)
+            ? hotelsData.hotels
+            : Array.isArray(hotelsData)
+                ? hotelsData
+                : [];
 
     return (
         <div className="space-y-6">
