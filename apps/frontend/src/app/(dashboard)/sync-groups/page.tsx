@@ -10,7 +10,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Radio,
     Plus,
@@ -23,6 +40,7 @@ import {
     Trash2,
     Edit,
     RefreshCw,
+    Video,
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -48,10 +66,30 @@ interface SyncGroup {
     createdAt: string;
 }
 
+interface Display {
+    id: string;
+    name: string;
+    status: string;
+    hotelId?: string;
+}
+
+interface Content {
+    id: string;
+    name: string;
+    type: string;
+}
+
+interface Hotel {
+    id: string;
+    name: string;
+}
+
 export default function SyncGroupsPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [editingGroup, setEditingGroup] = useState<SyncGroup | null>(null);
 
     // Fetch sync groups
     const { data: groupsData, isLoading } = useQuery({
@@ -65,6 +103,45 @@ export default function SyncGroupsPage() {
             return res.json();
         },
         enabled: user?.role === 'SUPER_ADMIN' || user?.role === 'HOTEL_ADMIN',
+    });
+
+    // Create mutation
+    const createMutation = useMutation({
+        mutationFn: async (data: { name: string; hotelId: string; displayIds: string[]; contentId?: string }) => {
+            const res = await authenticatedFetch(`${API_URL}/api/sync/groups`, {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error?.message || 'Failed to create sync group');
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success('Sync group created successfully');
+            queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
+            setIsCreateOpen(false);
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+
+    // Update mutation
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: { name?: string; displayIds?: string[]; contentId?: string } }) => {
+            const res = await authenticatedFetch(`${API_URL}/api/sync/groups/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to update sync group');
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success('Sync group updated');
+            queryClient.invalidateQueries({ queryKey: ['syncGroups'] });
+            setEditingGroup(null);
+        },
+        onError: () => toast.error('Failed to update sync group'),
     });
 
     // Playback controls
@@ -168,7 +245,7 @@ export default function SyncGroupsPage() {
                         Manage synchronized display groups for coordinated playback
                     </p>
                 </div>
-                <Button onClick={() => toast.info('Create sync group dialog coming soon')}>
+                <Button onClick={() => setIsCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Sync Group
                 </Button>
@@ -206,9 +283,13 @@ export default function SyncGroupsPage() {
                         <CardContent className="text-center py-12">
                             <Radio className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                             <h3 className="font-semibold text-lg mb-1">No sync groups found</h3>
-                            <p className="text-muted-foreground">
+                            <p className="text-muted-foreground mb-4">
                                 Create a sync group to synchronize content across multiple displays.
                             </p>
+                            <Button onClick={() => setIsCreateOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create First Sync Group
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
@@ -234,7 +315,7 @@ export default function SyncGroupsPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => toast.info('Edit coming soon')}>
+                                                <DropdownMenuItem onClick={() => setEditingGroup(group)}>
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
                                                 </DropdownMenuItem>
@@ -315,6 +396,407 @@ export default function SyncGroupsPage() {
                     })
                 )}
             </div>
+
+            {/* Create Sync Group Dialog */}
+            <CreateSyncGroupDialog
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+                onSubmit={(data) => createMutation.mutate(data)}
+                isLoading={createMutation.isPending}
+                userHotelId={user?.hotelId}
+                isSuperAdmin={user?.role === 'SUPER_ADMIN'}
+            />
+
+            {/* Edit Sync Group Dialog */}
+            {editingGroup && (
+                <EditSyncGroupDialog
+                    open={!!editingGroup}
+                    onOpenChange={() => setEditingGroup(null)}
+                    group={editingGroup}
+                    onSubmit={(data) => updateMutation.mutate({ id: editingGroup.id, data })}
+                    isLoading={updateMutation.isPending}
+                />
+            )}
         </div>
+    );
+}
+
+// Create Sync Group Dialog
+function CreateSyncGroupDialog({
+    open,
+    onOpenChange,
+    onSubmit,
+    isLoading,
+    userHotelId,
+    isSuperAdmin,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (data: { name: string; hotelId: string; displayIds: string[]; contentId?: string }) => void;
+    isLoading: boolean;
+    userHotelId?: string | null;
+    isSuperAdmin: boolean;
+}) {
+    const [formData, setFormData] = useState({
+        name: '',
+        hotelId: userHotelId || '',
+        displayIds: [] as string[],
+        contentId: '',
+    });
+
+    // Fetch hotels (for super admin)
+    const { data: hotelsData } = useQuery({
+        queryKey: ['hotels'],
+        queryFn: async () => {
+            const res = await authenticatedFetch(`${API_URL}/api/hotels`);
+            if (!res.ok) return { data: { hotels: [] } };
+            return res.json();
+        },
+        enabled: open && isSuperAdmin,
+    });
+
+    // Fetch displays
+    const { data: displaysData } = useQuery({
+        queryKey: ['displays', formData.hotelId],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            if (formData.hotelId) params.append('hotelId', formData.hotelId);
+            const res = await authenticatedFetch(`${API_URL}/api/displays?${params}`);
+            if (!res.ok) return { data: [] };
+            return res.json();
+        },
+        enabled: open && !!formData.hotelId,
+    });
+
+    // Fetch content
+    const { data: contentData } = useQuery({
+        queryKey: ['content', formData.hotelId],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            if (formData.hotelId) params.append('hotelId', formData.hotelId);
+            const res = await authenticatedFetch(`${API_URL}/api/content?${params}`);
+            if (!res.ok) return { data: [] };
+            return res.json();
+        },
+        enabled: open && !!formData.hotelId,
+    });
+
+    const hotels: Hotel[] = Array.isArray(hotelsData?.data?.hotels)
+        ? hotelsData.data.hotels
+        : Array.isArray(hotelsData?.data)
+            ? hotelsData.data
+            : [];
+
+    const displays: Display[] = Array.isArray(displaysData?.data?.displays)
+        ? displaysData.data.displays
+        : Array.isArray(displaysData?.data)
+            ? displaysData.data
+            : [];
+
+    const contents: Content[] = Array.isArray(contentData?.data?.contents)
+        ? contentData.data.contents
+        : Array.isArray(contentData?.data)
+            ? contentData.data
+            : [];
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.name.trim() || !formData.hotelId || formData.displayIds.length === 0) {
+            toast.error('Please fill all required fields');
+            return;
+        }
+        onSubmit({
+            name: formData.name,
+            hotelId: formData.hotelId,
+            displayIds: formData.displayIds,
+            contentId: formData.contentId || undefined,
+        });
+    };
+
+    const toggleDisplay = (displayId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            displayIds: prev.displayIds.includes(displayId)
+                ? prev.displayIds.filter(id => id !== displayId)
+                : [...prev.displayIds, displayId],
+        }));
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                    <DialogTitle>Create Sync Group</DialogTitle>
+                    <DialogDescription>
+                        Create a group of displays that will play synchronized content.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid gap-4">
+                        {/* Name */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="name">Group Name *</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Lobby Sync Group"
+                                required
+                            />
+                        </div>
+
+                        {/* Hotel (Super Admin only) */}
+                        {isSuperAdmin && (
+                            <div className="grid gap-2">
+                                <Label>Hotel *</Label>
+                                <Select
+                                    value={formData.hotelId}
+                                    onValueChange={(value) => setFormData({ ...formData, hotelId: value, displayIds: [] })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select hotel" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {hotels.map((hotel) => (
+                                            <SelectItem key={hotel.id} value={hotel.id}>
+                                                {hotel.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
+                        {/* Displays */}
+                        <div className="grid gap-2">
+                            <Label>Select Displays * ({formData.displayIds.length} selected)</Label>
+                            <div className="border rounded-lg p-4 max-h-[200px] overflow-y-auto space-y-2">
+                                {displays.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                        {formData.hotelId ? 'No displays found' : 'Select a hotel first'}
+                                    </p>
+                                ) : (
+                                    displays.map((display) => (
+                                        <div key={display.id} className="flex items-center space-x-3">
+                                            <Checkbox
+                                                id={display.id}
+                                                checked={formData.displayIds.includes(display.id)}
+                                                onCheckedChange={() => toggleDisplay(display.id)}
+                                            />
+                                            <label
+                                                htmlFor={display.id}
+                                                className="flex items-center gap-2 text-sm cursor-pointer flex-1"
+                                            >
+                                                <Monitor className="h-4 w-4 text-muted-foreground" />
+                                                <span>{display.name}</span>
+                                                <Badge variant="outline" className="ml-auto text-xs">
+                                                    {display.status}
+                                                </Badge>
+                                            </label>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="grid gap-2">
+                            <Label>Content (optional)</Label>
+                            <Select
+                                value={formData.contentId}
+                                onValueChange={(value) => setFormData({ ...formData, contentId: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select content to sync" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">None</SelectItem>
+                                    {contents.map((content) => (
+                                        <SelectItem key={content.id} value={content.id}>
+                                            <div className="flex items-center gap-2">
+                                                <Video className="h-4 w-4" />
+                                                {content.name}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? 'Creating...' : 'Create Sync Group'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// Edit Sync Group Dialog
+function EditSyncGroupDialog({
+    open,
+    onOpenChange,
+    group,
+    onSubmit,
+    isLoading,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    group: SyncGroup;
+    onSubmit: (data: { name?: string; displayIds?: string[]; contentId?: string }) => void;
+    isLoading: boolean;
+}) {
+    const [formData, setFormData] = useState({
+        name: group.name,
+        displayIds: group.displays?.map(d => d.id) || [],
+        contentId: group.content?.id || '',
+    });
+
+    // Fetch displays
+    const { data: displaysData } = useQuery({
+        queryKey: ['displays', group.hotelId],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            if (group.hotelId) params.append('hotelId', group.hotelId);
+            const res = await authenticatedFetch(`${API_URL}/api/displays?${params}`);
+            if (!res.ok) return { data: [] };
+            return res.json();
+        },
+        enabled: open,
+    });
+
+    // Fetch content
+    const { data: contentData } = useQuery({
+        queryKey: ['content', group.hotelId],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            if (group.hotelId) params.append('hotelId', group.hotelId);
+            const res = await authenticatedFetch(`${API_URL}/api/content?${params}`);
+            if (!res.ok) return { data: [] };
+            return res.json();
+        },
+        enabled: open,
+    });
+
+    const displays: Display[] = Array.isArray(displaysData?.data?.displays)
+        ? displaysData.data.displays
+        : Array.isArray(displaysData?.data)
+            ? displaysData.data
+            : [];
+
+    const contents: Content[] = Array.isArray(contentData?.data?.contents)
+        ? contentData.data.contents
+        : Array.isArray(contentData?.data)
+            ? contentData.data
+            : [];
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit({
+            name: formData.name,
+            displayIds: formData.displayIds,
+            contentId: formData.contentId || undefined,
+        });
+    };
+
+    const toggleDisplay = (displayId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            displayIds: prev.displayIds.includes(displayId)
+                ? prev.displayIds.filter(id => id !== displayId)
+                : [...prev.displayIds, displayId],
+        }));
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                    <DialogTitle>Edit Sync Group</DialogTitle>
+                    <DialogDescription>
+                        Update the sync group configuration.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid gap-4">
+                        {/* Name */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit-name">Group Name</Label>
+                            <Input
+                                id="edit-name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Lobby Sync Group"
+                            />
+                        </div>
+
+                        {/* Displays */}
+                        <div className="grid gap-2">
+                            <Label>Displays ({formData.displayIds.length} selected)</Label>
+                            <div className="border rounded-lg p-4 max-h-[200px] overflow-y-auto space-y-2">
+                                {displays.map((display) => (
+                                    <div key={display.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                            id={`edit-${display.id}`}
+                                            checked={formData.displayIds.includes(display.id)}
+                                            onCheckedChange={() => toggleDisplay(display.id)}
+                                        />
+                                        <label
+                                            htmlFor={`edit-${display.id}`}
+                                            className="flex items-center gap-2 text-sm cursor-pointer flex-1"
+                                        >
+                                            <Monitor className="h-4 w-4 text-muted-foreground" />
+                                            <span>{display.name}</span>
+                                            <Badge variant="outline" className="ml-auto text-xs">
+                                                {display.status}
+                                            </Badge>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="grid gap-2">
+                            <Label>Content</Label>
+                            <Select
+                                value={formData.contentId}
+                                onValueChange={(value) => setFormData({ ...formData, contentId: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select content" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">None</SelectItem>
+                                    {contents.map((content) => (
+                                        <SelectItem key={content.id} value={content.id}>
+                                            <div className="flex items-center gap-2">
+                                                <Video className="h-4 w-4" />
+                                                {content.name}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
