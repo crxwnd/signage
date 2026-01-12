@@ -410,7 +410,14 @@ function CreateUserDialog({
         enabled: !!formData.hotelId,
     });
 
-    const areas = areasData?.data || [];
+    // Handle different API response structures for areas
+    const areas = Array.isArray(areasData?.data)
+        ? areasData.data
+        : Array.isArray(areasData?.areas)
+            ? areasData.areas
+            : Array.isArray(areasData)
+                ? areasData
+                : [];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

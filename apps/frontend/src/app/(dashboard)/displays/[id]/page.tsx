@@ -102,8 +102,17 @@ export default function DisplayProfilePage() {
 
     const StatusIcon = STATUS_CONFIG[display.status as keyof typeof STATUS_CONFIG]?.icon || Monitor;
     const statusConfig = STATUS_CONFIG[display.status as keyof typeof STATUS_CONFIG];
-    const playlist = playlistData?.data || [];
-    const timeline = timelineData?.data || [];
+    // Handle different API response structures
+    const playlist = Array.isArray(playlistData?.data)
+        ? playlistData.data
+        : Array.isArray(playlistData)
+            ? playlistData
+            : [];
+    const timeline = Array.isArray(timelineData?.data)
+        ? timelineData.data
+        : Array.isArray(timelineData)
+            ? timelineData
+            : [];
 
     return (
         <div className="space-y-6">
@@ -383,7 +392,12 @@ function ConfigHistory({ displayId }: { displayId: string }) {
         },
     });
 
-    const history = historyData?.data || [];
+    // Handle different API response structures
+    const history = Array.isArray(historyData?.data)
+        ? historyData.data
+        : Array.isArray(historyData)
+            ? historyData
+            : [];
 
     if (isLoading) return <Skeleton className="h-32" />;
     if (!history.length) {
