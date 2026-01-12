@@ -127,7 +127,7 @@ export default function HomePage() {
                 <KPICard
                     title="Content Items"
                     value={contentData.total}
-                    subtitle={formatBytes(stats?.storage?.used || 0)}
+                    subtitle={stats?.storage?.used || '0GB'}
                     icon={Film}
                     href="/content"
                     color="purple"
@@ -144,9 +144,9 @@ export default function HomePage() {
 
             {/* Secondary KPIs - 4 columns */}
             <div className="grid gap-4 md:grid-cols-4">
-                <MiniKPI title="Sync Groups" value={stats?.syncGroups?.total || 0} icon={Radio} href="/sync-groups" />
-                <MiniKPI title="Areas" value={stats?.areas || 0} icon={Layers} href="/areas" />
-                <MiniKPI title="Users" value={stats?.users || 0} icon={Users} href="/settings/users" />
+                <MiniKPI title="Sync Groups" value={typeof stats?.syncGroups === 'number' ? stats.syncGroups : 0} icon={Radio} href="/sync-groups" />
+                <MiniKPI title="Areas" value={typeof stats?.areas === 'number' ? stats.areas : 0} icon={Layers} href="/areas" />
+                <MiniKPI title="Users" value={stats?.users?.total || 0} icon={Users} href="/settings/users" />
                 <MiniKPI
                     title="Errors"
                     value={displayData.error}
@@ -205,7 +205,7 @@ export default function HomePage() {
                         <div className="pt-2 border-t">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">Storage Used</span>
-                                <span className="font-medium">{formatBytes(stats?.storage?.used || 0)}</span>
+                                <span className="font-medium">{stats?.storage?.used || '0GB'}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -327,7 +327,7 @@ export default function HomePage() {
                         <StatusPill icon={Server} label="Server" status={stats?.systemStatus?.server || 'online'} />
                         <StatusPill icon={Database} label="Database" status={stats?.systemStatus?.database ? 'connected' : 'error'} />
                         <StatusPill icon={Wifi} label="Connections" value={displayData.online} />
-                        <StatusPill icon={HardDrive} label="Storage" value={formatBytes(stats?.storage?.used || 0)} />
+                        <StatusPill icon={HardDrive} label="Storage" value={stats?.storage?.used || '0GB'} />
                     </div>
                 </CardContent>
             </Card>
