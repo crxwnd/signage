@@ -161,21 +161,27 @@ export default function UsersPage() {
     });
 
     // Handle different API response structures for users
-    const users = Array.isArray(usersData?.data)
-        ? usersData.data
+    // API returns { success, data: { users: [...] } }
+    const users = Array.isArray(usersData?.data?.users)
+        ? usersData.data.users
         : Array.isArray(usersData?.users)
             ? usersData.users
-            : Array.isArray(usersData)
-                ? usersData
-                : [];
+            : Array.isArray(usersData?.data)
+                ? usersData.data
+                : Array.isArray(usersData)
+                    ? usersData
+                    : [];
     // Handle different API response structures for hotels
-    const hotels = Array.isArray(hotelsData?.data)
-        ? hotelsData.data
+    // API returns { success, data: { hotels: [...] } }
+    const hotels = Array.isArray(hotelsData?.data?.hotels)
+        ? hotelsData.data.hotels
         : Array.isArray(hotelsData?.hotels)
             ? hotelsData.hotels
-            : Array.isArray(hotelsData)
-                ? hotelsData
-                : [];
+            : Array.isArray(hotelsData?.data)
+                ? hotelsData.data
+                : Array.isArray(hotelsData)
+                    ? hotelsData
+                    : [];
 
     return (
         <div className="space-y-6">
@@ -411,13 +417,16 @@ function CreateUserDialog({
     });
 
     // Handle different API response structures for areas
-    const areas = Array.isArray(areasData?.data)
-        ? areasData.data
+    // API returns { success, data: { areas: [...] } }
+    const areas = Array.isArray(areasData?.data?.areas)
+        ? areasData.data.areas
         : Array.isArray(areasData?.areas)
             ? areasData.areas
-            : Array.isArray(areasData)
-                ? areasData
-                : [];
+            : Array.isArray(areasData?.data)
+                ? areasData.data
+                : Array.isArray(areasData)
+                    ? areasData
+                    : [];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
