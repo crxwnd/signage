@@ -509,7 +509,7 @@ function CreateSyncGroupDialog({
             name: formData.name,
             hotelId: formData.hotelId,
             displayIds: formData.displayIds,
-            contentId: formData.contentId || undefined,
+            contentId: formData.contentId && formData.contentId !== '__none__' ? formData.contentId : undefined,
         });
     };
 
@@ -610,7 +610,7 @@ function CreateSyncGroupDialog({
                                     <SelectValue placeholder="Select content to sync" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="__none__">None</SelectItem>
                                     {contents.map((content) => (
                                         <SelectItem key={content.id} value={content.id}>
                                             <div className="flex items-center gap-2">
@@ -701,7 +701,7 @@ function EditSyncGroupDialog({
         onSubmit({
             name: formData.name,
             displayIds: formData.displayIds,
-            contentId: formData.contentId || undefined,
+            contentId: formData.contentId && formData.contentId !== '__none__' ? formData.contentId : undefined,
         });
     };
 
@@ -773,7 +773,7 @@ function EditSyncGroupDialog({
                                     <SelectValue placeholder="Select content" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="__none__">None</SelectItem>
                                     {contents.map((content) => (
                                         <SelectItem key={content.id} value={content.id}>
                                             <div className="flex items-center gap-2">
