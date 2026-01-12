@@ -160,8 +160,15 @@ export default function UsersPage() {
         },
     });
 
-    const users = usersData?.data || [];
-    // Handle different API response structures
+    // Handle different API response structures for users
+    const users = Array.isArray(usersData?.data)
+        ? usersData.data
+        : Array.isArray(usersData?.users)
+            ? usersData.users
+            : Array.isArray(usersData)
+                ? usersData
+                : [];
+    // Handle different API response structures for hotels
     const hotels = Array.isArray(hotelsData?.data)
         ? hotelsData.data
         : Array.isArray(hotelsData?.hotels)
