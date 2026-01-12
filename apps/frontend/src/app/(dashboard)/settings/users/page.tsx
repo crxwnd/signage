@@ -161,7 +161,14 @@ export default function UsersPage() {
     });
 
     const users = usersData?.data || [];
-    const hotels = hotelsData?.data || [];
+    // Handle different API response structures
+    const hotels = Array.isArray(hotelsData?.data)
+        ? hotelsData.data
+        : Array.isArray(hotelsData?.hotels)
+            ? hotelsData.hotels
+            : Array.isArray(hotelsData)
+                ? hotelsData
+                : [];
 
     return (
         <div className="space-y-6">
@@ -241,7 +248,7 @@ export default function UsersPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                users.map((user: User) => (
+                                (users || []).map((user: User) => (
                                     <TableRow key={user.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
@@ -324,11 +331,10 @@ export default function UsersPage() {
                 </CardContent>
             </Card>
 
-            {/* Create User Dialog */}
             <CreateUserDialog
                 open={isCreateOpen}
                 onOpenChange={setIsCreateOpen}
-                hotels={hotels}
+                hotels={hotels || []}
                 onSubmit={(data) => createMutation.mutate(data)}
                 isLoading={createMutation.isPending}
             />
@@ -364,16 +370,18 @@ export default function UsersPage() {
 function CreateUserDialog({
     open,
     onOpenChange,
-    hotels,
+    hotels = [],
     onSubmit,
     isLoading
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    hotels: Array<{ id: string; name: string }>;
+    hotels?: Array<{ id: string; name: string }>;
     onSubmit: (data: Record<string, unknown>) => void;
     isLoading: boolean;
 }) {
+    // Ensure hotels is always an array
+    const hotelsList = Array.isArray(hotels) ? hotels : [];
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -477,7 +485,7 @@ function CreateUserDialog({
                                         <SelectValue placeholder="Select hotel" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {hotels.map((hotel) => (
+                                        {hotelsList.map((hotel) => (
                                             <SelectItem key={hotel.id} value={hotel.id}>
                                                 {hotel.name}
                                             </SelectItem>
@@ -497,7 +505,7 @@ function CreateUserDialog({
                                         <SelectValue placeholder="Select area" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {areas.map((area: { id: string; name: string }) => (
+                                        {(areas || []).map((area: { id: string; name: string }) => (
                                             <SelectItem key={area.id} value={area.id}>
                                                 {area.name}
                                             </SelectItem>

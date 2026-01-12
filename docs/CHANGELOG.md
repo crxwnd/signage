@@ -4,6 +4,26 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2.4.1] - 2026-01-12
+
+### Fixed
+- **Settings pages redirect issue** - Converted server-side layouts to client-side
+  - `settings/layout.tsx` now uses AuthContext for role validation
+  - `settings/users/layout.tsx` converted to client-side
+  - `settings/hotels/layout.tsx` converted to client-side  
+  - `reports/layout.tsx` converted to client-side
+  - Prevents redirect loop caused by server-side cookie validation issues
+- **TypeError: hotels.map is not a function** in settings/users
+  - Added robust null safety with multiple API response structure fallbacks
+  - CreateUserDialog now has optional `hotels` prop with default value
+  - Uses `hotelsList` with explicit Array.isArray() check before mapping
+
+### Changed
+- All protected layouts now use client-side auth validation via `useAuth()` hook
+- Better loading states with Loader2 spinner while checking authorization
+
+---
+
 ## [2.4.0] - 2026-01-09 (Security P1)
 
 ### Security
