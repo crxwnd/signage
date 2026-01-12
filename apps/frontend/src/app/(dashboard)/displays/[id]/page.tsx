@@ -30,6 +30,11 @@ import {
     Zap,
     TrendingUp,
     ArrowLeft,
+    Link2,
+    QrCode,
+    Copy,
+    Edit,
+    ExternalLink,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { authenticatedFetch } from '@/lib/api/auth';
@@ -258,6 +263,99 @@ export default function DisplayProfilePage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Vinculación y Edición */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Link2 className="h-5 w-5" />
+                        Vinculación y Configuración
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {/* Link Directo */}
+                        <div className="p-4 rounded-lg border bg-muted/30">
+                            <div className="flex items-center gap-2 mb-2">
+                                <ExternalLink className="h-4 w-4 text-blue-500" />
+                                <span className="font-medium">Link Directo del Player</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 text-xs p-2 rounded bg-background border truncate">
+                                    {`${typeof window !== 'undefined' ? window.location.origin.replace('3000', '3002') : 'http://localhost:3002'}/?displayId=${displayId}`}
+                                </code>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const url = `${window.location.origin.replace('3000', '3002')}/?displayId=${displayId}`;
+                                        navigator.clipboard.writeText(url);
+                                        toast.success('Link copiado al portapapeles');
+                                    }}
+                                >
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                Usa este link para acceder directamente al player de esta pantalla
+                            </p>
+                        </div>
+
+                        {/* QR y Vinculación */}
+                        <div className="p-4 rounded-lg border bg-muted/30">
+                            <div className="flex items-center gap-2 mb-2">
+                                <QrCode className="h-4 w-4 text-purple-500" />
+                                <span className="font-medium">Sistema de Vinculación</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">
+                                Para vincular una nueva pantalla, accede a:
+                            </p>
+                            <code className="block text-xs p-2 rounded bg-background border mb-2">
+                                {typeof window !== 'undefined' ? window.location.origin.replace('3000', '3002') : 'http://localhost:3002'}/vinculacion
+                            </code>
+                            <p className="text-xs text-muted-foreground">
+                                Muestra código QR, código único y link para vincular
+                            </p>
+                        </div>
+
+                        {/* Editar Configuración */}
+                        <div className="p-4 rounded-lg border bg-muted/30 md:col-span-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Edit className="h-4 w-4 text-amber-500" />
+                                    <span className="font-medium">Editar Configuración</span>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => toast.info('Función de edición próximamente')}
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar Display
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div className="text-sm">
+                                    <span className="text-muted-foreground">Nombre:</span>
+                                    <p className="font-medium">{display.name}</p>
+                                </div>
+                                <div className="text-sm">
+                                    <span className="text-muted-foreground">Ubicación:</span>
+                                    <p className="font-medium">{display.location || 'Sin definir'}</p>
+                                </div>
+                                <div className="text-sm">
+                                    <span className="text-muted-foreground">Orientación:</span>
+                                    <p className="font-medium">{display.orientation || 'horizontal'}</p>
+                                </div>
+                                <div className="text-sm">
+                                    <span className="text-muted-foreground">Resolución:</span>
+                                    <p className="font-medium">{display.resolution || '1920x1080'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Tabs for History */}
             <Card>
