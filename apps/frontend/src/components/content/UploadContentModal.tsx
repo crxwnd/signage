@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useHotels } from '@/hooks/useHotels';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadContent } from '@/lib/api/content';
+import { authenticatedFetch } from '@/lib/api/auth';
 import { Upload, X, FileVideo, Image as ImageIcon, CheckCircle2, AlertCircle, Link as LinkIcon, Youtube, Globe } from 'lucide-react';
 import Image from 'next/image';
 import type { ContentType } from '@/lib/api/content';
@@ -426,11 +427,10 @@ export function UploadContentModal({
     try {
       // Create content via API with URL
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/content/url`, {
+      const response = await authenticatedFetch(`${API_URL}/api/content/url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           name,
