@@ -40,8 +40,6 @@ interface Display {
     resolution?: string | null;
     hotelId: string;
     areaId?: string | null;
-    hotel?: { id: string; name: string };
-    area?: { id: string; name: string } | null;
 }
 
 interface Area {

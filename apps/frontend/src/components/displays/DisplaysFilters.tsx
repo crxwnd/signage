@@ -34,7 +34,7 @@ export function DisplaysFilters({ totalDisplays = 0, filteredCount = 0 }: Displa
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { areas, isLoading: areasLoading, refetch: refetchAreas } = useAreas();
+  const { areas, isLoading: areasLoading } = useAreas();
 
   // Role-based visibility
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -103,10 +103,6 @@ export function DisplaysFilters({ totalDisplays = 0, filteredCount = 0 }: Displa
   const handleHotelChange = (val: string) => {
     // When hotel changes, reset area filter
     updateUrl({ hotelId: val, areaId: null });
-    // Refetch areas for the new hotel
-    if (val !== 'all') {
-      refetchAreas();
-    }
   };
 
   const handleClearFilters = () => {

@@ -355,7 +355,7 @@ export default function DisplayProfilePage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                                             onClick={() => setIsDeleteOpen(true)}
                                         >
                                             <Trash2 className="h-4 w-4 mr-2" />
