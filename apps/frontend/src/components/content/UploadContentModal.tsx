@@ -822,8 +822,8 @@ export function UploadContentModal({
 
                 {/* URL Preview */}
                 {detectedSource && (
-                  <div className="rounded-lg border border-border p-4">
-                    <div className="flex items-center gap-4">
+                  <div className="rounded-lg border border-border p-4 overflow-hidden">
+                    <div className="flex items-center gap-4 max-w-full overflow-hidden">
                       {/* Source Icon */}
                       <div className="flex-shrink-0">
                         {urlThumbnail ? (
@@ -848,9 +848,11 @@ export function UploadContentModal({
                       </div>
 
                       {/* Source Info */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="font-medium capitalize">{detectedSource.toLowerCase()} {detectedType?.toLowerCase()}</p>
-                        <p className="text-sm text-muted-foreground truncate">{contentUrl}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-full" title={contentUrl}>
+                          {contentUrl}
+                        </p>
                       </div>
                     </div>
                   </div>
