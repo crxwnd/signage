@@ -1,6 +1,7 @@
 /**
  * UploadContentModal Component
  * Modal for uploading video and image content with drag & drop
+ * Or adding content from URL (YouTube, Vimeo, direct links)
  */
 
 'use client';
@@ -28,13 +29,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useHotels } from '@/hooks/useHotels';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadContent } from '@/lib/api/content';
-import { Upload, X, FileVideo, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, X, FileVideo, Image as ImageIcon, CheckCircle2, AlertCircle, Link as LinkIcon, Youtube, Globe } from 'lucide-react';
 import Image from 'next/image';
 import type { ContentType } from '@/lib/api/content';
+
+/**
+ * Source types for content
+ */
+type ContentSource = 'FILE' | 'YOUTUBE' | 'VIMEO' | 'URL';
+type TabType = 'file' | 'url';
 
 /**
  * Accepted file types
@@ -70,12 +78,83 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
 /**
- * Validation schema
+ * Validation schema for file upload
  */
 const uploadSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   file: z.instanceof(File),
 });
+
+/**
+ * Validation schema for URL content
+ */
+const urlSchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters'),
+  url: z.string().url('Please enter a valid URL'),
+});
+
+/**
+ * Detect content source from URL
+ */
+function detectSourceFromUrl(url: string): { source: ContentSource; type: ContentType } {
+  const lowerUrl = url.toLowerCase();
+
+  // YouTube detection
+  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+    return { source: 'YOUTUBE', type: 'VIDEO' };
+  }
+
+  // Vimeo detection
+  if (lowerUrl.includes('vimeo.com')) {
+    return { source: 'VIMEO', type: 'VIDEO' };
+  }
+
+  // Direct file detection by extension
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.avi'];
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+  if (videoExtensions.some(ext => lowerUrl.includes(ext))) {
+    return { source: 'URL', type: 'VIDEO' };
+  }
+
+  if (imageExtensions.some(ext => lowerUrl.includes(ext))) {
+    return { source: 'URL', type: 'IMAGE' };
+  }
+
+  // Default to URL video
+  return { source: 'URL', type: 'VIDEO' };
+}
+
+/**
+ * Extract YouTube video ID
+ */
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/,
+    /youtube\.com\/embed\/([^&?/]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return null;
+}
+
+/**
+ * Get thumbnail URL for external content
+ */
+function getThumbnailUrl(url: string, source: ContentSource): string | null {
+  if (source === 'YOUTUBE') {
+    const videoId = extractYouTubeId(url);
+    if (videoId) return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }
+  // For direct URLs, use the URL itself if it's an image
+  if (source === 'URL' && /\.(jpg|jpeg|png|gif|webp)/i.test(url)) {
+    return url;
+  }
+  return null;
+}
 
 interface UploadContentModalProps {
   isOpen: boolean;
@@ -127,10 +206,20 @@ export function UploadContentModal({
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Form state
+  // Tab state
+  const [activeTab, setActiveTab] = React.useState<TabType>('file');
+
+  // Form state - File upload
   const [name, setName] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+  // Form state - URL
+  const [contentUrl, setContentUrl] = React.useState('');
+  const [detectedSource, setDetectedSource] = React.useState<ContentSource | null>(null);
+  const [detectedType, setDetectedType] = React.useState<ContentType | null>(null);
+  const [urlThumbnail, setUrlThumbnail] = React.useState<string | null>(null);
+  const [urlError, setUrlError] = React.useState<string | null>(null);
 
   // Upload state
   const [uploadState, setUploadState] = React.useState<UploadState>('idle');
@@ -160,6 +249,13 @@ export function UploadContentModal({
       setErrorMessage(null);
       setNameError(null);
       setSelectedHotelId('');
+      // Reset URL state
+      setActiveTab('file');
+      setContentUrl('');
+      setDetectedSource(null);
+      setDetectedType(null);
+      setUrlThumbnail(null);
+      setUrlError(null);
     }
   }, [isOpen]);
 
@@ -254,6 +350,110 @@ export function UploadContentModal({
     setSelectedFile(null);
     setPreviewUrl(null);
     setErrorMessage(null);
+  };
+
+  /**
+   * Handle URL input change - detect source type and thumbnail
+   */
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setContentUrl(url);
+    setUrlError(null);
+
+    if (!url.trim()) {
+      setDetectedSource(null);
+      setDetectedType(null);
+      setUrlThumbnail(null);
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      setDetectedSource(null);
+      setDetectedType(null);
+      setUrlThumbnail(null);
+      return;
+    }
+
+    // Detect source and type
+    const { source, type } = detectSourceFromUrl(url);
+    setDetectedSource(source);
+    setDetectedType(type);
+
+    // Get thumbnail
+    const thumbnail = getThumbnailUrl(url, source);
+    setUrlThumbnail(thumbnail);
+  };
+
+  /**
+   * Handle URL form submission
+   */
+  const handleUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!contentUrl.trim()) {
+      setUrlError('URL is required');
+      return;
+    }
+
+    try {
+      urlSchema.parse({ name, url: contentUrl });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const urlErr = error.issues.find((issue) => issue.path[0] === 'url');
+        const nameErr = error.issues.find((issue) => issue.path[0] === 'name');
+        if (urlErr) setUrlError(urlErr.message);
+        if (nameErr) setNameError(nameErr.message);
+        return;
+      }
+    }
+
+    if (!effectiveHotelId) {
+      toast({
+        title: 'Hotel required',
+        description: 'Please select a hotel',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadState('uploading');
+    setUploadProgress(50); // Simulate progress for URL content
+
+    try {
+      // Create content via API with URL
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_URL}/api/content/url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          name,
+          url: contentUrl,
+          source: detectedSource,
+          type: detectedType,
+          thumbnailUrl: urlThumbnail,
+          hotelId: effectiveHotelId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to add content');
+      }
+
+      setUploadProgress(100);
+      setUploadState('success');
+      onSuccess?.();
+    } catch (error) {
+      setUploadState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to add content');
+    }
   };
 
   /**
@@ -386,196 +586,348 @@ export function UploadContentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Upload Content</DialogTitle>
+          <DialogTitle>Add Content</DialogTitle>
           <DialogDescription>
-            Upload a video or image file to your content library.
+            Upload a file or add content from a URL (YouTube, Vimeo, or direct link).
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
+        {/* Tabs for source selection */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="file" disabled={isUploading}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload File
+            </TabsTrigger>
+            <TabsTrigger value="url" disabled={isUploading}>
+              <LinkIcon className="h-4 w-4 mr-2" />
+              From URL
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <form onSubmit={activeTab === 'file' ? handleSubmit : handleUrlSubmit}>
           <div className="grid gap-6 py-4">
-            {/* File Drop Zone */}
-            {!selectedFile && uploadState === 'idle' && (
-              <div
-                {...getRootProps()}
-                className={`
-                  cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors
-                  ${isDragActive
-                    ? 'border-primary bg-primary/5'
-                    : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                  }
-                `}
-              >
-                <input {...getInputProps()} />
-                <Upload className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                <p className="mb-2 text-sm font-medium">
-                  {isDragActive
-                    ? 'Drop your file here'
-                    : 'Drag & drop a file here, or click to select'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Supported: Videos (MP4, WebM, MOV, AVI) up to 500MB
-                  <br />
-                  Images (JPG, PNG, GIF, WebP) up to 10MB
-                </p>
-              </div>
-            )}
 
-            {/* File Preview */}
-            {selectedFile && uploadState === 'idle' && (
-              <div className="rounded-lg border border-border p-4">
-                <div className="flex items-start gap-4">
-                  {/* Thumbnail/Icon */}
-                  <div className="flex-shrink-0">
-                    {previewUrl ? (
-                      <div className="relative h-20 w-20 overflow-hidden rounded-md">
-                        <Image
-                          src={previewUrl}
-                          alt="Preview"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : fileTypeInfo ? (
-                      <div className={`flex h-20 w-20 items-center justify-center rounded-md ${fileTypeInfo.bgColor}`}>
-                        <fileTypeInfo.icon className={`h-10 w-10 ${fileTypeInfo.color}`} />
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* File Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{selectedFile.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatFileSize(selectedFile.size)}
-                      {' • '}
-                      {getContentTypeFromMime(selectedFile.type)}
+            {/* FILE TAB CONTENT */}
+            {activeTab === 'file' && (
+              <>
+                {/* File Drop Zone */}
+                {!selectedFile && uploadState === 'idle' && (
+                  <div
+                    {...getRootProps()}
+                    className={`
+                      cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors
+                      ${isDragActive
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      }
+                    `}
+                  >
+                    <input {...getInputProps()} />
+                    <Upload className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                    <p className="mb-2 text-sm font-medium">
+                      {isDragActive
+                        ? 'Drop your file here'
+                        : 'Drag & drop a file here, or click to select'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supported: Videos (MP4, WebM, MOV, AVI) up to 500MB
+                      <br />
+                      Images (JPG, PNG, GIF, WebP) up to 10MB
                     </p>
                   </div>
-
-                  {/* Remove Button */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRemoveFile}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Name Input */}
-            {selectedFile && uploadState === 'idle' && (
-              <div className="grid gap-2">
-                <Label htmlFor="name">
-                  Content Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (nameError) setNameError(null);
-                  }}
-                  placeholder="e.g. Hotel Welcome Video"
-                  disabled={isUploading}
-                  className={nameError ? 'border-destructive' : ''}
-                />
-                {nameError && (
-                  <p className="text-sm text-destructive">{nameError}</p>
                 )}
-              </div>
-            )}
 
-            {/* Hotel Selector for Super Admin */}
-            {selectedFile && uploadState === 'idle' && user?.role === 'SUPER_ADMIN' && !user?.hotelId && (
-              <div className="grid gap-2">
-                <Label htmlFor="hotel">
-                  Target Hotel <span className="text-destructive">*</span>
-                </Label>
-                {hotelsLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading hotels...</p>
-                ) : hotels.length === 0 ? (
-                  <p className="text-sm text-destructive">No hotels available</p>
-                ) : (
-                  <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
-                    <SelectTrigger id="hotel" className="w-full">
-                      <SelectValue placeholder="Select hotel for this content" />
-                    </SelectTrigger>
-                    <SelectContent
-                      position="popper"
-                      sideOffset={4}
-                      align="start"
-                      className="w-[--radix-select-trigger-width] max-h-60"
-                    >
-                      {hotels.map((hotel) => (
-                        <SelectItem key={hotel.id} value={hotel.id}>
-                          {hotel.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
+                {/* File Preview */}
+                {selectedFile && uploadState === 'idle' && (
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Thumbnail/Icon */}
+                      <div className="flex-shrink-0">
+                        {previewUrl ? (
+                          <div className="relative h-20 w-20 overflow-hidden rounded-md">
+                            <Image
+                              src={previewUrl}
+                              alt="Preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : fileTypeInfo ? (
+                          <div className={`flex h-20 w-20 items-center justify-center rounded-md ${fileTypeInfo.bgColor}`}>
+                            <fileTypeInfo.icon className={`h-10 w-10 ${fileTypeInfo.color}`} />
+                          </div>
+                        ) : null}
+                      </div>
 
-            {/* Upload Progress */}
-            {isUploading && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  {fileTypeInfo && (
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-md ${fileTypeInfo.bgColor}`}>
-                      <fileTypeInfo.icon className={`h-6 w-6 ${fileTypeInfo.color}`} />
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="font-medium truncate max-w-full" title={selectedFile.name}>
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatFileSize(selectedFile.size)}
+                          {' • '}
+                          {getContentTypeFromMime(selectedFile.type)}
+                        </p>
+                      </div>
+
+                      {/* Remove Button */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                        disabled={isUploading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{name}</p>
-                    <p className="text-sm text-muted-foreground">Uploading...</p>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Progress value={uploadProgress} className="h-2" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    {uploadProgress}% complete
-                  </p>
-                </div>
-              </div>
+                )}
+
+                {/* Name Input */}
+                {selectedFile && uploadState === 'idle' && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">
+                      Content Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (nameError) setNameError(null);
+                      }}
+                      placeholder="e.g. Hotel Welcome Video"
+                      disabled={isUploading}
+                      className={nameError ? 'border-destructive' : ''}
+                    />
+                    {nameError && (
+                      <p className="text-sm text-destructive">{nameError}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Hotel Selector for Super Admin */}
+                {selectedFile && uploadState === 'idle' && user?.role === 'SUPER_ADMIN' && !user?.hotelId && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="hotel">
+                      Target Hotel <span className="text-destructive">*</span>
+                    </Label>
+                    {hotelsLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading hotels...</p>
+                    ) : hotels.length === 0 ? (
+                      <p className="text-sm text-destructive">No hotels available</p>
+                    ) : (
+                      <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
+                        <SelectTrigger id="hotel" className="w-full">
+                          <SelectValue placeholder="Select hotel for this content" />
+                        </SelectTrigger>
+                        <SelectContent
+                          position="popper"
+                          sideOffset={4}
+                          align="start"
+                          className="w-[--radix-select-trigger-width] max-h-60"
+                        >
+                          {hotels.map((hotel) => (
+                            <SelectItem key={hotel.id} value={hotel.id}>
+                              {hotel.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                {/* Upload Progress */}
+                {isUploading && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      {fileTypeInfo && (
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-md ${fileTypeInfo.bgColor}`}>
+                          <fileTypeInfo.icon className={`h-6 w-6 ${fileTypeInfo.color}`} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{name}</p>
+                        <p className="text-sm text-muted-foreground">Uploading...</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Progress value={uploadProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center">
+                        {uploadProgress}% complete
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {isSuccess && (
+                  <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-6 text-center">
+                    <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-500" />
+                    <p className="font-medium text-green-600">Upload successful!</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {name} has been added to your content library
+                    </p>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {errorMessage && uploadState === 'idle' && (
+                  <div className="rounded-md bg-destructive/10 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-destructive">{errorMessage}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {isError && errorMessage && (
+                  <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-6 text-center">
+                    <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-500" />
+                    <p className="font-medium text-red-600">Upload failed</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {errorMessage}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Success State */}
+            {/* URL TAB CONTENT */}
+            {activeTab === 'url' && uploadState === 'idle' && (
+              <>
+                {/* URL Input */}
+                <div className="grid gap-2">
+                  <Label htmlFor="content-url">
+                    Content URL <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="content-url"
+                    type="url"
+                    value={contentUrl}
+                    onChange={handleUrlChange}
+                    placeholder="https://youtube.com/watch?v=... or https://example.com/video.mp4"
+                    className={urlError ? 'border-destructive' : ''}
+                  />
+                  {urlError && (
+                    <p className="text-sm text-destructive">{urlError}</p>
+                  )}
+                </div>
+
+                {/* URL Preview */}
+                {detectedSource && (
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="flex items-center gap-4">
+                      {/* Source Icon */}
+                      <div className="flex-shrink-0">
+                        {urlThumbnail ? (
+                          <div className="relative h-20 w-32 overflow-hidden rounded-md bg-muted">
+                            <Image
+                              src={urlThumbnail}
+                              alt="Preview"
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className={`flex h-20 w-20 items-center justify-center rounded-md ${detectedSource === 'YOUTUBE' ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
+                            {detectedSource === 'YOUTUBE' ? (
+                              <Youtube className="h-10 w-10 text-red-500" />
+                            ) : (
+                              <Globe className="h-10 w-10 text-blue-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Source Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium capitalize">{detectedSource.toLowerCase()} {detectedType?.toLowerCase()}</p>
+                        <p className="text-sm text-muted-foreground truncate">{contentUrl}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Name Input for URL */}
+                {detectedSource && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="url-name">
+                      Content Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="url-name"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (nameError) setNameError(null);
+                      }}
+                      placeholder="e.g. Hotel Promo Video"
+                      className={nameError ? 'border-destructive' : ''}
+                    />
+                    {nameError && (
+                      <p className="text-sm text-destructive">{nameError}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Hotel Selector for URL - Super Admin */}
+                {detectedSource && user?.role === 'SUPER_ADMIN' && !user?.hotelId && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="url-hotel">
+                      Target Hotel <span className="text-destructive">*</span>
+                    </Label>
+                    {hotelsLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading hotels...</p>
+                    ) : hotels.length === 0 ? (
+                      <p className="text-sm text-destructive">No hotels available</p>
+                    ) : (
+                      <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
+                        <SelectTrigger id="url-hotel">
+                          <SelectValue placeholder="Select hotel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hotels.map((hotel) => (
+                            <SelectItem key={hotel.id} value={hotel.id}>
+                              {hotel.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Success/Error States - shared */}
             {isSuccess && (
               <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-6 text-center">
                 <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-500" />
-                <p className="font-medium text-green-600">Upload successful!</p>
+                <p className="font-medium text-green-600">Content added successfully!</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {name} has been added to your content library
                 </p>
               </div>
             )}
 
-            {/* Error Message */}
-            {errorMessage && uploadState === 'idle' && (
-              <div className="rounded-md bg-destructive/10 p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-destructive">{errorMessage}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Error State */}
             {isError && errorMessage && (
               <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-6 text-center">
                 <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-500" />
-                <p className="font-medium text-red-600">Upload failed</p>
+                <p className="font-medium text-red-600">Failed to add content</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {errorMessage}
                 </p>
               </div>
             )}
+
           </div>
 
           <DialogFooter>
@@ -590,9 +942,13 @@ export function UploadContentModal({
             {!isSuccess && !isError && (
               <Button
                 type="submit"
-                disabled={!selectedFile || isUploading || !effectiveHotelId}
+                disabled={
+                  activeTab === 'file'
+                    ? !selectedFile || isUploading || !effectiveHotelId
+                    : !contentUrl || !detectedSource || !name || isUploading || !effectiveHotelId
+                }
               >
-                {isUploading ? 'Uploading...' : 'Upload'}
+                {isUploading ? 'Adding...' : activeTab === 'file' ? 'Upload' : 'Add Content'}
               </Button>
             )}
             {isError && (

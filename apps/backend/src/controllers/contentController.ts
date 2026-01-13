@@ -800,3 +800,140 @@ export async function uploadContentFile(
     res.status(500).json(errorResponse);
   }
 }
+
+/**
+ * Content source enum for URL content
+ */
+const ContentSourceEnum = z.enum(['YOUTUBE', 'VIMEO', 'URL', 'FILE']);
+
+/**
+ * Schema for URL content creation
+ */
+const createUrlContentSchema = z.object({
+  name: z.string().min(3).max(200),
+  url: z.string().url(),
+  source: ContentSourceEnum,
+  type: ContentTypeEnum,
+  thumbnailUrl: z.string().url().nullable().optional(),
+  hotelId: z.string(),
+});
+
+/**
+ * POST /api/content/url
+ * Create content from external URL (YouTube, Vimeo, direct links)
+ */
+export async function createContentFromUrl(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const user = req.user as RBACUser | undefined;
+
+    if (!user) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'User not authenticated' },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(401).json(errorResponse);
+      return;
+    }
+
+    // Validate request body
+    const payload = createUrlContentSchema.parse(req.body);
+    const { name, url, source, type, thumbnailUrl, hotelId } = payload;
+
+    // RBAC: Check if user can create content for this hotel
+    const canCreate =
+      user.role === 'SUPER_ADMIN' ||
+      (user.role === 'HOTEL_ADMIN' && user.hotelId === hotelId) ||
+      (user.role === 'AREA_MANAGER' && user.hotelId === hotelId);
+
+    if (!canCreate) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not authorized to create content for this hotel' },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(403).json(errorResponse);
+      return;
+    }
+
+    // Create content in database
+    // URL content is immediately READY since no processing is needed
+    const content = await contentService.createContent({
+      name,
+      type,
+      originalUrl: url,
+      hotelId,
+    });
+
+    // Update with additional fields
+    const updatedContent = await contentService.updateContent(content.id, {
+      status: 'READY',
+      thumbnailUrl: thumbnailUrl || undefined,
+    });
+
+    // Update source field directly via Prisma (since service doesn't have it yet)
+    const { prisma } = await import('../utils/prisma');
+    await prisma.content.update({
+      where: { id: content.id },
+      data: { source: source as any },
+    });
+
+    log.info('URL content created', {
+      contentId: content.id,
+      name,
+      source,
+      type,
+      url,
+      userId: user.userId,
+    });
+
+    const response: ApiSuccessResponse = {
+      success: true,
+      data: { ...updatedContent, source },
+      message: 'Content added successfully from URL',
+      timestamp: new Date().toISOString(),
+    };
+
+    // Log activity
+    await userAnalyticsService.logActivity({
+      userId: user.userId,
+      action: userAnalyticsService.ActivityActions.CONTENT_UPLOAD,
+      resource: 'content',
+      resourceId: content.id,
+      details: { name, source, type, url },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch(() => { });
+
+    res.status(201).json(response);
+  } catch (error) {
+    log.error('Failed to create content from URL', error);
+
+    if (error instanceof z.ZodError) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request body',
+          details: { errors: error.issues },
+        },
+        timestamp: new Date().toISOString(),
+      };
+      res.status(400).json(errorResponse);
+      return;
+    }
+
+    const errorResponse: ApiErrorResponse = {
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to create content from URL',
+      },
+      timestamp: new Date().toISOString(),
+    };
+    res.status(500).json(errorResponse);
+  }
+}

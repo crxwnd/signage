@@ -41,6 +41,13 @@ enum ContentStatus {
   ERROR
 }
 
+enum ContentSource {
+  FILE
+  YOUTUBE
+  VIMEO
+  URL
+}
+
 enum AlertType {
   INFO
   WARNING
@@ -209,8 +216,9 @@ model Content {
   name   String
   type   ContentType
   status ContentStatus @default(PENDING)
+  source ContentSource @default(FILE)
 
-  // File URLs
+  // File URLs or external URL
   originalUrl  String
   hlsUrl       String?
   thumbnailUrl String?

@@ -46,6 +46,12 @@ router.get('/', contentController.getContents);
 router.get('/:id', contentController.getContentById);
 
 /**
+ * POST /api/content/url
+ * Create content from external URL (YouTube, Vimeo, direct links)
+ */
+router.post('/url', contentController.createContentFromUrl);
+
+/**
  * POST /api/content
  * Create new content
  */

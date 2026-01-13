@@ -4,6 +4,25 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2.6.0] - 2026-01-13
+
+### Added
+- **Content from URL Support** - Add content from external URLs
+  - YouTube video support with auto-thumbnail
+  - Vimeo video support
+  - Direct URL support for videos and images
+  - Tabs UI: "Upload File" / "From URL"
+  - Auto-detect content type from URL
+  - New endpoint `POST /api/content/url`
+  - New `ContentSource` enum in database (FILE, YOUTUBE, VIMEO, URL)
+
+### Fixed
+- **Upload Content Modal overflow bug** - Long file names now truncate correctly
+  - Added `overflow-hidden` and `max-w-full` classes
+  - Tooltip on hover to see full name
+
+---
+
 ## [2.5.0] - 2026-01-13
 
 ### Fixed
