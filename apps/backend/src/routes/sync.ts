@@ -308,4 +308,90 @@ router.post('/groups/:id/conductor', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN'])
     }
 });
 
+/**
+ * POST /api/sync/groups/:id/quick-url
+ * Quick play content from URL directly on all displays in sync group
+ * Content will loop automatically and be logged
+ */
+router.post('/groups/:id/quick-url', requireRole(['SUPER_ADMIN', 'HOTEL_ADMIN']), async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { url, source, type, thumbnailUrl, loop = true } = req.body;
+        const user = (req as any).user;
+
+        if (!url || !source || !type) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'url, source, and type are required' }
+            });
+        }
+
+        // Get sync group with displays
+        const group = await syncService.getSyncGroup(id!);
+
+        if (!group) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Sync group not found' }
+            });
+        }
+
+        // Log the quick URL playback for each display
+        const { prisma } = await import('../utils/prisma');
+        const loggingPromises = (group.displays || []).map(display =>
+            prisma.playbackLog.create({
+                data: {
+                    displayId: display.id,
+                    sourceType: 'QUICK_URL',
+                    sourceId: group.id,
+                    contentId: `quick-url-${Date.now()}`,
+                    startedAt: new Date(),
+                    hotelId: group.hotelId,
+                }
+            })
+        );
+        await Promise.all(loggingPromises);
+
+        // Emit socket event to all displays in the group
+        const socketManager = await import('../socket/socketManager');
+        const io = socketManager.getIO();
+
+        if (io) {
+            // Emit to each display in the group
+            for (const display of group.displays || []) {
+                io.to(`display:${display.id}`).emit('quick-play' as any, {
+                    type: 'QUICK_URL',
+                    url,
+                    source,
+                    contentType: type,
+                    thumbnailUrl,
+                    loop,
+                    syncGroupId: group.id,
+                });
+            }
+
+            log.info('Quick URL sent to sync group', {
+                groupId: id,
+                displayCount: group.displays?.length || 0,
+                url,
+                source,
+                type,
+                userId: user?.userId
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Content sent to ${group.displays?.length || 0} displays in ${group.name}`,
+            data: { groupId: id, displayCount: group.displays?.length || 0, url, source, type, loop }
+        });
+    } catch (error) {
+        log.error('[SyncRoutes] Failed to send quick URL', error);
+        res.status(500).json({
+            success: false,
+            error: { code: 'SYNC_ERROR', message: 'Failed to send quick URL' },
+        });
+    }
+});
+
 export default router;

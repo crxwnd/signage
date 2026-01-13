@@ -51,6 +51,7 @@ import {
 import { toast } from 'sonner';
 import { authenticatedFetch } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import { QuickUrlDialog } from '@/components/displays/QuickUrlDialog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -90,6 +91,7 @@ export default function SyncGroupsPage() {
     const [search, setSearch] = useState('');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<SyncGroup | null>(null);
+    const [quickUrlGroup, setQuickUrlGroup] = useState<SyncGroup | null>(null);
 
     // Fetch sync groups
     const { data: groupsData, isLoading } = useQuery({
@@ -315,6 +317,10 @@ export default function SyncGroupsPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => setQuickUrlGroup(group)}>
+                                                    <Play className="h-4 w-4 mr-2" />
+                                                    Quick Play URL
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => setEditingGroup(group)}>
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
@@ -415,6 +421,17 @@ export default function SyncGroupsPage() {
                     group={editingGroup}
                     onSubmit={(data) => updateMutation.mutate({ id: editingGroup.id, data })}
                     isLoading={updateMutation.isPending}
+                />
+            )}
+
+            {/* Quick URL Dialog */}
+            {quickUrlGroup && (
+                <QuickUrlDialog
+                    isOpen={!!quickUrlGroup}
+                    onClose={() => setQuickUrlGroup(null)}
+                    targetType="syncGroup"
+                    targetId={quickUrlGroup.id}
+                    targetName={quickUrlGroup.name}
                 />
             )}
         </div>

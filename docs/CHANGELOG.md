@@ -4,6 +4,22 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2.7.0] - 2026-01-13
+
+### Added
+- **Quick Play URL** - Play content from URL directly on displays/sync groups
+  - New "Quick Play URL" button on Display details page
+  - New "Quick Play URL" option in Sync Group dropdown menu
+  - `QuickUrlDialog` component with URL detection and preview
+  - Content loops automatically
+  - Logged to `playbackLog` with `sourceType: 'QUICK_URL'`
+  - Endpoints: `POST /api/displays/:id/quick-url`, `POST /api/sync/groups/:id/quick-url`
+
+### Fixed
+- **URL Content "Invalid Token" error** - Now uses `authenticatedFetch` correctly
+
+---
+
 ## [2.6.0] - 2026-01-13
 
 ### Added

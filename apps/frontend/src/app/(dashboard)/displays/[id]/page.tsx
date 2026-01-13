@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { EditDisplayDialog } from '@/components/displays/EditDisplayDialog';
 import { DeleteDisplayDialog } from '@/components/displays/DeleteDisplayDialog';
+import { QuickUrlDialog } from '@/components/displays/QuickUrlDialog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -63,6 +64,7 @@ export default function DisplayProfilePage() {
     // Dialog states
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isQuickUrlOpen, setIsQuickUrlOpen] = useState(false);
 
     // Permissions
     const canEdit = user?.role === 'SUPER_ADMIN' || user?.role === 'HOTEL_ADMIN';
@@ -341,6 +343,14 @@ export default function DisplayProfilePage() {
                                     <span className="font-medium">Editar Configuración</span>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setIsQuickUrlOpen(true)}
+                                    >
+                                        <Play className="h-4 w-4 mr-2" />
+                                        Quick Play URL
+                                    </Button>
                                     {canEdit && (
                                         <Button
                                             variant="outline"
@@ -424,6 +434,15 @@ export default function DisplayProfilePage() {
                 open={isDeleteOpen}
                 onOpenChange={setIsDeleteOpen}
                 display={{ id: display.id, name: display.name }}
+            />
+
+            {/* Quick URL Dialog */}
+            <QuickUrlDialog
+                isOpen={isQuickUrlOpen}
+                onClose={() => setIsQuickUrlOpen(false)}
+                targetType="display"
+                targetId={display.id}
+                targetName={display.name}
             />
         </div>
     );

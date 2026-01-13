@@ -260,5 +260,76 @@ router.patch('/:id', displaysController.updateDisplay);
  */
 router.delete('/:id', displaysController.deleteDisplay);
 
+/**
+ * POST /api/displays/:id/quick-url
+ * Quick play content from URL directly on display (temporary content)
+ * Content will loop automatically and be logged
+ */
+router.post('/:id/quick-url', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { url, source, type, thumbnailUrl, loop = true } = req.body;
+        const user = (req as any).user;
+
+        if (!url || !source || !type) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'url, source, and type are required' }
+            });
+        }
+
+        // Verify display exists
+        const display = await prisma.display.findUnique({
+            where: { id },
+            select: { id: true, name: true, hotelId: true },
+        });
+
+        if (!display) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Display not found' }
+            });
+        }
+
+        // Log the quick URL playback
+        await prisma.playbackLog.create({
+            data: {
+                displayId: display.id,
+                sourceType: 'QUICK_URL',
+                sourceId: null,
+                contentId: `quick-url-${Date.now()}`,
+                startedAt: new Date(),
+                hotelId: display.hotelId,
+            }
+        });
+
+        // Emit socket event to display to play the URL
+        const socketManager = await import('../socket/socketManager');
+        const io = socketManager.getIO();
+
+        if (io) {
+            io.to(`display:${id}`).emit('quick-play' as any, {
+                type: 'QUICK_URL',
+                url,
+                source,
+                contentType: type,
+                thumbnailUrl,
+                loop,
+            });
+
+            log.info('Quick URL sent to display', { displayId: id, url, source, type, userId: user?.userId });
+        }
+
+        res.json({
+            success: true,
+            message: `Content sent to ${display.name}`,
+            data: { displayId: id, url, source, type, loop }
+        });
+    } catch (error) {
+        log.error('Error sending quick URL to display', { error });
+        next(error);
+    }
+});
+
 export default router;
 
