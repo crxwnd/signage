@@ -8,15 +8,21 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ### Added
 - **Quick Play URL** - Play content from URL directly on displays/sync groups
-  - New "Quick Play URL" button on Display details page
-  - New "Quick Play URL" option in Sync Group dropdown menu
+  - Button now in Playlist modal (more intuitive location)
   - `QuickUrlDialog` component with URL detection and preview
-  - Content loops automatically
+  - YouTube embeds with auto-loop
+  - Vimeo embeds with auto-loop
   - Logged to `playbackLog` with `sourceType: 'QUICK_URL'`
   - Endpoints: `POST /api/displays/:id/quick-url`, `POST /api/sync/groups/:id/quick-url`
+- **Player Quick URL Support**
+  - Handler for `quick-play` socket event
+  - YouTube/Vimeo iframe embeds
+  - Direct video/image URL support
 
 ### Fixed
 - **URL Content "Invalid Token" error** - Now uses `authenticatedFetch` correctly
+- **Quick URL Dialog overflow** - Long URLs now truncate properly with tooltip
+- **Moved Quick URL button** - From display details to Playlist modal (more intuitive)
 
 ---
 

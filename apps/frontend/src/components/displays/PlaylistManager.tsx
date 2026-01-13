@@ -29,8 +29,10 @@ import {
   Code,
   ListVideo,
   X,
+  Link as LinkIcon,
 } from 'lucide-react';
 import type { Content } from '@/lib/api/content';
+import { QuickUrlDialog } from './QuickUrlDialog';
 
 interface PlaylistManagerProps {
   displayId: string;
@@ -72,6 +74,7 @@ export function PlaylistManager({
   onOpenChange,
 }: PlaylistManagerProps) {
   const [showAddContent, setShowAddContent] = useState(false);
+  const [showQuickUrl, setShowQuickUrl] = useState(false);
 
   const {
     playlist,
@@ -202,15 +205,23 @@ export function PlaylistManager({
           )}
         </div>
 
-        {/* Add Content Button */}
-        <div className="pt-4 border-t">
+        {/* Add Content Buttons */}
+        <div className="pt-4 border-t flex gap-2">
           <Button
             onClick={() => setShowAddContent(true)}
             disabled={isProcessing}
-            className="w-full"
+            className="flex-1"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Content
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowQuickUrl(true)}
+            disabled={isProcessing}
+          >
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Quick URL
           </Button>
         </div>
 
@@ -295,6 +306,15 @@ export function PlaylistManager({
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Quick URL Dialog */}
+        <QuickUrlDialog
+          isOpen={showQuickUrl}
+          onClose={() => setShowQuickUrl(false)}
+          targetType="display"
+          targetId={displayId}
+          targetName={displayName}
+        />
       </DialogContent>
     </Dialog>
   );

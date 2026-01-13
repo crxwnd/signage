@@ -27,6 +27,17 @@ export interface SyncCommand {
     seekTo?: number;
 }
 
+// Quick URL data from dashboard
+export interface QuickUrlData {
+    type: 'QUICK_URL';
+    url: string;
+    source: 'YOUTUBE' | 'VIMEO' | 'URL';
+    contentType: 'VIDEO' | 'IMAGE';
+    thumbnailUrl?: string;
+    loop: boolean;
+    syncGroupId?: string;
+}
+
 interface UsePlayerSocketOptions {
     displayId: string | null;
     syncGroupId?: string | null;
@@ -43,6 +54,8 @@ interface UsePlayerSocketOptions {
     onScheduleActivated?: (data: { scheduleId: string; schedule: any }) => void;
     onScheduleEnded?: (data: { scheduleId: string }) => void;
     onContentRefresh?: () => void;
+    // Quick URL callback
+    onQuickUrl?: (data: QuickUrlData) => void;
 }
 
 export function usePlayerSocket({
@@ -59,6 +72,7 @@ export function usePlayerSocket({
     onScheduleActivated,
     onScheduleEnded,
     onContentRefresh,
+    onQuickUrl,
 }: UsePlayerSocketOptions) {
     // Refs for callbacks (stable references)
     const onPlaylistUpdateRef = useRef(onPlaylistUpdate);
@@ -72,6 +86,7 @@ export function usePlayerSocket({
     const onScheduleActivatedRef = useRef(onScheduleActivated);
     const onScheduleEndedRef = useRef(onScheduleEnded);
     const onContentRefreshRef = useRef(onContentRefresh);
+    const onQuickUrlRef = useRef(onQuickUrl);
     const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     const registeredDisplayRef = useRef<string | null>(null);
     const joinedSyncGroupRef = useRef<string | null>(null);
@@ -88,6 +103,7 @@ export function usePlayerSocket({
     useEffect(() => { onScheduleActivatedRef.current = onScheduleActivated; }, [onScheduleActivated]);
     useEffect(() => { onScheduleEndedRef.current = onScheduleEnded; }, [onScheduleEnded]);
     useEffect(() => { onContentRefreshRef.current = onContentRefresh; }, [onContentRefresh]);
+    useEffect(() => { onQuickUrlRef.current = onQuickUrl; }, [onQuickUrl]);
 
     const [isConnected, setIsConnected] = useState(false);
     const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -211,6 +227,12 @@ export function usePlayerSocket({
         socket.on('content:refresh' as never, () => {
             playerLog.log('[PlayerSocket] Content refresh requested');
             onContentRefreshRef.current?.();
+        });
+
+        // Quick URL handler
+        socket.on('quick-play' as never, (data: QuickUrlData) => {
+            playerLog.log('[PlayerSocket] Quick URL received:', data.url, data.source);
+            onQuickUrlRef.current?.(data);
         });
 
         // No cleanup - socket persists for player lifetime

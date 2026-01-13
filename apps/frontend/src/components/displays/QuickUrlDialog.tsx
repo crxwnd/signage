@@ -314,11 +314,13 @@ export function QuickUrlDialog({
                                     </div>
 
                                     {/* Source Info */}
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 overflow-hidden">
                                         <p className="font-medium capitalize">
                                             {detectedSource.toLowerCase()} {detectedType?.toLowerCase()}
                                         </p>
-                                        <p className="text-sm text-muted-foreground truncate">{contentUrl}</p>
+                                        <p className="text-sm text-muted-foreground truncate max-w-full" title={contentUrl}>
+                                            {contentUrl}
+                                        </p>
                                         <p className="text-xs text-green-600 mt-1">✓ Will loop automatically</p>
                                     </div>
                                 </div>

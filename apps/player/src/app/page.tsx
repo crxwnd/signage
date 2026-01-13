@@ -18,7 +18,7 @@ import { SyncPlayer } from '@/components/SyncPlayer';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { NoContentScreen } from '@/components/NoContentScreen';
-import { usePlayerSocket } from '@/hooks/usePlayerSocket';
+import { usePlayerSocket, type QuickUrlData } from '@/hooks/usePlayerSocket';
 import { useContentSource } from '@/hooks/useContentSource';
 import { useOfflineMode } from '@/hooks/useOfflineMode';
 
@@ -36,6 +36,29 @@ function getFullUrl(path: string | null | undefined): string {
   return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+/**
+ * Extract YouTube video ID from URL
+ */
+function extractYouTubeId(url: string): string {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/,
+    /youtube\.com\/embed\/([^&?/]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return '';
+}
+
+/**
+ * Extract Vimeo video ID from URL
+ */
+function extractVimeoId(url: string): string {
+  const match = url.match(/vimeo\.com\/(\d+)/);
+  return match?.[1] || '';
+}
+
 interface PlaylistItem {
   id: string;
   type: 'VIDEO' | 'IMAGE' | 'HTML';
@@ -47,6 +70,7 @@ interface PlaylistItem {
 export default function PlayerPage() {
   const [displayId, setDisplayId] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [quickUrl, setQuickUrl] = useState<QuickUrlData | null>(null);
 
   // Content source from priority system
   const {
@@ -115,6 +139,10 @@ export default function PlayerPage() {
       refetch();
     },
     onContentRefresh: refetch,
+    onQuickUrl: (data) => {
+      console.log('[Player] Quick URL received:', data.url);
+      setQuickUrl(data);
+    },
   });
 
   // Offline mode
@@ -231,8 +259,38 @@ export default function PlayerPage() {
       {/* Offline Banner */}
       <OfflineBanner isOffline={isOffline} offlineSince={offlineSince} />
 
+      {/* PRIORITY 0: Quick URL (temporary, highest priority from dashboard) */}
+      {quickUrl && (
+        <div className="absolute inset-0 z-50">
+          {quickUrl.source === 'YOUTUBE' ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${extractYouTubeId(quickUrl.url)}?autoplay=1&loop=1&playlist=${extractYouTubeId(quickUrl.url)}&controls=0&modestbranding=1`}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          ) : quickUrl.source === 'VIMEO' ? (
+            <iframe
+              src={`https://player.vimeo.com/video/${extractVimeoId(quickUrl.url)}?autoplay=1&loop=1&background=1`}
+              className="w-full h-full"
+              allow="autoplay"
+              allowFullScreen
+            />
+          ) : quickUrl.contentType === 'VIDEO' ? (
+            <VideoPlayer src={quickUrl.url} autoPlay muted />
+          ) : (
+            <img
+              src={quickUrl.url}
+              alt="Quick content"
+              className="w-full h-full object-contain"
+            />
+          )}
+          {/* Clear button (hidden, can be triggered by command) */}
+        </div>
+      )}
+
       {/* PRIORITY 1: Alert */}
-      {isAlert && source.alert && (
+      {!quickUrl && isAlert && source.alert && (
         <AlertOverlay source={source}>
           {source.content ? (
             // Distinguish VIDEO vs IMAGE rendering
