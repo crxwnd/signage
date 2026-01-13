@@ -4,6 +4,31 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ---
 
+## [2.5.0] - 2026-01-13
+
+### Added
+- **Edit Display Dialog** - Full modal for editing display configuration
+  - Name, location, orientation, resolution, area fields
+  - Hotel selector for SUPER_ADMIN
+  - Pre-loads current values, validates, and updates via API
+- **Delete Display Dialog** - Secure deletion with name confirmation
+  - Warning box explaining consequences
+  - Must type display name to confirm
+  - Redirects to /displays after deletion
+- **Hierarchical Filters in Displays List**
+  - SUPER_ADMIN: Hotel + Area + Status filters
+  - HOTEL_ADMIN: Area + Status filters (hotel implicit)
+  - AREA_MANAGER: Status filter only (area implicit)
+  - Dynamic area filtering based on selected hotel
+  - "Showing X of Y" counter
+
+### Changed
+- Edit/Delete buttons now appear on display details page with RBAC permissions
+- DisplaysFilters component updated for role-based visibility
+- Display page reads hotelId and areaId from URL params
+
+---
+
 ## [2.4.1] - 2026-01-12
 
 ### Fixed

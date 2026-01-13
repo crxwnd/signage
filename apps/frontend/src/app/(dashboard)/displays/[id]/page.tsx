@@ -5,8 +5,9 @@
  * Shows complete display history, status, and configuration
  */
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,10 +36,14 @@ import {
     Copy,
     Edit,
     ExternalLink,
+    Trash2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { authenticatedFetch } from '@/lib/api/auth';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { EditDisplayDialog } from '@/components/displays/EditDisplayDialog';
+import { DeleteDisplayDialog } from '@/components/displays/DeleteDisplayDialog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -51,7 +56,17 @@ const STATUS_CONFIG = {
 export default function DisplayProfilePage() {
     const params = useParams();
     const router = useRouter();
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
     const displayId = params.id as string;
+
+    // Dialog states
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+    // Permissions
+    const canEdit = user?.role === 'SUPER_ADMIN' || user?.role === 'HOTEL_ADMIN';
+    const canDelete = user?.role === 'SUPER_ADMIN' || user?.role === 'HOTEL_ADMIN';
 
     // Fetch display details
     const { data: displayData, isLoading: displayLoading } = useQuery({
@@ -325,14 +340,29 @@ export default function DisplayProfilePage() {
                                     <Edit className="h-4 w-4 text-amber-500" />
                                     <span className="font-medium">Editar Configuración</span>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => toast.info('Función de edición próximamente')}
-                                >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Editar Display
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    {canEdit && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsEditOpen(true)}
+                                        >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Editar Display
+                                        </Button>
+                                    )}
+                                    {canDelete && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => setIsDeleteOpen(true)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Eliminar
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                 <div className="text-sm">
@@ -380,6 +410,21 @@ export default function DisplayProfilePage() {
                     </CardContent>
                 </Tabs>
             </Card>
+
+            {/* Edit Display Dialog */}
+            <EditDisplayDialog
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                display={display}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['display', displayId] })}
+            />
+
+            {/* Delete Display Dialog */}
+            <DeleteDisplayDialog
+                open={isDeleteOpen}
+                onOpenChange={setIsDeleteOpen}
+                display={{ id: display.id, name: display.name }}
+            />
         </div>
     );
 }

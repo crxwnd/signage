@@ -36,9 +36,13 @@ function DisplaysContent() {
     const displayFilter: DisplayFilter = {};
     const search = searchParams.get('search');
     const status = searchParams.get('status');
+    const hotelId = searchParams.get('hotelId');
+    const areaId = searchParams.get('areaId');
 
     if (search) displayFilter.search = search;
     if (status) displayFilter.status = status as any;
+    if (hotelId) displayFilter.hotelId = hotelId;
+    if (areaId) displayFilter.areaId = areaId;
 
     return displayFilter;
   }, [searchParams]);
