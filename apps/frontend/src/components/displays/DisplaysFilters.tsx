@@ -84,7 +84,8 @@ export function DisplaysFilters({ totalDisplays = 0, filteredCount = 0 }: Displa
     });
 
     params.delete('page');
-    router.push(`?${params.toString()}`);
+    // Use replace instead of push for filter updates - more reactive
+    router.replace(`?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);
 
   // Debounce manual
@@ -107,7 +108,7 @@ export function DisplaysFilters({ totalDisplays = 0, filteredCount = 0 }: Displa
 
   const handleClearFilters = () => {
     setSearchValue('');
-    router.push('/displays');
+    router.replace('/displays', { scroll: false });
   };
 
   const hasActiveFilters = searchValue !== '' ||

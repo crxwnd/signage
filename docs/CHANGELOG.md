@@ -6,6 +6,13 @@ Este archivo documenta todos los cambios y modificaciones realizados en el proye
 
 ## [2.5.0] - 2026-01-13
 
+### Fixed
+- **Displays filters now update list reactively** - Changing filters updates the list immediately
+  - `router.replace` with `scroll: false` for smoother transitions
+  - Filter object serialized as JSON in queryKey for stable comparison
+  - Added `isFetching` state for visual feedback during filter changes
+  - Opacity transition on DisplaysList while fetching
+
 ### Added
 - **Edit Display Dialog** - Modal for editing display configuration
   - Name, location, orientation, resolution, area fields

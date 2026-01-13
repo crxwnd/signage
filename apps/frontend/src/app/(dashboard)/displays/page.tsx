@@ -48,7 +48,7 @@ function DisplaysContent() {
   }, [searchParams]);
 
   // Fetch displays and stats using custom hook
-  const { displays, stats, isLoading, error, refetch } = useDisplays({
+  const { displays, stats, isLoading, isFetching, error, refetch } = useDisplays({
     filter,
   });
 
@@ -207,10 +207,12 @@ function DisplaysContent() {
             </Card>
           ) : (
             filteredCount > 0 ? (
-              <DisplaysList
-                initialDisplays={displays}
-                initialTotal={filteredCount}
-              />
+              <div className={`transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
+                <DisplaysList
+                  initialDisplays={displays}
+                  initialTotal={filteredCount}
+                />
+              </div>
             ) : (
               <Card>
                 <CardContent className="py-12">

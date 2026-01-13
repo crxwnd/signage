@@ -20,6 +20,7 @@ interface UseDisplaysReturn {
     error: number;
   };
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   refetch: () => void;
 }
@@ -32,7 +33,7 @@ interface UseDisplaysReturn {
  *
  * @example
  * ```tsx
- * const { displays, stats, isLoading, error, refetch } = useDisplays({
+ * const { displays, stats, isLoading, isFetching, error, refetch } = useDisplays({
  *   filter: { status: 'ONLINE' }
  * });
  * ```
@@ -42,11 +43,14 @@ export function useDisplays(
 ): UseDisplaysReturn {
   const { filter } = options;
 
+  // Serialize filter for stable queryKey comparison
+  const filterKey = JSON.stringify(filter ?? {});
+
   // Use useQueries to fetch displays and stats in parallel
   const [displaysQuery, statsQuery] = useQueries({
     queries: [
       {
-        queryKey: ['displays', filter],
+        queryKey: ['displays', filterKey],
         queryFn: async () => {
           const result = await getDisplays(filter, {
             page: 1,
@@ -59,7 +63,7 @@ export function useDisplays(
         staleTime: 5 * 1000, // 5 seconds
       },
       {
-        queryKey: ['displays-stats'],
+        queryKey: ['displays-stats', filterKey],
         queryFn: () => getDisplayStats(),
         staleTime: 10 * 1000, // 10 seconds
       },
@@ -78,6 +82,9 @@ export function useDisplays(
   // Combine loading states
   const isLoading = displaysQuery.isLoading || statsQuery.isLoading;
 
+  // isFetching is true during background refetches (filter changes)
+  const isFetching = displaysQuery.isFetching || statsQuery.isFetching;
+
   // Get first error if any
   const error =
     (displaysQuery.error as Error) || (statsQuery.error as Error) || null;
@@ -92,6 +99,7 @@ export function useDisplays(
     displays,
     stats,
     isLoading,
+    isFetching,
     error,
     refetch,
   };
