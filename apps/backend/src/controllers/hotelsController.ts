@@ -162,8 +162,14 @@ export async function createHotel(req: Request, res: Response): Promise<void> {
             return;
         }
 
+        log.debug('CreateHotel request body', { body: req.body });
+
         const validation = createHotelSchema.safeParse(req.body);
         if (!validation.success) {
+            log.warn('Hotel validation failed', {
+                errors: validation.error.issues,
+                body: req.body
+            });
             sendError(res, 400, 'VALIDATION_ERROR', validation.error.issues[0]?.message || 'Invalid data');
             return;
         }

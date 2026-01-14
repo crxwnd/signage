@@ -89,6 +89,7 @@ export default function HotelsPage() {
         mutationFn: async (data: { name: string; address: string }) => {
             const res = await authenticatedFetch(`${API_URL}/api/hotels`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
             if (!res.ok) {
@@ -112,6 +113,7 @@ export default function HotelsPage() {
         mutationFn: async ({ id, data }: { id: string; data: { name?: string; address?: string } }) => {
             const res = await authenticatedFetch(`${API_URL}/api/hotels/${id}`, {
                 method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
             if (!res.ok) throw new Error('Failed to update hotel');
