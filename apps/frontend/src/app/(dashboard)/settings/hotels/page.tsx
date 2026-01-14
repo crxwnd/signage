@@ -5,7 +5,7 @@
  * CRUD for hotels (SUPER_ADMIN only)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -353,6 +353,16 @@ function HotelFormDialog({
         name: initialData?.name || '',
         address: initialData?.address || '',
     });
+
+    // Reset form when dialog opens or initialData changes
+    useEffect(() => {
+        if (open) {
+            setFormData({
+                name: initialData?.name || '',
+                address: initialData?.address || '',
+            });
+        }
+    }, [open, initialData?.name, initialData?.address]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
