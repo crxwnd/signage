@@ -245,7 +245,7 @@ export default function HotelsPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem asChild>
-                                            <Link href={`/hotels/${hotel.id}`}>
+                                            <Link href={`/settings/hotels/${hotel.id}`}>
                                                 <Eye className="h-4 w-4 mr-2" />
                                                 View Details
                                             </Link>
