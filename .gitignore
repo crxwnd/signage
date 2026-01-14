@@ -102,3 +102,6 @@ minio_data/
 .pm2/
 
 /generated/prisma
+
+# chrome
+googlechrome.dmg 
